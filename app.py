@@ -36,7 +36,7 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- CSS MAESTRO (TODO EL DISEÑO ANTERIOR) ---
+# --- CSS MAESTRO (VISIBILIDAD, MODALES Y DISEÑO) ---
 st.markdown("""
     <style>
     /* 1. FONDO BLANCO GLOBAL */
@@ -213,10 +213,8 @@ def modal_nuevo_producto():
     with st.form("form_nuevo_prod"):
         n = st.text_input("Nombre / Modelo *")
         c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
-        
         m = st.text_input("Marca (Solo si aplica)")
         cb = st.text_input("Código de Batería (Solo para Baterías)")
-
         s = st.number_input("Stock Inicial *", min_value=0, step=1)
         p = st.number_input("Precio Venta (S/) *", min_value=0.0, step=0.5)
         img = st.text_input("URL Imagen (Opcional)")
@@ -230,13 +228,8 @@ def modal_nuevo_producto():
                     st.error("⚠️ Ya existe.")
                 else:
                     supabase.table("productos").insert({
-                        "nombre": n, 
-                        "categoria": c, 
-                        "marca": m, 
-                        "codigo_bateria": cb,
-                        "stock": s, 
-                        "precio_venta": p, 
-                        "imagen_url": img
+                        "nombre": n, "categoria": c, "marca": m, "codigo_bateria": cb,
+                        "stock": s, "precio_venta": p, "imagen_url": img
                     }).execute()
                     
                     supabase.table("historial").insert({
@@ -296,37 +289,25 @@ if opcion == "Stock":
     with col_a: busqueda = st.text_input("Buscar por modelo", placeholder="Ej: Pantalla iPhone...")
     with col_b: categoria = st.selectbox("Apartado", ["Todos", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
 
-    # 1. Traer todos los datos ordenados alfabéticamente
     items = supabase.table("productos").select("*").order("nombre").execute().data
-    
     if items:
-        # 2. Filtrar en una lista nueva (NO DIBUJAR TODAVÍA)
+        # Filtrado
         filtered_items = []
         busqueda_lower = busqueda.lower()
-
         for p in items:
-            nombre_prod = p['nombre'].lower()
-            marca_prod = (p.get('marca') or '').lower()
-            
-            # Coincidencia de búsqueda
-            match_busqueda = (busqueda_lower in nombre_prod) or (busqueda_lower in marca_prod)
-            # Coincidencia de categoría
+            match_busqueda = (busqueda_lower in p['nombre'].lower()) or (busqueda_lower in (p.get('marca') or '').lower())
             match_categoria = (categoria == "Todos" or p['categoria'] == categoria)
-
             if match_busqueda and match_categoria:
                 filtered_items.append(p)
         
-        # 3. Ordenamiento inteligente (Lo que pediste: modelo específico primero)
-        # Python sort es estable. Si ya viene ordenado por nombre, esto solo mueve al principio lo que empieza con la búsqueda.
+        # Ordenamiento inteligente
         if busqueda_lower:
             filtered_items.sort(key=lambda x: 0 if x['nombre'].lower().startswith(busqueda_lower) else 1)
 
-        # 4. Dibujar la cuadrícula SIN HUECOS
         cols = st.columns(4)
         for i, p in enumerate(filtered_items):
-            with cols[i % 4]: # El índice 'i' ahora es continuo (0, 1, 2, 3...) llenando los espacios
+            with cols[i % 4]:
                 with st.container(border=True):
-                    # Imagen
                     img_url = p.get('imagen_url') or "https://via.placeholder.com/150"
                     st.markdown(f"""
                         <div style="display: flex; justify-content: center; align-items: center; height: 160px; width: 100%; margin-bottom: 10px;">
@@ -334,10 +315,8 @@ if opcion == "Stock":
                         </div>
                     """, unsafe_allow_html=True)
                     
-                    # Texto alineado
                     marca_val = p.get('marca', '')
                     marca_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase;'>{marca_val}</div>" if marca_val else "<div style='height:16px;'></div>"
-                    
                     st.markdown(f"""
                         <div style="text-align:center; height:70px; display:flex; flex-direction:column; justify-content:flex-start; align-items:center;">
                             {marca_html}
@@ -351,8 +330,7 @@ if opcion == "Stock":
                     st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
                     
                     if p['stock'] > 0:
-                        if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True):
-                            modal_salida(p)
+                        if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True): modal_salida(p)
                     else:
                         st.button("🚫 NO STOCK", key=f"ns_{p['id']}", disabled=True, use_container_width=True)
 
@@ -363,17 +341,31 @@ elif opcion == "Carga":
         if st.button("➕ NUEVO PRODUCTO", use_container_width=True): modal_nuevo_producto()
     
     all_products = supabase.table("productos").select("*").order("nombre").execute().data
-    nombres_prod = [p['nombre'] for p in all_products]
+    
+    # --- LÓGICA DE BÚSQUEDA MEJORADA PARA MOSTRAR MARCA ---
+    opciones_map = {}
+    for p in all_products:
+        marca = p.get('marca') or ""
+        # Creamos una etiqueta amigable: "Marca - Modelo" o solo "Modelo"
+        if marca:
+            display_text = f"{marca} - {p['nombre']}"
+        else:
+            display_text = p['nombre']
+        opciones_map[display_text] = p # Guardamos el objeto completo referenciado por su nombre bonito
+
+    # Ordenamos la lista para que se vea bien
+    lista_opciones = sorted(list(opciones_map.keys()))
     
     st.write("Seleccione un producto existente para añadir stock o editarlo.")
-    seleccion = st.selectbox("Modelo / Repuesto (Busca aquí)", ["Seleccionar"] + nombres_prod)
+    seleccion_str = st.selectbox("Modelo / Repuesto (Busca por Marca o Modelo)", ["Seleccionar"] + lista_opciones)
     
-    if seleccion != "Seleccionar":
-        prod_data = next((item for item in all_products if item["nombre"] == seleccion), None)
+    if seleccion_str != "Seleccionar":
+        # Recuperamos los datos usando el mapa, no buscando por nombre exacto en la DB
+        prod_data = opciones_map[seleccion_str]
+        
         if prod_data:
             with st.form("form_update_stock"):
                 col_u1, col_u2 = st.columns(2)
-                
                 with col_u1:
                     st.text_input("Categoría", value=prod_data['categoria'], disabled=True)
                     marca_val = prod_data.get('marca') or ""
@@ -397,9 +389,7 @@ elif opcion == "Carga":
                     total_stock = prod_data['stock'] + stock_add
                     
                     datos_update = {
-                        "stock": total_stock, 
-                        "precio_venta": new_price, 
-                        "imagen_url": new_img
+                        "stock": total_stock, "precio_venta": new_price, "imagen_url": new_img
                     }
                     if prod_data['categoria'] == "Baterías":
                         datos_update["codigo_bateria"] = cod_bat_new
@@ -435,7 +425,6 @@ elif opcion == "Stats":
 elif opcion == "Users":
     st.markdown("<h2>👥 Gestión</h2>", unsafe_allow_html=True)
     tab1, tab2, tab3 = st.tabs(["🔑 Accesos", "👨‍🔧 Técnicos", "🏠 Locales"])
-    
     with tab1:
         with st.form("nu"):
             un = st.text_input("Usuario")
@@ -446,7 +435,6 @@ elif opcion == "Users":
                 else:
                     supabase.table("usuarios").insert({"usuario":un, "contrasena":pw, "rol":rl}).execute()
                     st.success("Creado.")
-    
     with tab2:
         with st.form("nt"):
             tn = st.text_input("Nombre")
@@ -454,7 +442,6 @@ elif opcion == "Users":
                 supabase.table("tecnicos").insert({"nombre": tn}).execute()
                 st.success("Hecho.")
                 st.rerun()
-        
         st.write("---")
         tecs = supabase.table("tecnicos").select("*").execute().data
         if tecs:
@@ -465,7 +452,6 @@ elif opcion == "Users":
                 st.write("")
                 if st.button("🗑️", key="bt"): modal_borrar_tecnico(t_del)
             st.dataframe(pd.DataFrame(tecs), use_container_width=True)
-
     with tab3:
         with st.form("nl"):
             ln = st.text_input("Nombre")
@@ -473,7 +459,6 @@ elif opcion == "Users":
                 supabase.table("locales").insert({"nombre": ln}).execute()
                 st.success("Hecho.")
                 st.rerun()
-        
         st.write("---")
         locs = supabase.table("locales").select("*").execute().data
         if locs:
@@ -494,7 +479,6 @@ elif opcion == "Prov":
                 st.markdown(f"**{pr['nombre_contacto']}**")
                 st.link_button("WhatsApp", f"https://wa.me/{pr['whatsapp']}")
 
-# --- RESET ---
 elif opcion == "Reset":
     st.markdown("<h2>⚙️ Reset</h2>", unsafe_allow_html=True)
     col_r1, col_r2 = st.columns(2)
