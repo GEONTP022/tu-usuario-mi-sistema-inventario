@@ -3,15 +3,14 @@ from supabase import create_client
 import pandas as pd
 import plotly.express as px
 
-# --- CONEXIÓN A BASE DE DATOS ---
+# --- CONEXIÓN ---
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
-# --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide")
 
-# --- LÓGICA DE SESIÓN (LOGIN) ---
+# --- LÓGICA DE SESIÓN ---
 if 'autenticado' not in st.session_state:
     st.session_state.autenticado = False
     st.session_state.rol = None
@@ -37,56 +36,59 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- DISEÑO UI REFINADO (FORZAR NEGRO PARA LAPTOP Y CELULAR) ---
+# --- DISEÑO UI REFINADO (ALTA VISIBILIDAD) ---
 st.markdown("""
     <style>
-    /* 1. FORZAR FONDO BLANCO EN TODO MOMENTO */
-    .stApp, .main, .block-container { 
-        background-color: #ffffff !important; 
-    }
+    /* 1. ÁREA CENTRAL: Fondo blanco y TEXTO NEGRO PURO */
+    .stApp { background-color: #ffffff !important; }
     
-    /* 2. FORZAR TEXTO NEGRO PURO (Soluciona el problema de la laptop) */
-    html, body, [class*="st-"] {
-        color: #000000 !important;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    .main h2, .main label, .main p, .main span, .main b, .main strong {
+    /* Forzar color negro en etiquetas, títulos y textos */
+    .main h1, .main h2, .main h3, .main label, .main p, .main span, .main b {
         color: #000000 !important;
         font-weight: 700 !important;
+        opacity: 1 !important;
     }
 
-    /* 3. BARRA LATERAL: Perfil centrado y texto blanco (No cambia) */
+    /* 2. BARRA LATERAL: Perfil centrado y texto blanco */
     [data-testid="stSidebar"] { background-color: #1a222b !important; }
-    .profile-section { text-align: center !important; padding: 30px 10px; }
-    .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 4px solid #f39c12; margin-bottom: 15px; object-fit: cover; }
+    
+    .profile-section { 
+        text-align: center !important; 
+        padding: 30px 10px; 
+        width: 100%;
+    }
+    .profile-pic { 
+        width: 100px; height: 100px; border-radius: 50%; 
+        border: 4px solid #f39c12; margin-bottom: 10px; object-fit: cover;
+        display: block; margin-left: auto; margin-right: auto;
+    }
     .profile-name { font-size: 19px; font-weight: bold; color: #ffffff !important; margin: 0; }
     .profile-status { font-size: 12px; color: #f39c12 !important; margin-bottom: 5px; }
+    
     .sidebar-divider { height: 1px; background-color: #3498db; margin: 10px 0 20px 0; width: 100%; opacity: 0.5; }
     [data-testid="stSidebar"] button p { color: #ffffff !important; font-size: 15px !important; }
 
-    /* 4. FORMULARIOS: Mejorar cuadros de Cantidad y Precio */
-    input, select {
+    /* 3. INPUTS: Fondos claros para que el número se vea */
+    input, select, .stNumberInput div {
         background-color: #f1f3f4 !important;
         color: #000000 !important;
-        border: 2px solid #000000 !important; /* Borde más grueso para laptop */
-        border-radius: 8px !important;
+        border: 1px solid #000000 !important;
     }
     
-    /* Limpiar cuadros de Number Input */
+    /* Corregir cuadros de Number Input que se veían feos */
     div[data-testid="stNumberInput"] div[role="group"] {
         background-color: #f1f3f4 !important;
-        border: 2px solid #000000 !important;
-        border-radius: 8px !important;
+        border: 1px solid #000000 !important;
     }
 
-    /* BOTÓN CONSOLIDAR: Azul sólido */
+    /* 4. BOTÓN CONSOLIDAR: Azul sólido, texto blanco, siempre visible */
     div.stForm button {
         background-color: #2488bc !important;
         color: #ffffff !important;
         font-weight: bold !important;
         border: none !important;
         height: 48px !important;
+        opacity: 1 !important;
         width: 100% !important;
     }
     
@@ -124,7 +126,7 @@ opcion = st.session_state.menu
 if opcion == "Stock":
     st.markdown("<h2>Inventario General</h2>", unsafe_allow_html=True)
     col_a, col_b = st.columns([3, 1])
-    with col_a: busqueda = st.text_input("Buscar por modelo", placeholder="Ej: Samsung S22...")
+    with col_a: busqueda = st.text_input("Buscar por modelo", placeholder="Ej: Samsung S23...")
     with col_b: categoria = st.selectbox("Apartado", ["Todos", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
 
     items = supabase.table("productos").select("*").order("nombre").execute().data
@@ -135,7 +137,7 @@ if opcion == "Stock":
                 with cols[i % 4]:
                     with st.container(border=True):
                         st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=True)
-                        st.markdown(f"<p style='margin-bottom:0px; color:black;'><b>{p['nombre']}</b></p>", unsafe_allow_html=True)
+                        st.markdown(f"<p style='margin-bottom:0px;'><b>{p['nombre']}</b></p>", unsafe_allow_html=True)
                         cs, cp = st.columns(2)
                         cs.write(f"U: {p['stock']}")
                         cp.write(f"S/ {p['precio_venta']}")
