@@ -8,127 +8,78 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
-st.set_page_config(page_title="VillaFix | Inventario", page_icon="🛠️", layout="wide")
+st.set_page_config(page_title="VillaFix | Acceso", page_icon="🔐", layout="wide")
 
-# --- DISEÑO UI ---
+# --- LÓGICA DE LOGIN ---
+if 'autenticado' not in st.session_state:
+    st.session_state.autenticado = False
+    st.session_state.rol = None
+    st.session_state.user = None
+
+def login():
+    st.markdown("<h1 style='text-align:center; color:#50fa7b;'>VILLAFIX ACCESS</h1>", unsafe_allow_html=True)
+    with st.container(border=True):
+        u = st.text_input("Usuario")
+        p = st.text_input("Contraseña", type="password")
+        if st.button("INGRESAR AL SISTEMA", use_container_width=True):
+            res = supabase.table("usuarios").select("*").eq("usuario", u).eq("contrasena", p).execute()
+            if res.data:
+                st.session_state.autenticado = True
+                st.session_state.rol = res.data[0]['rol']
+                st.session_state.user = u
+                st.rerun()
+            else:
+                st.error("Credenciales incorrectas")
+
+# --- SI NO ESTÁ LOGUEADO, MOSTRAR LOGIN ---
+if not st.session_state.autenticado:
+    login()
+    st.stop()
+
+# --- SI ESTÁ LOGUEADO, MOSTRAR EL SISTEMA ---
+# (Diseño UI igual al anterior...)
 st.markdown("""
     <style>
     .stApp { background-color: #1e1e2f; color: #ffffff; }
     [data-testid="stSidebar"] { background-color: #11111b; min-width: 250px !important; }
-    .sidebar-header { font-size: 13px; color: #6272a4; font-weight: bold; margin-top: 25px; text-transform: uppercase; letter-spacing: 1.5px; }
-    
-    div[data-testid="stVerticalBlockBorderWrapper"] {
-        background-color: #282a36 !important;
-        border: 1px solid #44475a !important;
-        border-radius: 15px !important;
-        padding: 20px !important;
-    }
+    .sidebar-header { font-size: 13px; color: #6272a4; font-weight: bold; margin-top: 25px; text-transform: uppercase; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- PANEL IZQUIERDO ---
-if 'menu' not in st.session_state: st.session_state.menu = "Stock"
-
 with st.sidebar:
-    st.markdown("<h1 style='color:#50fa7b; text-align:center;'>VillaFix</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='color:#50fa7b; text-align:center;'>VillaFix</h1>", unsafe_allow_html=True)
+    st.write(f"👤 Usuario: **{st.session_state.user}**")
+    st.caption(f"Acceso: {st.session_state.rol}")
+    if st.button("Cerrar Sesión"):
+        st.session_state.autenticado = False
+        st.rerun()
     st.write("---")
-    st.markdown('<p class="sidebar-header">📦 Gestión de Almacén</p>', unsafe_allow_html=True)
+    
+    # --- FILTRO DE MENÚ POR ROL ---
+    st.markdown('<p class="sidebar-header">📦 Almacén</p>', unsafe_allow_html=True)
     if st.button("🖼️ Ver Inventario", use_container_width=True): st.session_state.menu = "Stock"
-    if st.button("➕ Ingreso de Mercancía", use_container_width=True): st.session_state.menu = "Carga"
     
-    st.markdown('<p class="sidebar-header">🔄 Operaciones</p>', unsafe_allow_html=True)
-    if st.button("📜 Historial de Salidas", use_container_width=True): st.session_state.menu = "Log"
-    if st.button("📊 Estadísticas de Uso", use_container_width=True): st.session_state.menu = "Stats"
-    
-    st.markdown('<p class="sidebar-header">👥 Directorio</p>', unsafe_allow_html=True)
-    if st.button("📞 Proveedores", use_container_width=True): st.session_state.menu = "Prov"
-
-# --- LÓGICA DE NAVEGACIÓN ---
-opcion = st.session_state.menu
-
-# 1. INVENTARIO GENERAL
-if opcion == "Stock":
-    st.markdown("<h1 style='color:#50fa7b;'>INVENTARIO GENERAL - VILLAFIX</h1>", unsafe_allow_html=True)
-    col_a, col_b = st.columns([3, 1])
-    with col_a: busqueda = st.text_input("", placeholder="🔍 Buscar por modelo o repuesto...")
-    with col_b: categoria = st.selectbox("Filtrar", ["Todos", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
-
-    query = supabase.table("productos").select("*").order("nombre")
-    if categoria != "Todos": query = query.eq("categoria", categoria)
-    items = query.execute().data
-
-    if items:
-        cols = st.columns(4)
-        for i, p in enumerate(items):
-            if busqueda.lower() in p['nombre'].lower():
-                with cols[i % 4]:
-                    with st.container(border=True):
-                        st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_container_width=True)
-                        st.markdown(f"### {p['nombre']}")
-                        color_stock = "#ff5555" if p['stock'] <= 3 else "#50fa7b"
-                        c_stock, c_precio = st.columns(2)
-                        c_stock.markdown(f"Stock: <br><span style='color:{color_stock}; font-size:22px; font-weight:bold;'>{p['stock']}</span>", unsafe_allow_html=True)
-                        c_precio.markdown(f"Precio: <br><span style='font-size:22px; font-weight:bold;'>S/ {p['precio_venta']}</span>", unsafe_allow_html=True)
-                        if st.button(f"REGISTRAR SALIDA", key=f"btn_{p['id']}", use_container_width=True):
-                            if p['stock'] > 0:
-                                supabase.table("productos").update({"stock": p['stock'] - 1}).eq("id", p['id']).execute()
-                                supabase.table("historial").insert({"producto_nombre": p['nombre'], "cantidad": -1}).execute()
-                                st.rerun()
-
-# 2. AÑADIR PRODUCTOS (OBLIGATORIO)
-elif opcion == "Carga":
-    st.header("➕ Ingreso de Mercancía Nueva")
-    with st.form("form_carga"):
-        st.write("Complete los campos. *Nombre y Categoría son obligatorios*.")
-        nombre_new = st.text_input("Modelo / Nombre del Repuesto *")
-        cat_new = st.selectbox("Categoría *", ["Pantallas", "Baterías", "Flex", "Glases", "Otros"])
-        stock_new = st.number_input("Cantidad inicial", min_value=1, value=1)
-        precio_new = st.number_input("Precio de Venta (S/)", min_value=0.0, format="%.2f")
-        img_new = st.text_input("Link de Imagen (URL)")
+    # Solo el Súper Usuario ve estas opciones
+    if st.session_state.rol == "Super":
+        if st.button("➕ Ingreso de Mercancía", use_container_width=True): st.session_state.menu = "Carga"
         
-        btn_guardar = st.form_submit_button("GUARDAR EN VILLAFIX")
+        st.markdown('<p class="sidebar-header">🔄 Operaciones</p>', unsafe_allow_html=True)
+        if st.button("📜 Historial de Salidas", use_container_width=True): st.session_state.menu = "Log"
+        if st.button("📊 Estadísticas de Uso", use_container_width=True): st.session_state.menu = "Stats"
         
-        if btn_guardar:
-            if not nombre_new or not cat_new:
-                st.error("Error: El nombre y la categoría son obligatorios.")
-            else:
-                supabase.table("productos").insert({
-                    "nombre": nombre_new, "categoria": cat_new, 
-                    "stock": stock_new, "precio_venta": precio_new, "imagen_url": img_new
-                }).execute()
-                st.success(f"Producto {nombre_new} añadido correctamente.")
+        st.markdown('<p class="sidebar-header">👥 Directorio</p>', unsafe_allow_html=True)
+        if st.button("📞 Proveedores", use_container_width=True): st.session_state.menu = "Prov"
+        if st.button("👤 Crear Usuarios", use_container_width=True): st.session_state.menu = "Users"
 
-# 3. ESTADÍSTICAS (GRÁFICOS)
-elif opcion == "Stats":
-    st.header("📊 Estadísticas de Uso y Stock")
-    
-    # Datos de Historial (Salidas)
-    h_data = supabase.table("historial").select("*").execute().data
-    p_data = supabase.table("productos").select("*").execute().data
-    
-    col_g1, col_g2 = st.columns(2)
-    
-    with col_g1:
-        st.subheader("🔥 Repuestos más usados")
-        if h_data:
-            df_h = pd.DataFrame(h_data)
-            salidas = df_h[df_h['cantidad'] < 0].groupby('producto_nombre')['cantidad'].sum().abs().reset_index()
-            fig_bar = px.bar(salidas.nlargest(10, 'cantidad'), x='producto_nombre', y='cantidad', 
-                             color='cantidad', template="plotly_dark", labels={'cantidad':'Unidades'})
-            st.plotly_chart(fig_bar, use_container_width=True)
-    
-    with col_g2:
-        st.subheader("📦 Distribución por Categoría")
-        if p_data:
-            df_p = pd.DataFrame(p_data)
-            fig_pie = px.pie(df_p, names='categoria', values='stock', hole=0.4, template="plotly_dark")
-            st.plotly_chart(fig_pie, use_container_width=True)
+# --- LÓGICA DE LAS SECCIONES ---
+# Aquí pegas el resto de tu código de Stock, Carga, Log, Stats, etc.
 
-# 4. LOGS Y PROVEEDORES (Se mantienen simples)
-elif opcion == "Log":
-    st.header("📜 Historial de Salidas")
-    logs = supabase.table("historial").select("*").order("fecha", desc=True).limit(50).execute().data
-    if logs: st.table(pd.DataFrame(logs))
-elif opcion == "Prov":
-    st.header("📞 Directorio de Proveedores")
-    # ... código de proveedores ...
+if st.session_state.menu == "Users" and st.session_state.rol == "Super":
+    st.header("👤 Gestión de Usuarios del Sistema")
+    with st.form("new_user"):
+        new_u = st.text_input("Nombre de Usuario")
+        new_p = st.text_input("Contraseña")
+        new_r = st.selectbox("Rol", ["Normal", "Super"])
+        if st.form_submit_button("REGISTRAR NUEVO USUARIO"):
+            supabase.table("usuarios").insert({"usuario": new_u, "contrasena": new_p, "rol": new_r}).execute()
+            st.success(f"Usuario {new_u} creado correctamente.")
