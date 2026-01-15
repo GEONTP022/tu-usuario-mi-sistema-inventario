@@ -44,7 +44,7 @@ st.markdown("""
         background-color: #ffffff !important;
     }
 
-    /* 2. BARRA LATERAL (OSCURA Y LIMPIA) */
+    /* 2. BARRA LATERAL (OSCURA) */
     [data-testid="stSidebar"] {
         background-color: #1a222b !important;
     }
@@ -143,7 +143,7 @@ st.markdown("""
     }
     div.stButton button:disabled p { color: white !important; }
     
-    /* Pestañas (Tabs) en Usuarios */
+    /* Pestañas (Tabs) */
     button[data-baseweb="tab"] { color: #000000 !important; }
     div[data-baseweb="tab-list"] { background-color: #f1f3f4 !important; border-radius: 8px; }
 
@@ -187,22 +187,66 @@ def modal_salida(producto):
                 st.success("Salida registrada.")
                 st.rerun()
 
+@st.dialog("✨ Crear Nuevo Producto")
+def modal_nuevo_producto():
+    st.write("Ingrese los datos para un producto que NO existe en el inventario.")
+    with st.form("form_nuevo_prod"):
+        n = st.text_input("Modelo / Repuesto *")
+        c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"], key="cat_new")
+        
+        # Lógica de Marca (Solo si es Pantallas, Baterías u Otros) - En el nuevo
+        # Nota: En un form dentro de un dialogo, la interactividad es limitada, 
+        # así que mostraremos el campo marca siempre pero indicaremos que es opcional/requerido según caso
+        m = st.text_input("Marca (Solo para Pantallas, Baterías, Otros)")
+        
+        s = st.number_input("Stock Inicial *", min_value=0, step=1)
+        p = st.number_input("Precio Venta (S/) *", min_value=0.0, step=0.5)
+        img = st.text_input("URL Imagen (Opcional)")
+
+        if st.form_submit_button("GUARDAR NUEVO PRODUCTO"):
+            if not n or c == "Seleccionar" or p <= 0:
+                st.error("⚠️ Faltan datos obligatorios.")
+            else:
+                # Verificar duplicado
+                existe = supabase.table("productos").select("*").eq("nombre", n).execute()
+                if existe.data:
+                    st.error("⚠️ Este nombre ya existe. Use la pantalla principal para agregar stock.")
+                else:
+                    supabase.table("productos").insert({
+                        "nombre": n, 
+                        "categoria": c, 
+                        "marca": m, 
+                        "stock": s, 
+                        "precio_venta": p, 
+                        "imagen_url": img
+                    }).execute()
+                    
+                    # Registrar en historial ingreso inicial
+                    supabase.table("historial").insert({
+                        "producto_nombre": n, 
+                        "cantidad": s, 
+                        "usuario": st.session_state.user,
+                        "tecnico": "Ingreso Inicial",
+                        "local": "Almacén"
+                    }).execute()
+                    
+                    st.success("Producto creado exitosamente.")
+                    st.rerun()
+
 @st.dialog("⚠️ Confirmar Eliminación")
 def modal_borrar_tecnico(nombre):
-    st.write(f"¿Estás seguro de eliminar al técnico **{nombre}**?")
-    st.warning("Esta acción no se puede deshacer.")
+    st.write(f"¿Eliminar técnico **{nombre}**?")
     if st.button("SÍ, ELIMINAR", use_container_width=True):
         supabase.table("tecnicos").delete().eq("nombre", nombre).execute()
-        st.success("Técnico eliminado.")
+        st.success("Eliminado.")
         st.rerun()
 
 @st.dialog("⚠️ Confirmar Eliminación")
 def modal_borrar_local(nombre):
-    st.write(f"¿Estás seguro de eliminar el local **{nombre}**?")
-    st.warning("Esta acción no se puede deshacer.")
+    st.write(f"¿Eliminar local **{nombre}**?")
     if st.button("SÍ, ELIMINAR", use_container_width=True):
         supabase.table("locales").delete().eq("nombre", nombre).execute()
-        st.success("Local eliminado.")
+        st.success("Eliminado.")
         st.rerun()
 
 # --- PANEL IZQUIERDO ---
@@ -266,34 +310,78 @@ if opcion == "Stock":
                             st.button("🚫 NO STOCK", key=f"ns_{p['id']}", disabled=True, use_container_width=True)
 
 elif opcion == "Carga":
-    st.markdown("<h2>📥 Añadir Producto</h2>", unsafe_allow_html=True)
-    with st.form("form_carga", clear_on_submit=True):
-        st.markdown("<p>Complete los campos obligatorios (*)</p>", unsafe_allow_html=True)
+    # --- CABECERA CON BOTÓN A LA DERECHA ---
+    c_title, c_btn = st.columns([3, 1])
+    with c_title:
+        st.markdown("<h2>📥 Añadir / Reponer Stock</h2>", unsafe_allow_html=True)
+    with c_btn:
+        if st.button("➕ NUEVO PRODUCTO", use_container_width=True):
+            modal_nuevo_producto()
+    
+    # --- CARGA DE PRODUCTOS EXISTENTES ---
+    all_products = supabase.table("productos").select("*").order("nombre").execute().data
+    nombres_prod = [p['nombre'] for p in all_products]
+    
+    st.write("Seleccione un producto existente para añadir stock o editarlo.")
+    
+    seleccion = st.selectbox("Modelo / Repuesto (Busca aquí)", ["Seleccionar"] + nombres_prod)
+    
+    if seleccion != "Seleccionar":
+        # Encontrar el producto seleccionado en la lista
+        prod_data = next((item for item in all_products if item["nombre"] == seleccion), None)
         
-        n = st.text_input("Modelo / Repuesto *")
-        c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
-        s = st.number_input("Cantidad a añadir", min_value=1, step=1)
-        p = st.number_input("Precio Venta (S/) *", min_value=0.0, step=0.5)
-        img = st.text_input("URL Imagen (Opcional)")
-        
-        if st.form_submit_button("CONSOLIDAR INGRESO", use_container_width=True):
-            if not n or c == "Seleccionar" or p <= 0:
-                st.warning("⚠️ Falta completar Nombre, Categoría o Precio.")
-            else:
-                # VERIFICAR DUPLICADOS
-                existe = supabase.table("productos").select("*").eq("nombre", n).execute()
-                if existe.data:
-                    # Si ya existe, preguntamos si es actualización
-                    st.warning(f"⚠️ El producto '{n}' ya existe en el sistema.")
-                    st.info("Para actualizar stock, use el nombre exacto. Para uno nuevo, cambie el nombre.")
-                    # Lógica simple: si el usuario insiste, actualizamos.
-                    nuevo_stock = existe.data[0]['stock'] + s
-                    supabase.table("productos").update({"stock": nuevo_stock, "precio_venta": p, "imagen_url": img}).eq("id", existe.data[0]['id']).execute()
-                    st.success(f"✅ Se actualizó el stock existente.")
-                else:
-                    supabase.table("productos").insert({"nombre": n, "categoria": c, "stock": s, "precio_venta": p, "imagen_url": img}).execute()
-                    st.success(f"✅ Producto nuevo creado.")
-                supabase.table("historial").insert({"producto_nombre": n, "cantidad": s, "usuario": st.session_state.user}).execute()
+        if prod_data:
+            with st.form("form_update_stock"):
+                # Mostrar datos recuperados (permitiendo editar algunos)
+                col_u1, col_u2 = st.columns(2)
+                
+                with col_u1:
+                    # Categoría (Editable)
+                    cat_opts = ["Pantallas", "Baterías", "Flex", "Glases", "Otros"]
+                    idx_cat = cat_opts.index(prod_data['categoria']) if prod_data['categoria'] in cat_opts else 0
+                    new_cat = st.selectbox("Categoría", cat_opts, index=idx_cat)
+                    
+                    # Marca (Solo si aplica)
+                    marca_val = prod_data.get('marca') or ""
+                    new_marca = marca_val
+                    if new_cat in ["Pantallas", "Baterías", "Otros"]:
+                        new_marca = st.text_input("Marca", value=marca_val)
+
+                with col_u2:
+                    # Precio (Editable)
+                    new_price = st.number_input("Precio Venta (S/)", value=float(prod_data['precio_venta']), min_value=0.0, step=0.5)
+                    # Imagen (Editable)
+                    img_val = prod_data.get('imagen_url') or ""
+                    new_img = st.text_input("URL Imagen", value=img_val)
+
+                st.divider()
+                st.markdown(f"**Stock Actual en Sistema:** {prod_data['stock']}")
+                stock_add = st.number_input("Cantidad a AÑADIR (+)", min_value=1, value=1, step=1)
+                
+                if st.form_submit_button("CONSOLIDAR INGRESO"):
+                    # Calculamos nuevo total
+                    total_stock = prod_data['stock'] + stock_add
+                    
+                    # Actualizamos TODO (Precio, Cat, Marca, Imagen y Stock)
+                    supabase.table("productos").update({
+                        "stock": total_stock,
+                        "precio_venta": new_price,
+                        "categoria": new_cat,
+                        "marca": new_marca,
+                        "imagen_url": new_img
+                    }).eq("id", prod_data['id']).execute()
+                    
+                    # Guardamos historial de ingreso
+                    supabase.table("historial").insert({
+                        "producto_nombre": prod_data['nombre'],
+                        "cantidad": stock_add, # Positivo es entrada
+                        "usuario": st.session_state.user,
+                        "tecnico": "Ingreso Stock",
+                        "local": "Almacén"
+                    }).execute()
+                    
+                    st.success(f"✅ Se añadieron {stock_add} unidades a {prod_data['nombre']}. Datos actualizados.")
+                    st.rerun()
 
 elif opcion == "Log":
     st.markdown("<h2>📜 Historial</h2>", unsafe_allow_html=True)
@@ -326,7 +414,6 @@ elif opcion == "Users":
             pw = st.text_input("Clave")
             rl = st.selectbox("Rol", ["Normal", "Super"])
             if st.form_submit_button("CREAR USUARIO"):
-                # Check Duplicado Usuario
                 dup = supabase.table("usuarios").select("*").eq("usuario", un).execute()
                 if dup.data:
                     st.error("⚠️ Este usuario ya existe.")
@@ -339,7 +426,6 @@ elif opcion == "Users":
         with st.form("nt"):
             tec_name = st.text_input("Nombre del Técnico")
             if st.form_submit_button("AGREGAR TÉCNICO"):
-                # Check Duplicado Técnico
                 dup = supabase.table("tecnicos").select("*").eq("nombre", tec_name).execute()
                 if dup.data:
                     st.error(f"⚠️ El técnico '{tec_name}' ya está registrado.")
@@ -358,11 +444,10 @@ elif opcion == "Users":
                     lista_tecs = [t['nombre'] for t in tecs_data]
                     tec_a_borrar = st.selectbox("Seleccione técnico a eliminar", lista_tecs)
                 with col_t2:
-                    st.write("") # Espacio
+                    st.write("") 
                     st.write("") 
                     if st.button("🗑️ ELIMINAR", key="btn_del_tec"):
                         modal_borrar_tecnico(tec_a_borrar)
-                
                 st.dataframe(pd.DataFrame(tecs_data), use_container_width=True, hide_index=True)
         except: pass
 
@@ -371,7 +456,6 @@ elif opcion == "Users":
         with st.form("nl"):
             loc_name = st.text_input("Nombre del Local")
             if st.form_submit_button("AGREGAR LOCAL"):
-                # Check Duplicado Local
                 dup = supabase.table("locales").select("*").eq("nombre", loc_name).execute()
                 if dup.data:
                     st.error(f"⚠️ El local '{loc_name}' ya está registrado.")
@@ -394,7 +478,6 @@ elif opcion == "Users":
                     st.write("")
                     if st.button("🗑️ ELIMINAR", key="btn_del_loc"):
                         modal_borrar_local(loc_a_borrar)
-                
                 st.dataframe(pd.DataFrame(locs_data), use_container_width=True, hide_index=True)
         except: pass
 
