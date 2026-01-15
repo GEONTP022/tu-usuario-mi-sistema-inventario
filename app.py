@@ -36,7 +36,7 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- CSS MAESTRO (FIX DE IMAGEN CENTRADA) ---
+# --- CSS MAESTRO (ALINEACIÓN PERFECTA) ---
 st.markdown("""
     <style>
     /* 1. FONDO BLANCO GLOBAL */
@@ -44,7 +44,7 @@ st.markdown("""
         background-color: #ffffff !important;
     }
 
-    /* 2. BARRA LATERAL (OSCURA Y LIMPIA) */
+    /* 2. BARRA LATERAL (OSCURA) */
     [data-testid="stSidebar"] {
         background-color: #1a222b !important;
     }
@@ -72,7 +72,7 @@ st.markdown("""
         font-weight: 700 !important;
     }
 
-    /* 4. INPUTS (CAJAS DE TEXTO) */
+    /* 4. INPUTS */
     input, textarea, .stNumberInput input {
         background-color: #f8f9fa !important;
         color: #000000 !important;
@@ -89,34 +89,33 @@ st.markdown("""
         color: #000000 !important;
     }
 
-    /* 5. TARJETAS DE STOCK */
+    /* 5. TARJETAS DE STOCK (GRID ALINEADO) */
     div[data-testid="stVerticalBlockBorderWrapper"] {
         background-color: #ffffff !important;
         border: 1px solid #ddd !important;
         padding: 15px !important;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+        height: 100% !important; /* Intentar igualar alturas */
     }
 
-    /* --- CORRECCIÓN CRÍTICA DE IMÁGENES: CENTRADO TOTAL --- */
-    /* 1. Forzamos al contenedor de la imagen a ser flex y centrar contenido */
+    /* --- CORRECCIÓN DE IMÁGENES: TAMAÑO FIJO Y MENOR --- */
+    /* Contenedor de imagen con altura FIJA para que todos se alineen */
     div[data-testid="stImage"] {
+        height: 160px !important; /* Espacio reservado fijo */
         display: flex !important;
         justify-content: center !important; 
         align-items: center !important;
-        width: 100% !important;
-        margin: 0 auto !important;
+        margin-bottom: 10px !important;
     }
     
-    /* 2. Forzamos a la imagen misma a tener márgenes automáticos */
-    div[data-testid="stImage"] > img {
-        display: block !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-        max-height: 190px !important; /* Tamaño grande */
+    /* La imagen en sí */
+    div[data-testid="stImage"] img {
+        max-height: 150px !important; /* Un poco más pequeña que antes (era 190) */
         width: auto !important;
+        max-width: 100% !important;
         object-fit: contain !important;
     }
-    /* ------------------------------------------------------ */
+    /* --------------------------------------------------- */
 
     /* Textos dentro de tarjetas (Negro) */
     div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] p,
@@ -125,18 +124,18 @@ st.markdown("""
     }
 
     /* 6. BOTONES */
-    /* Botón Estándar (Azul) */
     div.stButton button {
         background-color: #2488bc !important;
         color: #ffffff !important;
         border: none !important;
         font-weight: bold !important;
+        width: 100% !important; /* Botón ocupa todo el ancho */
     }
     div.stButton button p { color: #ffffff !important; }
 
-    /* Botón DESHABILITADO (NO STOCK - ROJO) */
+    /* Botón NO STOCK (ROJO) */
     div.stButton button:disabled {
-        background-color: #e74c3c !important; /* Rojo */
+        background-color: #e74c3c !important;
         color: white !important;
         opacity: 1 !important;
         cursor: not-allowed !important;
@@ -196,24 +195,25 @@ if opcion == "Stock":
             if (categoria == "Todos" or p['categoria'] == categoria) and (busqueda.lower() in p['nombre'].lower()):
                 with cols[i % 4]:
                     with st.container(border=True):
-                        # Imagen sin use_column_width=True para que el CSS controle el centrado
+                        # Imagen renderizada
                         st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=False)
                         
-                        st.markdown(f"<div style='text-align:center; color:#000000; font-weight:bold; margin-bottom:5px; height:40px; overflow:hidden;'>{p['nombre']}</div>", unsafe_allow_html=True)
+                        # TÍTULO CON ALTURA FIJA (45px) PARA QUE TODO SE ALINEE
+                        st.markdown(f"<div style='text-align:center; color:#000000; font-weight:bold; margin-bottom:5px; height:45px; overflow:hidden; display:flex; align-items:center; justify-content:center; line-height:1.2;'>{p['nombre']}</div>", unsafe_allow_html=True)
+                        
                         c1, c2 = st.columns(2)
                         with c1: st.markdown(f"<div style='text-align:center; color:#000000; font-size:13px;'>U: {p['stock']}</div>", unsafe_allow_html=True)
                         with c2: st.markdown(f"<div style='text-align:center; color:#000000; font-size:13px;'>S/ {p['precio_venta']}</div>", unsafe_allow_html=True)
                         
                         st.markdown("<div style='margin-top:5px;'></div>", unsafe_allow_html=True)
                         
-                        # LOGICA DE BOTONES (STOCK vs NO STOCK)
+                        # BOTONES
                         if p['stock'] > 0:
                             if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True):
                                 supabase.table("productos").update({"stock": p['stock']-1}).eq("id", p['id']).execute()
                                 supabase.table("historial").insert({"producto_nombre":p['nombre'], "cantidad":-1, "usuario":st.session_state.user}).execute()
                                 st.rerun()
                         else:
-                            # Botón deshabilitado (el CSS lo pondrá rojo)
                             st.button("🚫 NO STOCK", key=f"ns_{p['id']}", disabled=True, use_container_width=True)
 
 elif opcion == "Carga":
