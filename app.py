@@ -150,17 +150,56 @@ if opcion == "Stock":
                                 st.rerun()
 
 elif opcion == "Carga":
-    st.header("➕ Nuevo Producto")
-    with st.form("form_carga"):
-        n = st.text_input("Modelo / Repuesto *")
-        c = st.selectbox("Categoría *", ["Pantallas", "Baterías", "Flex", "Glases", "Otros"])
-        s = st.number_input("Stock inicial", min_value=1)
-        p = st.number_input("Precio Venta (S/)", min_value=0.0)
-        img = st.text_input("URL Imagen")
-        if st.form_submit_button("GUARDAR"):
-            if n and c:
-                supabase.table("productos").insert({"nombre":n, "categoria":c, "stock":s, "precio_venta":p, "imagen_url":img}).execute()
-                st.success("Registrado.")
+    st.markdown("<h2 style='color:#1a222b;'>📥 Añadir Producto</h2>", unsafe_allow_html=True)
+    
+    with st.form("form_carga", clear_on_submit=True):
+        st.info("Complete los datos para actualizar o crear un producto.")
+        
+        n = st.text_input("Modelo / Repuesto * (Exacto para sumar stock)")
+        c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
+        s = st.number_input("Cantidad a añadir", min_value=1, step=1)
+        p = st.number_input("Precio Venta (S/) *", min_value=0.0, step=0.50)
+        img = st.text_input("URL Imagen (Opcional)")
+        
+        enviar = st.form_submit_button("CONSOLIDEAR INGRESO", use_container_width=True)
+        
+        if enviar:
+            # VALIDACIÓN ESTRICTA
+            errores = []
+            if not n: errores.append("Modelo")
+            if c == "Seleccionar": errores.append("Categoría")
+            if p <= 0: errores.append("Precio")
+            
+            if errores:
+                # VENTANA DE ALERTA (Signo de interrogación/advertencia)
+                st.warning(f"⚠️ Falta completar: {', '.join(errores)}. Por favor, rellene todos los campos obligatorios.")
+            else:
+                # BUSCAR SI EL PRODUCTO YA EXISTE
+                existe = supabase.table("productos").select("*").eq("nombre", n).execute()
+                
+                if existe.data:
+                    # SI EXISTE: SUMAR STOCK
+                    id_prod = existe.data[0]['id']
+                    nuevo_stock = existe.data[0]['stock'] + s
+                    supabase.table("productos").update({"stock": nuevo_stock, "precio_venta": p, "imagen_url": img}).eq("id", id_prod).execute()
+                    st.success(f"✅ Stock actualizado. Nuevo total: {nuevo_stock} unidades.")
+                else:
+                    # SI NO EXISTE: CREAR NUEVO
+                    supabase.table("productos").insert({
+                        "nombre": n, 
+                        "categoria": c, 
+                        "stock": s, 
+                        "precio_venta": p, 
+                        "imagen_url": img
+                    }).execute()
+                    st.success(f"✅ Producto '{n}' creado con éxito.")
+                
+                # REGISTRAR EN EL HISTORIAL
+                supabase.table("historial").insert({
+                    "producto_nombre": n, 
+                    "cantidad": s, 
+                    "usuario": st.session_state.user
+                }).execute()
 
 elif opcion == "Log":
     st.header("📜 Historial")
