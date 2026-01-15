@@ -37,20 +37,26 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- DISEÑO UI REFINADO (ALTO CONTRASTE Y LIMPIEZA VISUAL) ---
+# --- DISEÑO UI REFINADO (FORZAR NEGRO PARA LAPTOP Y CELULAR) ---
 st.markdown("""
     <style>
-    /* 1. ÁREA CENTRAL: Fondo blanco puro */
-    .stApp { background-color: #ffffff !important; }
+    /* 1. FORZAR FONDO BLANCO EN TODO MOMENTO */
+    .stApp, .main, .block-container { 
+        background-color: #ffffff !important; 
+    }
     
-    /* 2. TEXTOS EN NEGRO: Para legibilidad total según lo pedido */
-    .main h2, .main label, .main p, .main span, .main .stMarkdown {
+    /* 2. FORZAR TEXTO NEGRO PURO (Soluciona el problema de la laptop) */
+    html, body, [class*="st-"] {
         color: #000000 !important;
-        font-weight: 700 !important;
-        opacity: 1 !important;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
-    /* 3. BARRA LATERAL: Perfil centrado y texto blanco */
+    .main h2, .main label, .main p, .main span, .main b, .main strong {
+        color: #000000 !important;
+        font-weight: 700 !important;
+    }
+
+    /* 3. BARRA LATERAL: Perfil centrado y texto blanco (No cambia) */
     [data-testid="stSidebar"] { background-color: #1a222b !important; }
     .profile-section { text-align: center !important; padding: 30px 10px; }
     .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 4px solid #f39c12; margin-bottom: 15px; object-fit: cover; }
@@ -59,32 +65,28 @@ st.markdown("""
     .sidebar-divider { height: 1px; background-color: #3498db; margin: 10px 0 20px 0; width: 100%; opacity: 0.5; }
     [data-testid="stSidebar"] button p { color: #ffffff !important; font-size: 15px !important; }
 
-    /* 4. FORMULARIOS: Inputs limpios y campos de números corregidos */
+    /* 4. FORMULARIOS: Mejorar cuadros de Cantidad y Precio */
     input, select {
         background-color: #f1f3f4 !important;
         color: #000000 !important;
-        border: 1px solid #000000 !important;
+        border: 2px solid #000000 !important; /* Borde más grueso para laptop */
+        border-radius: 8px !important;
     }
     
-    /* Quitar cuadros feos de los Number Input */
-    div[data-testid="stNumberInput"] {
-        border: none !important;
-        background-color: transparent !important;
-    }
+    /* Limpiar cuadros de Number Input */
     div[data-testid="stNumberInput"] div[role="group"] {
         background-color: #f1f3f4 !important;
-        border: 1px solid #000000 !important;
-        border-radius: 5px;
+        border: 2px solid #000000 !important;
+        border-radius: 8px !important;
     }
 
-    /* BOTÓN CONSOLIDAR: Azul sólido, siempre visible */
+    /* BOTÓN CONSOLIDAR: Azul sólido */
     div.stForm button {
         background-color: #2488bc !important;
         color: #ffffff !important;
         font-weight: bold !important;
         border: none !important;
         height: 48px !important;
-        opacity: 1 !important;
         width: 100% !important;
     }
     
@@ -133,7 +135,7 @@ if opcion == "Stock":
                 with cols[i % 4]:
                     with st.container(border=True):
                         st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=True)
-                        st.markdown(f"<p style='margin-bottom:0px;'><b>{p['nombre']}</b></p>", unsafe_allow_html=True)
+                        st.markdown(f"<p style='margin-bottom:0px; color:black;'><b>{p['nombre']}</b></p>", unsafe_allow_html=True)
                         cs, cp = st.columns(2)
                         cs.write(f"U: {p['stock']}")
                         cp.write(f"S/ {p['precio_venta']}")
@@ -155,16 +157,16 @@ elif opcion == "Carga":
         
         if st.form_submit_button("CONSOLIDAR INGRESO"):
             if not n or c == "Seleccionar" or p <= 0:
-                st.warning("⚠️ Complete los campos en negro: Nombre, Categoría y Precio.")
+                st.warning("⚠️ Complete: Nombre, Categoría y Precio.")
             else:
                 existe = supabase.table("productos").select("*").eq("nombre", n).execute()
                 if existe.data:
                     nuevo_stock = existe.data[0]['stock'] + s
                     supabase.table("productos").update({"stock": nuevo_stock, "precio_venta": p, "imagen_url": img}).eq("id", existe.data[0]['id']).execute()
-                    st.success(f"✅ Stock actualizado a {nuevo_stock}")
+                    st.success(f"✅ Stock actualizado!")
                 else:
                     supabase.table("productos").insert({"nombre": n, "categoria": c, "stock": s, "precio_venta": p, "imagen_url": img}).execute()
-                    st.success(f"✅ Producto '{n}' creado exitosamente.")
+                    st.success(f"✅ Creado!")
                 supabase.table("historial").insert({"producto_nombre": n, "cantidad": s, "usuario": st.session_state.user}).execute()
 
 elif opcion == "Log":
