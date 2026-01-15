@@ -468,7 +468,8 @@ elif opcion == "Log":
     
     if logs:
         df = pd.DataFrame(logs)
-        df['fecha_dt'] = pd.to_datetime(df['fecha'])
+        # CORRECCIÓN DE ERROR DE TIPO: Eliminar zona horaria para comparar
+        df['fecha_dt'] = pd.to_datetime(df['fecha']).dt.tz_localize(None)
         
         if len(date_range) == 2:
             start_date = pd.to_datetime(date_range[0])
@@ -506,7 +507,8 @@ elif opcion == "Stats":
 
         if historial_db:
             df_hist = pd.DataFrame(historial_db)
-            df_hist['fecha_dt'] = pd.to_datetime(df_hist['fecha'])
+            # CORRECCIÓN DE ERROR DE TIPO: Eliminar zona horaria
+            df_hist['fecha_dt'] = pd.to_datetime(df_hist['fecha']).dt.tz_localize(None)
             
             if len(date_range_stats) == 2:
                 s_date = pd.to_datetime(date_range_stats[0])
