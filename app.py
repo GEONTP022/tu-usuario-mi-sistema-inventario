@@ -34,20 +34,18 @@ if not st.session_state.autenticado:
                 st.error("Credenciales incorrectas")
     st.stop()
 
-# --- DISEÑO UI PREMIUM RESPONSIVO ---
+# --- DISEÑO UI PREMIUM RESPONSIVO (CORREGIDO) ---
 st.markdown("""
     <style>
     .stApp { background-color: #f8f9fa; color: #1e1e2f; }
     
-    /* FIX SIDEBAR RESPONSIVE */
+    /* SIDEBAR AUTO-AJUSTABLE (Eliminado 'fixed' para permitir expansión) */
     [data-testid="stSidebar"] {
         background-color: #1a222b !important;
         color: white !important;
-        min-width: 280px !important;
-        position: fixed;
     }
 
-    /* PERFIL PROFESIONAL */
+    /* PERFIL PROFESIONAL (Basado en imagen image_6cc48a.png) */
     .profile-section {
         text-align: center;
         padding: 20px 10px;
@@ -57,7 +55,7 @@ st.markdown("""
         width: 90px;
         height: 90px;
         border-radius: 50%;
-        border: 3px solid #f39c12;
+        border: 3px solid #f39c12; /* Borde naranja segun referencia */
         margin-bottom: 10px;
         object-fit: cover;
     }
@@ -72,7 +70,7 @@ st.markdown("""
         opacity: 0.5;
     }
 
-    /* BOTONES CON ICONOS ALINEADOS */
+    /* BOTONES CON ICONOS ALINEADOS A LA IZQUIERDA */
     .stSidebar .stButton>button {
         background-color: transparent;
         color: #bdc3c7;
@@ -92,11 +90,6 @@ st.markdown("""
         color: white !important;
         border-left: 4px solid #3498db !important;
     }
-
-    /* AJUSTE CONTENIDO CENTRAL PARA QUE NO SE CORRA MAL */
-    [data-testid="stSidebarUserContent"] {
-        padding-top: 0rem;
-    }
     
     [data-testid="stSidebarNav"] {display: none;}
     </style>
@@ -104,6 +97,7 @@ st.markdown("""
 
 # --- PANEL IZQUIERDO (SIDEBAR) ---
 with st.sidebar:
+    # Perfil segun imagen_6cc48a.png
     st.markdown(f"""
         <div class="profile-section">
             <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="profile-pic">
@@ -113,7 +107,7 @@ with st.sidebar:
         <div class="sidebar-divider"></div>
     """, unsafe_allow_html=True)
     
-    # NAVEGACIÓN CON ICONOS FORMALES (Material Design)
+    # Navegación con iconos formales blancos
     if st.button("📊 Dashboard / Stock", use_container_width=True): st.session_state.menu = "Stock"
     
     if st.session_state.rol == "Super":
@@ -128,7 +122,7 @@ with st.sidebar:
         st.session_state.autenticado = False
         st.rerun()
 
-# --- ÁREA CENTRAL (SIN CAMBIOS EN LÓGICA) ---
+# --- ÁREA CENTRAL (Mantenida intacta) ---
 opcion = st.session_state.menu
 
 if opcion == "Stock":
@@ -187,7 +181,9 @@ elif opcion == "Stats":
 elif opcion == "Users":
     st.header("👥 Usuarios")
     with st.form("nu"):
-        un, pw, rl = st.text_input("Usuario"), st.text_input("Clave"), st.selectbox("Rol", ["Normal", "Super"])
+        un = st.text_input("Usuario")
+        pw = st.text_input("Clave")
+        rl = st.selectbox("Rol", ["Normal", "Super"])
         if st.form_submit_button("CREAR"):
             supabase.table("usuarios").insert({"usuario":un, "contrasena":pw, "rol":rl}).execute()
             st.success("Creado.")
