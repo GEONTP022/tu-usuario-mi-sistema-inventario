@@ -36,7 +36,7 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- CSS MAESTRO (FIX DE ALINEACIÓN FINAL) ---
+# --- CSS MAESTRO (SE MANTIENE IGUAL QUE ANTES) ---
 st.markdown("""
     <style>
     /* 1. FONDO BLANCO GLOBAL */
@@ -44,7 +44,7 @@ st.markdown("""
         background-color: #ffffff !important;
     }
 
-    /* 2. BARRA LATERAL (OSCURA) */
+    /* 2. BARRA LATERAL (OSCURA Y LIMPIA) */
     [data-testid="stSidebar"] {
         background-color: #1a222b !important;
     }
@@ -97,30 +97,7 @@ st.markdown("""
         box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
         height: 100% !important; 
     }
-
-    /* --- CORRECCIÓN FINAL DE IMÁGENES: CENTRADO FORZADO --- */
-    /* El contenedor de la imagen se vuelve FLEXIBLE y CENTRADO */
-    div[data-testid="stImage"] {
-        display: flex !important;
-        justify-content: center !important; 
-        align-items: center !important;
-        width: 100% !important;
-        margin: 0 auto !important;
-        height: 160px !important; /* Altura fija del contenedor */
-    }
     
-    /* La imagen en sí */
-    div[data-testid="stImage"] img {
-        display: block !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-        max-height: 150px !important;
-        width: auto !important;
-        object-fit: contain !important;
-        flex-grow: 0 !important; /* Evita que se estire a la izquierda */
-    }
-    /* ------------------------------------------------------ */
-
     /* Textos dentro de tarjetas (Negro) */
     div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] p,
     div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] div {
@@ -199,20 +176,24 @@ if opcion == "Stock":
             if (categoria == "Todos" or p['categoria'] == categoria) and (busqueda.lower() in p['nombre'].lower()):
                 with cols[i % 4]:
                     with st.container(border=True):
-                        # IMAGEN
-                        st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=False)
+                        # --- SOLUCIÓN DEFINITIVA PARA CENTRAR IMAGEN ---
+                        # Usamos HTML directo con flexbox para obligar el centrado
+                        img_url = p.get('imagen_url') or "https://via.placeholder.com/150"
+                        st.markdown(f"""
+                            <div style="display: flex; justify-content: center; align-items: center; height: 160px; width: 100%; margin-bottom: 10px;">
+                                <img src="{img_url}" style="max-height: 150px; width: auto; object-fit: contain; display: block;">
+                            </div>
+                        """, unsafe_allow_html=True)
+                        # -----------------------------------------------
                         
-                        # TÍTULO (Altura fija para alineación)
                         st.markdown(f"<div style='text-align:center; color:#000000; font-weight:bold; margin-bottom:5px; height:45px; overflow:hidden; display:flex; align-items:center; justify-content:center; line-height:1.2;'>{p['nombre']}</div>", unsafe_allow_html=True)
                         
-                        # PRECIO Y STOCK
                         c1, c2 = st.columns(2)
                         with c1: st.markdown(f"<div style='text-align:center; color:#000000; font-size:13px;'>U: {p['stock']}</div>", unsafe_allow_html=True)
                         with c2: st.markdown(f"<div style='text-align:center; color:#000000; font-size:13px;'>S/ {p['precio_venta']}</div>", unsafe_allow_html=True)
                         
                         st.markdown("<div style='margin-top:5px;'></div>", unsafe_allow_html=True)
                         
-                        # BOTONES
                         if p['stock'] > 0:
                             if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True):
                                 supabase.table("productos").update({"stock": p['stock']-1}).eq("id", p['id']).execute()
