@@ -2,6 +2,7 @@ import streamlit as st
 from supabase import create_client
 import pandas as pd
 import plotly.express as px
+from datetime import datetime, timedelta
 
 # --- CONEXIÓN ---
 url = st.secrets["SUPABASE_URL"]
@@ -184,33 +185,60 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- VENTANAS FLOTANTES ---
+# --- VENTANAS FLOTANTES (AHORA CON PESTAÑAS PARA DEVOLUCIÓN) ---
 
-@st.dialog("Registrar Salida")
-def modal_salida(producto):
+@st.dialog("Gestionar Inventario")
+def modal_gestion(producto):
     st.markdown(f"<h3 style='color:black;'>{producto['nombre']}</h3>", unsafe_allow_html=True)
-    st.markdown(f"**Stock:** {producto['stock']}")
     
-    try: techs = [t['nombre'] for t in supabase.table("tecnicos").select("nombre").execute().data]
-    except: techs = ["General"]
-    try: locs = [l['nombre'] for l in supabase.table("locales").select("nombre").execute().data]
-    except: locs = ["Principal"]
+    # PESTAÑAS: SALIDA vs DEVOLUCIÓN
+    tab_salida, tab_devolucion = st.tabs(["📉 REGISTRAR SALIDA", "↩️ DEVOLUCIÓN / INGRESO"])
+    
+    # --- PESTAÑA 1: SALIDA (LO DE SIEMPRE) ---
+    with tab_salida:
+        st.markdown(f"**Stock Actual:** {producto['stock']}")
+        try: techs = [t['nombre'] for t in supabase.table("tecnicos").select("nombre").execute().data]
+        except: techs = ["General"]
+        try: locs = [l['nombre'] for l in supabase.table("locales").select("nombre").execute().data]
+        except: locs = ["Principal"]
 
-    with st.form("form_salida_modal"):
-        tecnico = st.selectbox("Técnico", ["Seleccionar"] + techs)
-        local = st.selectbox("Local", ["Seleccionar"] + locs)
-        cantidad = st.number_input("Cantidad", min_value=1, max_value=producto['stock'], step=1)
-        if st.form_submit_button("CONFIRMAR SALIDA"):
-            if tecnico == "Seleccionar" or local == "Seleccionar":
-                st.error("⚠️ Faltan datos.")
-            else:
-                nuevo_stock = producto['stock'] - cantidad
-                supabase.table("productos").update({"stock": nuevo_stock}).eq("id", producto['id']).execute()
+        with st.form("form_salida_modal"):
+            tecnico = st.selectbox("Técnico", ["Seleccionar"] + techs, key="tec_sal")
+            local = st.selectbox("Local", ["Seleccionar"] + locs, key="loc_sal")
+            cantidad = st.number_input("Cantidad a RETIRAR", min_value=1, max_value=producto['stock'], step=1, key="cant_sal")
+            
+            if st.form_submit_button("CONFIRMAR SALIDA"):
+                if tecnico == "Seleccionar" or local == "Seleccionar":
+                    st.error("⚠️ Faltan datos.")
+                else:
+                    nuevo_stock = producto['stock'] - cantidad
+                    supabase.table("productos").update({"stock": nuevo_stock}).eq("id", producto['id']).execute()
+                    supabase.table("historial").insert({
+                        "producto_nombre": producto['nombre'], "cantidad": -cantidad,
+                        "usuario": st.session_state.user, "tecnico": tecnico, "local": local
+                    }).execute()
+                    st.success("Salida Registrada.")
+                    st.rerun()
+
+    # --- PESTAÑA 2: DEVOLUCIÓN (NUEVO) ---
+    with tab_devolucion:
+        st.info("Use esto para devoluciones de técnicos o ingresos rápidos.")
+        with st.form("form_devolucion_modal"):
+            razon = st.text_input("Motivo (Ej: Devolución Técnico, Error)", value="Devolución")
+            cant_dev = st.number_input("Cantidad a INGRESAR/DEVOLVER", min_value=1, step=1, key="cant_dev")
+            
+            if st.form_submit_button("CONFIRMAR DEVOLUCIÓN"):
+                nuevo_stock_dev = producto['stock'] + cant_dev
+                supabase.table("productos").update({"stock": nuevo_stock_dev}).eq("id", producto['id']).execute()
+                # Registramos en historial con cantidad positiva
                 supabase.table("historial").insert({
-                    "producto_nombre": producto['nombre'], "cantidad": -cantidad,
-                    "usuario": st.session_state.user, "tecnico": tecnico, "local": local
+                    "producto_nombre": producto['nombre'], 
+                    "cantidad": cant_dev,
+                    "usuario": st.session_state.user, 
+                    "tecnico": razon,  # Guardamos el motivo en el campo técnico para verlo fácil
+                    "local": "Almacén"
                 }).execute()
-                st.success("Listo.")
+                st.success("Devolución Registrada (Stock Aumentado).")
                 st.rerun()
 
 @st.dialog("✨ Nuevo Producto")
@@ -234,13 +262,8 @@ def modal_nuevo_producto():
                     st.error("⚠️ Ya existe.")
                 else:
                     supabase.table("productos").insert({
-                        "nombre": n, 
-                        "categoria": c, 
-                        "marca": m, 
-                        "codigo_bateria": cb,
-                        "stock": s, 
-                        "precio_venta": p, 
-                        "imagen_url": img
+                        "nombre": n, "categoria": c, "marca": m, "codigo_bateria": cb,
+                        "stock": s, "precio_venta": p, "imagen_url": img
                     }).execute()
                     
                     supabase.table("historial").insert({
@@ -297,8 +320,8 @@ opcion = st.session_state.menu
 if opcion == "Stock":
     st.markdown("<h2>Inventario General</h2>", unsafe_allow_html=True)
     col_a, col_b = st.columns([3, 1])
-    with col_a: busqueda = st.text_input("Buscar por modelo", placeholder="Ej: Pantalla iPhone...")
-    with col_b: categoria = st.selectbox("Apartado", ["Todos", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
+    with col_a: busqueda = st.text_input("Buscar por modelo, marca o código...", placeholder="Ej: Pantalla iPhone, Oppo, COD-123...")
+    with col_b: categoria = st.selectbox("Apartado", ["Todos", "⚠️ Solo Bajo Stock", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
 
     items = supabase.table("productos").select("*").order("nombre").execute().data
     if items:
@@ -306,15 +329,20 @@ if opcion == "Stock":
         filtered_items = []
         busqueda_lower = busqueda.lower()
         for p in items:
+            # Buscador Texto
             nombre_prod = p['nombre'].lower()
             marca_prod = (p.get('marca') or '').lower()
             codigo_prod = (p.get('codigo_bateria') or '').lower()
+            match_busqueda = (busqueda_lower in nombre_prod) or (busqueda_lower in marca_prod) or (busqueda_lower in codigo_prod)
             
-            match_busqueda = (busqueda_lower in nombre_prod) or \
-                             (busqueda_lower in marca_prod) or \
-                             (busqueda_lower in codigo_prod)
-            
-            match_categoria = (categoria == "Todos" or p['categoria'] == categoria)
+            # Filtro Categoría / Stock Bajo
+            if categoria == "⚠️ Solo Bajo Stock":
+                match_categoria = (p['stock'] <= 2)
+            elif categoria == "Todos":
+                match_categoria = True
+            else:
+                match_categoria = (p['categoria'] == categoria)
+                
             if match_busqueda and match_categoria:
                 filtered_items.append(p)
         
@@ -349,15 +377,24 @@ if opcion == "Stock":
                         </div>
                     """, unsafe_allow_html=True)
 
+                    # --- ALERTA STOCK BAJO VISUAL ---
+                    if p['stock'] <= 2:
+                         st.markdown(f"<div style='text-align:center; color:#e74c3c; font-weight:bold; font-size:12px; margin-bottom:5px;'>⚠️ STOCK BAJO ({p['stock']})</div>", unsafe_allow_html=True)
+                    else:
+                        st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
+                    # --------------------------------
+
                     c1, c2 = st.columns(2)
                     with c1: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>U: {p['stock']}</div>", unsafe_allow_html=True)
                     with c2: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>S/ {p['precio_venta']}</div>", unsafe_allow_html=True)
-                    st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
+                    st.markdown("<div style='margin-top:5px;'></div>", unsafe_allow_html=True)
                     
                     if p['stock'] > 0:
-                        if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True): modal_salida(p)
+                        # Botón cambiado a GESTIONAR para incluir devoluciones
+                        if st.button("GESTIONAR", key=f"s_{p['id']}", use_container_width=True): modal_gestion(p)
                     else:
-                        st.button("🚫 NO STOCK", key=f"ns_{p['id']}", disabled=True, use_container_width=True)
+                         # Si no hay stock, igual permitimos gestionar para devoluciones/ingresos
+                        if st.button("SIN STOCK (GESTIONAR)", key=f"ns_{p['id']}", use_container_width=True): modal_gestion(p)
 
 elif opcion == "Carga":
     c_title, c_btn = st.columns([3, 1])
@@ -421,28 +458,46 @@ elif opcion == "Carga":
                     st.rerun()
 
 elif opcion == "Log":
-    st.markdown("<h2>📜 Historial</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>📜 Historial General</h2>", unsafe_allow_html=True)
+    
+    # --- FILTRO DE FECHAS (NUEVO) ---
+    col_d1, col_d2 = st.columns([1, 3])
+    with col_d1:
+        # Por defecto ultimos 30 dias
+        today = datetime.now()
+        last_month = today - timedelta(days=30)
+        date_range = st.date_input("Filtrar por Fecha", (last_month, today))
+    
     logs = supabase.table("historial").select("*").order("fecha", desc=True).execute().data
+    
     if logs:
         df = pd.DataFrame(logs)
-        df['fecha'] = pd.to_datetime(df['fecha']).dt.strftime('%d/%m/%Y %H:%M')
+        df['fecha_dt'] = pd.to_datetime(df['fecha']) # Para filtrar
+        
+        # Aplicar filtro de fecha
+        if len(date_range) == 2:
+            start_date = pd.to_datetime(date_range[0])
+            end_date = pd.to_datetime(date_range[1]) + timedelta(days=1) # Incluir el dia final
+            df = df[(df['fecha_dt'] >= start_date) & (df['fecha_dt'] < end_date)]
+            
+        df['fecha'] = df['fecha_dt'].dt.strftime('%d/%m/%Y %H:%M')
         cols = ['fecha', 'producto_nombre', 'cantidad', 'usuario']
         if 'tecnico' in df.columns: cols.append('tecnico')
         if 'local' in df.columns: cols.append('local')
         st.dataframe(df[cols], use_container_width=True, hide_index=True)
 
-# --- SECCIÓN ESTADÍSTICAS MEJORADA ---
 elif opcion == "Stats":
     st.markdown("<h2>📊 Control y Estadísticas</h2>", unsafe_allow_html=True)
     
-    # 1. Recuperar Datos
+    # Filtro Fechas Stats
+    date_range_stats = st.date_input("Rango de Análisis", (datetime.now() - timedelta(days=30), datetime.now()))
+
     productos_db = supabase.table("productos").select("*").execute().data
     historial_db = supabase.table("historial").select("*").execute().data
     
     if productos_db:
         df_prod = pd.DataFrame(productos_db)
         
-        # --- KPIS PRINCIPALES ---
         kpi1, kpi2, kpi3 = st.columns(3)
         with kpi1:
             total_unidades = df_prod['stock'].sum()
@@ -455,59 +510,46 @@ elif opcion == "Stats":
         
         st.divider()
 
-        # 2. PROCESAMIENTO DE SALIDAS (HISTORIAL)
         if historial_db:
             df_hist = pd.DataFrame(historial_db)
-            # Filtramos solo salidas (cantidad negativa)
-            df_salidas = df_hist[df_hist['cantidad'] < 0].copy()
-            df_salidas['cantidad'] = df_salidas['cantidad'].abs() # Convertir a positivo para graficar
+            df_hist['fecha_dt'] = pd.to_datetime(df_hist['fecha'])
             
-            # Unimos historial con productos para saber la categoría de lo que se vendió
-            # (Usamos el nombre como llave, ya que historial guarda nombre)
+            # Aplicar filtro fechas
+            if len(date_range_stats) == 2:
+                s_date = pd.to_datetime(date_range_stats[0])
+                e_date = pd.to_datetime(date_range_stats[1]) + timedelta(days=1)
+                df_hist = df_hist[(df_hist['fecha_dt'] >= s_date) & (df_hist['fecha_dt'] < e_date)]
+            
+            # Solo salidas reales (negativas)
+            df_salidas = df_hist[df_hist['cantidad'] < 0].copy()
+            df_salidas['cantidad'] = df_salidas['cantidad'].abs()
+            
             df_merged = df_salidas.merge(df_prod, left_on='producto_nombre', right_on='nombre', how='left')
             
-            # --- FILA 1: GENERAL ---
             c1, c2 = st.columns([1, 1])
-            
             with c1:
-                st.subheader("Stock Actual por Categoría")
-                fig_stock = px.pie(df_prod, names='categoria', values='stock', hole=0.4)
-                st.plotly_chart(fig_stock, use_container_width=True)
-            
-            with c2:
-                st.subheader("Top 10 Productos Más Usados (General)")
+                st.subheader("Top 10 Productos Más Usados")
                 if not df_salidas.empty:
                     top_gen = df_salidas.groupby('producto_nombre')['cantidad'].sum().reset_index().sort_values('cantidad', ascending=False).head(10)
                     fig_top = px.bar(top_gen, x='cantidad', y='producto_nombre', orientation='h', text='cantidad')
                     st.plotly_chart(fig_top, use_container_width=True)
                 else:
-                    st.info("No hay datos de salidas aún.")
-
-            st.divider()
+                    st.info("No hay movimientos en este rango de fechas.")
             
-            # --- FILA 2: DETALLE POR CATEGORÍA (TU PEDIDO) ---
-            st.markdown("### 🔎 Análisis Detallado: ¿Qué modelos se mueven más?")
-            
-            # Selector de Categoría
-            cats_disponibles = ["Pantallas", "Baterías", "Flex", "Glases", "Otros"]
-            cat_filter = st.selectbox("Selecciona una Categoría para ver sus movimientos:", cats_disponibles)
-            
-            if not df_merged.empty:
-                # Filtrar por la categoría seleccionada
-                df_cat_specific = df_merged[df_merged['categoria'] == cat_filter]
+            with c2:
+                st.subheader("Análisis por Categoría")
+                cats_disponibles = ["Pantallas", "Baterías", "Flex", "Glases", "Otros"]
+                cat_filter = st.selectbox("Selecciona Categoría:", cats_disponibles)
                 
-                if not df_cat_specific.empty:
-                    # Agrupar por nombre de producto y sumar cantidad
-                    top_cat = df_cat_specific.groupby('producto_nombre')['cantidad'].sum().reset_index().sort_values('cantidad', ascending=False)
-                    
-                    st.write(f"Ranking de modelos usados en **{cat_filter}**:")
-                    fig_cat = px.bar(top_cat, x='producto_nombre', y='cantidad', text='cantidad', 
-                                     color='cantidad', color_continuous_scale='Blues')
-                    st.plotly_chart(fig_cat, use_container_width=True)
-                else:
-                    st.warning(f"No se han registrado salidas en la categoría {cat_filter} todavía.")
-            else:
-                st.info("Registra salidas para ver estadísticas detalladas.")
+                if not df_merged.empty:
+                    df_cat_specific = df_merged[df_merged['categoria'] == cat_filter]
+                    if not df_cat_specific.empty:
+                        top_cat = df_cat_specific.groupby('producto_nombre')['cantidad'].sum().reset_index().sort_values('cantidad', ascending=False)
+                        fig_cat = px.bar(top_cat, x='producto_nombre', y='cantidad', text='cantidad', 
+                                         color='cantidad', color_continuous_scale='Blues')
+                        st.plotly_chart(fig_cat, use_container_width=True)
+                    else:
+                        st.info(f"Sin movimientos de {cat_filter} en estas fechas.")
 
 elif opcion == "Users":
     st.markdown("<h2>👥 Gestión</h2>", unsafe_allow_html=True)
