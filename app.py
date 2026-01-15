@@ -36,7 +36,7 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- CSS MAESTRO (VERSIÓN ESTABLE Y LIMPIA) ---
+# --- CSS MAESTRO (SOLO MODIFICACIÓN DE IMÁGENES) ---
 st.markdown("""
     <style>
     /* 1. FONDO BLANCO GLOBAL */
@@ -69,7 +69,6 @@ st.markdown("""
     }
     
     /* 3. ETIQUETAS DEL FORMULARIO (NEGRAS) */
-    /* Forzamos negro en títulos de inputs */
     div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3 {
         color: #000000 !important;
         -webkit-text-fill-color: #000000 !important;
@@ -102,13 +101,24 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
     }
     
-    /* IMÁGENES PEQUEÑAS (Como antes) */
-    div[data-testid="stImage"] img {
-        max-height: 120px !important; 
-        width: auto !important;
-        object-fit: contain !important;
-        margin: 0 auto;
+    /* --- MODIFICACIÓN SOLICITADA: IMÁGENES MÁS GRANDES Y CENTRADAS --- */
+    /* Asegurar que el contenedor de la imagen centre el contenido */
+    div[data-testid="stImage"] {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        height: 200px !important; /* Altura fija para el contenedor */
     }
+
+    /* Hacemos la imagen más grande (max-height aumentado) */
+    div[data-testid="stImage"] img {
+        max-height: 190px !important; /* Antes era 120px, ahora es más grande */
+        width: auto !important;
+        max-width: 100% !important;
+        object-fit: contain !important;
+        margin: 0 auto !important;
+    }
+    /* --------------------------------------------------------- */
 
     /* TEXTOS DENTRO DE TARJETAS (Negros) */
     div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] p,
@@ -156,7 +166,7 @@ with st.sidebar:
         if st.button("📈 Estadísticas", use_container_width=True): st.session_state.menu = "Stats"
         if st.button("👥 Usuarios", use_container_width=True): st.session_state.menu = "Users"
         if st.button("📞 Proveedores", use_container_width=True): st.session_state.menu = "Prov"
-        # Opción de borrado (sin romper estilos)
+        # Opción de borrado
         if st.button("⚙️ Reset Sistema", use_container_width=True): st.session_state.menu = "Reset"
 
     st.markdown("<br><br>", unsafe_allow_html=True)
@@ -180,7 +190,7 @@ if opcion == "Stock":
             if (categoria == "Todos" or p['categoria'] == categoria) and (busqueda.lower() in p['nombre'].lower()):
                 with cols[i % 4]:
                     with st.container(border=True):
-                        # Imagen controlada por CSS
+                        # Imagen controlada por CSS para ser más grande y centrada
                         st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=True)
                         
                         # Datos en negro forzado inline
@@ -256,10 +266,10 @@ elif opcion == "Prov":
                 st.markdown(f"**{pr['nombre_contacto']}**")
                 st.link_button("WhatsApp", f"https://wa.me/{pr['whatsapp']}")
 
-# --- ZONA DE RESET (Mantenemos funcionalidad sin dañar estilos) ---
+# --- ZONA DE RESET (SOLO PARA SUPER USUARIO) ---
 elif opcion == "Reset":
     st.markdown("<h2>⚙️ Zona de Peligro</h2>", unsafe_allow_html=True)
-    st.warning("⚠️ Estas acciones borrarán datos permanentemente.")
+    st.warning("⚠️ ADVERTENCIA: Estas acciones no se pueden deshacer.")
     
     col_r1, col_r2 = st.columns(2)
     with col_r1:
