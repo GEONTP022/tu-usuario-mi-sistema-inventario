@@ -10,76 +10,81 @@ supabase = create_client(url, key)
 
 st.set_page_config(page_title="VillaFix | Acceso", page_icon="🔐", layout="wide")
 
-# --- LÓGICA DE LOGIN ---
+# --- ESTADO DE SESIÓN ---
 if 'autenticado' not in st.session_state:
     st.session_state.autenticado = False
     st.session_state.rol = None
     st.session_state.user = None
+    st.session_state.menu = "Stock"
 
-def login():
+# --- LOGIN ---
+if not st.session_state.autenticado:
     st.markdown("<h1 style='text-align:center; color:#50fa7b;'>VILLAFIX ACCESS</h1>", unsafe_allow_html=True)
     with st.container(border=True):
         u = st.text_input("Usuario")
         p = st.text_input("Contraseña", type="password")
         if st.button("INGRESAR AL SISTEMA", use_container_width=True):
-            res = supabase.table("usuarios").select("*").eq("usuario", u).eq("contrasena", p).execute()
-            if res.data:
-                st.session_state.autenticado = True
-                st.session_state.rol = res.data[0]['rol']
-                st.session_state.user = u
-                st.rerun()
-            else:
-                st.error("Credenciales incorrectas")
-
-# --- SI NO ESTÁ LOGUEADO, MOSTRAR LOGIN ---
-if not st.session_state.autenticado:
-    login()
+            try:
+                res = supabase.table("usuarios").select("*").eq("usuario", u).eq("contrasena", p).execute()
+                if res.data:
+                    st.session_state.autenticado = True
+                    st.session_state.rol = res.data[0]['rol']
+                    st.session_state.user = u
+                    st.rerun()
+                else:
+                    st.error("Usuario o contraseña incorrectos")
+            except:
+                st.error("Error técnico: Verifica si creaste la tabla 'usuarios' en Supabase.")
     st.stop()
 
-# --- SI ESTÁ LOGUEADO, MOSTRAR EL SISTEMA ---
-# (Diseño UI igual al anterior...)
+# --- DISEÑO UI ---
 st.markdown("""
     <style>
     .stApp { background-color: #1e1e2f; color: #ffffff; }
-    [data-testid="stSidebar"] { background-color: #11111b; min-width: 250px !important; }
-    .sidebar-header { font-size: 13px; color: #6272a4; font-weight: bold; margin-top: 25px; text-transform: uppercase; }
+    [data-testid="stSidebar"] { background-color: #11111b; min-width: 260px !important; }
+    .sidebar-header { font-size: 12px; color: #6272a4; font-weight: bold; margin-top: 20px; text-transform: uppercase; letter-spacing: 1px; }
     </style>
     """, unsafe_allow_html=True)
 
+# --- MENÚ LATERAL ORGANIZADO ---
 with st.sidebar:
     st.markdown(f"<h1 style='color:#50fa7b; text-align:center;'>VillaFix</h1>", unsafe_allow_html=True)
-    st.write(f"👤 Usuario: **{st.session_state.user}**")
-    st.caption(f"Acceso: {st.session_state.rol}")
+    st.markdown(f"<p style='text-align:center;'>Bienvenido, <b>{st.session_state.user}</b></p>", unsafe_allow_html=True)
     if st.button("Cerrar Sesión"):
         st.session_state.autenticado = False
         st.rerun()
     st.write("---")
     
-    # --- FILTRO DE MENÚ POR ROL ---
-    st.markdown('<p class="sidebar-header">📦 Almacén</p>', unsafe_allow_html=True)
-    if st.button("🖼️ Ver Inventario", use_container_width=True): st.session_state.menu = "Stock"
+    # CATEGORÍA 1: ALMACÉN
+    st.markdown('<p class="sidebar-header">📦 Gestión de Almacén</p>', unsafe_allow_html=True)
+    if st.button("🖼️ Inventario General", use_container_width=True): st.session_state.menu = "Stock"
     
-    # Solo el Súper Usuario ve estas opciones
+    # OPCIONES SOLO PARA SUPER USUARIO
     if st.session_state.rol == "Super":
-        if st.button("➕ Ingreso de Mercancía", use_container_width=True): st.session_state.menu = "Carga"
+        if st.button("➕ Nuevo Repuesto", use_container_width=True): st.session_state.menu = "Carga"
         
-        st.markdown('<p class="sidebar-header">🔄 Operaciones</p>', unsafe_allow_html=True)
-        if st.button("📜 Historial de Salidas", use_container_width=True): st.session_state.menu = "Log"
-        if st.button("📊 Estadísticas de Uso", use_container_width=True): st.session_state.menu = "Stats"
+        st.markdown('<p class="sidebar-header">📈 Análisis y Control</p>', unsafe_allow_html=True)
+        if st.button("📊 Estadísticas", use_container_width=True): st.session_state.menu = "Stats"
+        if st.button("📜 Historial Total", use_container_width=True): st.session_state.menu = "Log"
         
-        st.markdown('<p class="sidebar-header">👥 Directorio</p>', unsafe_allow_html=True)
-        if st.button("📞 Proveedores", use_container_width=True): st.session_state.menu = "Prov"
+        st.markdown('<p class="sidebar-header">⚙️ Configuración</p>', unsafe_allow_html=True)
         if st.button("👤 Crear Usuarios", use_container_width=True): st.session_state.menu = "Users"
+        if st.button("📞 Proveedores", use_container_width=True): st.session_state.menu = "Prov"
 
-# --- LÓGICA DE LAS SECCIONES ---
-# Aquí pegas el resto de tu código de Stock, Carga, Log, Stats, etc.
+# --- SECCIONES ---
+if st.session_state.menu == "Stock":
+    st.markdown("<h1 style='color:#50fa7b;'>INVENTARIO GENERAL - VILLAFIX</h1>", unsafe_allow_html=True)
+    # ... aquí sigue tu código de filtros y tarjetas de productos ...
+    # IMPORTANTE: Al registrar salida, ahora guardamos el usuario:
+    # supabase.table("historial").insert({"producto_nombre": p['nombre'], "cantidad": -1, "usuario": st.session_state.user}).execute()
 
-if st.session_state.menu == "Users" and st.session_state.rol == "Super":
-    st.header("👤 Gestión de Usuarios del Sistema")
-    with st.form("new_user"):
-        new_u = st.text_input("Nombre de Usuario")
-        new_p = st.text_input("Contraseña")
-        new_r = st.selectbox("Rol", ["Normal", "Super"])
-        if st.form_submit_button("REGISTRAR NUEVO USUARIO"):
-            supabase.table("usuarios").insert({"usuario": new_u, "contrasena": new_p, "rol": new_r}).execute()
-            st.success(f"Usuario {new_u} creado correctamente.")
+elif st.session_state.menu == "Users" and st.session_state.rol == "Super":
+    st.header("👤 Registro de Colaboradores")
+    with st.form("new_u"):
+        nu = st.text_input("Nombre de Usuario")
+        np = st.text_input("Contraseña")
+        nr = st.selectbox("Rol", ["Normal", "Super"])
+        if st.form_submit_button("CREAR ACCESO"):
+            if nu and np:
+                supabase.table("usuarios").insert({"usuario":nu, "contrasena":np, "rol":nr}).execute()
+                st.success(f"Usuario {nu} registrado con éxito.")
