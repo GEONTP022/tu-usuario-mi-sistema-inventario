@@ -36,7 +36,7 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- CSS MAESTRO (SE MANTIENE IGUAL QUE ANTES) ---
+# --- CSS MAESTRO (TU DISEÑO PERFECTO) ---
 st.markdown("""
     <style>
     /* 1. FONDO BLANCO GLOBAL */
@@ -66,7 +66,7 @@ st.markdown("""
     }
 
     /* 3. ETIQUETAS Y TEXTOS DEL FORMULARIO (NEGROS) */
-    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3 {
+    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label {
         color: #000000 !important;
         -webkit-text-fill-color: #000000 !important;
         font-weight: 700 !important;
@@ -97,7 +97,26 @@ st.markdown("""
         box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
         height: 100% !important; 
     }
-    
+
+    /* IMÁGENES: CENTRADO FORZADO */
+    div[data-testid="stImage"] {
+        display: flex !important;
+        justify-content: center !important; 
+        align-items: center !important;
+        width: 100% !important;
+        margin: 0 auto !important;
+        height: 160px !important; 
+    }
+    div[data-testid="stImage"] img {
+        display: block !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        max-height: 150px !important;
+        width: auto !important;
+        object-fit: contain !important;
+        flex-grow: 0 !important;
+    }
+
     /* Textos dentro de tarjetas (Negro) */
     div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] p,
     div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] div {
@@ -125,6 +144,15 @@ st.markdown("""
     div.stButton button:disabled p {
         color: white !important;
     }
+    
+    /* Pestañas (Tabs) en Usuarios */
+    button[data-baseweb="tab"] {
+        color: #000000 !important;
+    }
+    div[data-baseweb="tab-list"] {
+        background-color: #f1f3f4 !important;
+        border-radius: 8px;
+    }
 
     /* Perfil */
     .profile-section { text-align: center !important; padding: 20px 0px; }
@@ -133,6 +161,50 @@ st.markdown("""
     [data-testid="stSidebarNav"] {display: none;}
     </style>
     """, unsafe_allow_html=True)
+
+# --- VENTANA FLOTANTE (MODAL) PARA SALIDA ---
+@st.dialog("Registrar Salida de Producto")
+def modal_salida(producto):
+    st.markdown(f"**Producto:** {producto['nombre']}")
+    st.markdown(f"**Stock Actual:** {producto['stock']}")
+    
+    # Obtener listas de técnicos y locales (o usar default si falla)
+    try:
+        techs = [t['nombre'] for t in supabase.table("tecnicos").select("nombre").execute().data]
+    except:
+        techs = ["Técnico General"] # Default si no hay tabla
+        
+    try:
+        locs = [l['nombre'] for l in supabase.table("locales").select("nombre").execute().data]
+    except:
+        locs = ["Local Principal"] # Default si no hay tabla
+
+    with st.form("form_salida_modal"):
+        tecnico = st.selectbox("Técnico que solicita", ["Seleccionar"] + techs)
+        local = st.selectbox("Local de destino", ["Seleccionar"] + locs)
+        cantidad = st.number_input("Unidades a retirar", min_value=1, max_value=producto['stock'], step=1)
+        
+        submitted = st.form_submit_button("CONFIRMAR SALIDA")
+        
+        if submitted:
+            if tecnico == "Seleccionar" or local == "Seleccionar":
+                st.error("⚠️ Seleccione Técnico y Local.")
+            else:
+                # Actualizar Stock
+                nuevo_stock = producto['stock'] - cantidad
+                supabase.table("productos").update({"stock": nuevo_stock}).eq("id", producto['id']).execute()
+                
+                # Guardar Historial con datos extra
+                supabase.table("historial").insert({
+                    "producto_nombre": producto['nombre'],
+                    "cantidad": -cantidad,
+                    "usuario": st.session_state.user,
+                    "tecnico": tecnico, # Asegurate que esta columna exista en Supabase
+                    "local": local      # Asegurate que esta columna exista en Supabase
+                }).execute()
+                
+                st.success("Salida registrada.")
+                st.rerun()
 
 # --- PANEL IZQUIERDO ---
 with st.sidebar:
@@ -151,7 +223,7 @@ with st.sidebar:
         if st.button("📥 Añadir Producto", use_container_width=True): st.session_state.menu = "Carga"
         if st.button("📋 Historial", use_container_width=True): st.session_state.menu = "Log"
         if st.button("📈 Estadísticas", use_container_width=True): st.session_state.menu = "Stats"
-        if st.button("👥 Usuarios", use_container_width=True): st.session_state.menu = "Users"
+        if st.button("👥 Usuarios / Config", use_container_width=True): st.session_state.menu = "Users"
         if st.button("📞 Proveedores", use_container_width=True): st.session_state.menu = "Prov"
         if st.button("⚙️ Reset Sistema", use_container_width=True): st.session_state.menu = "Reset"
 
@@ -176,18 +248,8 @@ if opcion == "Stock":
             if (categoria == "Todos" or p['categoria'] == categoria) and (busqueda.lower() in p['nombre'].lower()):
                 with cols[i % 4]:
                     with st.container(border=True):
-                        # --- SOLUCIÓN DEFINITIVA PARA CENTRAR IMAGEN ---
-                        # Usamos HTML directo con flexbox para obligar el centrado
-                        img_url = p.get('imagen_url') or "https://via.placeholder.com/150"
-                        st.markdown(f"""
-                            <div style="display: flex; justify-content: center; align-items: center; height: 160px; width: 100%; margin-bottom: 10px;">
-                                <img src="{img_url}" style="max-height: 150px; width: auto; object-fit: contain; display: block;">
-                            </div>
-                        """, unsafe_allow_html=True)
-                        # -----------------------------------------------
-                        
+                        st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=False)
                         st.markdown(f"<div style='text-align:center; color:#000000; font-weight:bold; margin-bottom:5px; height:45px; overflow:hidden; display:flex; align-items:center; justify-content:center; line-height:1.2;'>{p['nombre']}</div>", unsafe_allow_html=True)
-                        
                         c1, c2 = st.columns(2)
                         with c1: st.markdown(f"<div style='text-align:center; color:#000000; font-size:13px;'>U: {p['stock']}</div>", unsafe_allow_html=True)
                         with c2: st.markdown(f"<div style='text-align:center; color:#000000; font-size:13px;'>S/ {p['precio_venta']}</div>", unsafe_allow_html=True)
@@ -195,10 +257,9 @@ if opcion == "Stock":
                         st.markdown("<div style='margin-top:5px;'></div>", unsafe_allow_html=True)
                         
                         if p['stock'] > 0:
+                            # AQUI ESTA EL CAMBIO: Llama a la ventana flotante
                             if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True):
-                                supabase.table("productos").update({"stock": p['stock']-1}).eq("id", p['id']).execute()
-                                supabase.table("historial").insert({"producto_nombre":p['nombre'], "cantidad":-1, "usuario":st.session_state.user}).execute()
-                                st.rerun()
+                                modal_salida(p)
                         else:
                             st.button("🚫 NO STOCK", key=f"ns_{p['id']}", disabled=True, use_container_width=True)
 
@@ -229,11 +290,17 @@ elif opcion == "Carga":
 
 elif opcion == "Log":
     st.markdown("<h2>📜 Historial</h2>", unsafe_allow_html=True)
+    # Intenta traer tecnico y local si existen, sino trae todo
     logs = supabase.table("historial").select("*").order("fecha", desc=True).execute().data
     if logs:
         df = pd.DataFrame(logs)
         df['fecha'] = pd.to_datetime(df['fecha']).dt.strftime('%d/%m/%Y %H:%M')
-        st.dataframe(df[['fecha', 'producto_nombre', 'cantidad', 'usuario']], use_container_width=True, hide_index=True)
+        # Mostrar columnas nuevas si existen en el dataframe
+        cols_to_show = ['fecha', 'producto_nombre', 'cantidad', 'usuario']
+        if 'tecnico' in df.columns: cols_to_show.append('tecnico')
+        if 'local' in df.columns: cols_to_show.append('local')
+        
+        st.dataframe(df[cols_to_show], use_container_width=True, hide_index=True)
 
 elif opcion == "Stats":
     st.markdown("<h2>📊 Estadísticas</h2>", unsafe_allow_html=True)
@@ -244,14 +311,53 @@ elif opcion == "Stats":
         st.plotly_chart(fig, use_container_width=True)
 
 elif opcion == "Users":
-    st.markdown("<h2>👥 Usuarios</h2>", unsafe_allow_html=True)
-    with st.form("nu"):
-        un = st.text_input("Usuario")
-        pw = st.text_input("Clave")
-        rl = st.selectbox("Rol", ["Normal", "Super"])
-        if st.form_submit_button("CREAR"):
-            supabase.table("usuarios").insert({"usuario":un, "contrasena":pw, "rol":rl}).execute()
-            st.success("Usuario creado.")
+    st.markdown("<h2>👥 Gestión de Usuarios y Datos</h2>", unsafe_allow_html=True)
+    
+    # PESTAÑAS PARA ORGANIZAR LA GESTIÓN
+    tab1, tab2, tab3 = st.tabs(["🔑 Accesos Sistema", "👨‍🔧 Técnicos", "🏠 Locales"])
+    
+    with tab1:
+        with st.form("nu"):
+            st.write("Crear nuevo acceso al sistema")
+            un = st.text_input("Usuario")
+            pw = st.text_input("Clave")
+            rl = st.selectbox("Rol", ["Normal", "Super"])
+            if st.form_submit_button("CREAR USUARIO"):
+                supabase.table("usuarios").insert({"usuario":un, "contrasena":pw, "rol":rl}).execute()
+                st.success("Usuario creado.")
+    
+    with tab2:
+        st.write("Registrar técnicos para las salidas")
+        with st.form("nt"):
+            tec_name = st.text_input("Nombre del Técnico")
+            if st.form_submit_button("AGREGAR TÉCNICO"):
+                # Asegurate de tener la tabla 'tecnicos' en Supabase
+                try:
+                    supabase.table("tecnicos").insert({"nombre": tec_name}).execute()
+                    st.success("Técnico agregado.")
+                except:
+                    st.error("Error: Verifica que exista la tabla 'tecnicos' en Supabase.")
+        # Lista de técnicos actuales
+        try:
+            tecs = supabase.table("tecnicos").select("*").execute().data
+            if tecs: st.dataframe(pd.DataFrame(tecs), use_container_width=True, hide_index=True)
+        except: pass
+
+    with tab3:
+        st.write("Registrar locales de destino")
+        with st.form("nl"):
+            loc_name = st.text_input("Nombre del Local")
+            if st.form_submit_button("AGREGAR LOCAL"):
+                try:
+                    supabase.table("locales").insert({"nombre": loc_name}).execute()
+                    st.success("Local agregado.")
+                except:
+                    st.error("Error: Verifica que exista la tabla 'locales' en Supabase.")
+        # Lista de locales actuales
+        try:
+            locs = supabase.table("locales").select("*").execute().data
+            if locs: st.dataframe(pd.DataFrame(locs), use_container_width=True, hide_index=True)
+        except: pass
 
 elif opcion == "Prov":
     st.markdown("<h2>📞 Proveedores</h2>", unsafe_allow_html=True)
