@@ -325,11 +325,11 @@ if opcion == "Stock":
                     marca_val = p.get('marca', '')
                     marca_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase;'>{marca_val}</div>" if marca_val else "<div style='height:16px;'></div>"
                     
-                    # Nuevo: Código de Batería
+                    # CÓDIGO BATERÍA (SIN EMOJI, MISMO ESTILO QUE MARCA)
                     cod_bat = p.get('codigo_bateria')
-                    cod_html = f"<div style='color:#2488bc; font-size:11px; font-weight:bold; margin-top:2px;'>🔋 {cod_bat}</div>" if cod_bat else ""
+                    cod_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase; margin-top:2px;'>{cod_bat}</div>" if cod_bat else ""
                     
-                    # Altura aumentada a 90px para acomodar todo y mantener alineación
+                    # Altura 90px
                     st.markdown(f"""
                         <div style="text-align:center; height:90px; display:flex; flex-direction:column; justify-content:flex-start; align-items:center;">
                             {marca_html}
@@ -392,7 +392,9 @@ elif opcion == "Carga":
 
                 st.divider()
                 st.markdown(f"**Stock Actual:** {prod_data['stock']}")
-                stock_add = st.number_input("Cantidad a AÑADIR (+)", min_value=1, value=1, step=1)
+                
+                # --- CAMBIO: INICIA EN 0 PARA NO OBLIGAR A SUMAR ---
+                stock_add = st.number_input("Cantidad a AÑADIR (+)", min_value=0, value=0, step=1)
                 
                 if st.form_submit_button("CONSOLIDAR INGRESO"):
                     total_stock = prod_data['stock'] + stock_add
@@ -405,10 +407,13 @@ elif opcion == "Carga":
 
                     supabase.table("productos").update(datos_update).eq("id", prod_data['id']).execute()
                     
-                    supabase.table("historial").insert({
-                        "producto_nombre": prod_data['nombre'], "cantidad": stock_add,
-                        "usuario": st.session_state.user, "tecnico": "Ingreso Stock", "local": "Almacén"
-                    }).execute()
+                    # Solo guardamos historial si hubo ingreso real de stock
+                    if stock_add > 0:
+                        supabase.table("historial").insert({
+                            "producto_nombre": prod_data['nombre'], "cantidad": stock_add,
+                            "usuario": st.session_state.user, "tecnico": "Ingreso Stock", "local": "Almacén"
+                        }).execute()
+                    
                     st.success("Actualizado.")
                     st.rerun()
 
