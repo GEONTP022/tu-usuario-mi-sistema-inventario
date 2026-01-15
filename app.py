@@ -3,14 +3,15 @@ from supabase import create_client
 import pandas as pd
 import plotly.express as px
 
-# --- CONEXIÓN ---
+# --- CONEXIÓN A BASE DE DATOS ---
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
+# --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide")
 
-# --- LÓGICA DE SESIÓN ---
+# --- LÓGICA DE SESIÓN (LOGIN) ---
 if 'autenticado' not in st.session_state:
     st.session_state.autenticado = False
     st.session_state.rol = None
@@ -36,50 +37,57 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- DISEÑO UI REFORZADO (ALTA VISIBILIDAD DE LETRAS) ---
+# --- DISEÑO UI REFORZADO (BLOQUEO DE MODO OSCURO) ---
 st.markdown("""
     <style>
-    /* 1. FONDO BLANCO PURO PARA TODO EL CONTENIDO CENTRAL */
-    .stApp, .main, .block-container { 
+    /* 1. FORZAR FONDO BLANCO ABSOLUTO */
+    .stApp, .main, .block-container, div[data-testid="stForm"] { 
         background-color: #ffffff !important; 
     }
     
-    /* 2. FORZAR LETRAS EN NEGRO PURO (Solución para laptop y móvil) */
-    /* Esto aplica a etiquetas, párrafos, títulos y componentes de entrada */
-    .main label, .main p, .main span, .main b, .main h2, .main h1, .main .stMarkdown {
+    /* 2. FORZAR TEXTO NEGRO INTENSO EN TODO EL CONTENIDO CENTRAL */
+    /* Títulos, etiquetas, párrafos y texto dentro de botones */
+    .main h1, .main h2, .main h3, .main label, .main p, .main span, .main b, .main strong, .main div {
         color: #000000 !important;
-        font-weight: 700 !important;
+        -webkit-text-fill-color: #000000 !important; /* Fuerza extra para Safari/iOS */
         opacity: 1 !important;
     }
 
-    /* 3. ARREGLO DE MENÚS DESPLEGABLES (Categorías) */
-    /* Asegura que el texto seleccionado y las opciones de la lista sean negras */
-    div[data-baseweb="select"] > div, div[role="listbox"] li {
-        color: #000000 !important;
-        background-color: #f1f3f4 !important;
-    }
-
-    /* 4. CAMPOS DE ENTRADA (Inputs y Números) */
-    input, select, .stNumberInput input {
+    /* 3. ARREGLO DE INPUTS Y DESPLEGABLES (Categorías) */
+    /* Aseguramos fondo gris claro y letras negras para que se lea al escribir */
+    input, select, textarea, div[data-baseweb="select"] > div {
         background-color: #f1f3f4 !important;
         color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
         border: 2px solid #000000 !important;
-        border-radius: 8px !important;
     }
 
-    /* 5. BARRA LATERAL (Mantiene tu diseño de perfil centrado) */
-    [data-testid="stSidebar"] { background-color: #1a222b !important; }
-    .profile-section { text-align: center !important; padding: 30px 10px; }
-    .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 4px solid #f39c12; margin-bottom: 15px; object-fit: cover; margin-left: auto; margin-right: auto; display: block; }
-    .profile-name { font-size: 19px; font-weight: bold; color: #ffffff !important; margin: 0; }
-    .profile-status { font-size: 12px; color: #f39c12 !important; margin-bottom: 5px; }
-    .sidebar-divider { height: 1px; background-color: #3498db; margin: 10px 0 20px 0; width: 100%; opacity: 0.5; }
-    [data-testid="stSidebar"] button p { color: #ffffff !important; font-size: 15px !important; }
+    /* Opciones dentro del menú desplegable */
+    div[role="listbox"] ul li {
+        color: #000000 !important;
+        background-color: #ffffff !important;
+    }
 
-    /* 6. BOTÓN CONSOLIDAR INGRESO (Siempre azul, letra blanca) */
+    /* 4. BARRA LATERAL OSCURA (Mantiene el perfil centrado) */
+    [data-testid="stSidebar"] { background-color: #1a222b !important; }
+    .profile-section { text-align: center !important; padding: 30px 10px; width: 100%; }
+    .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 4px solid #f39c12; margin-bottom: 15px; object-fit: cover; display: block; margin-left: auto; margin-right: auto; }
+    .profile-name { font-size: 19px; font-weight: bold; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; margin: 0; }
+    .profile-status { font-size: 12px; color: #f39c12 !important; -webkit-text-fill-color: #f39c12 !important; margin-bottom: 5px; }
+    .sidebar-divider { height: 1px; background-color: #3498db; margin: 10px 0 20px 0; width: 100%; opacity: 0.5; }
+    
+    /* Botones del sidebar siempre blancos */
+    [data-testid="stSidebar"] button p { 
+        color: #ffffff !important; 
+        -webkit-text-fill-color: #ffffff !important; 
+        font-size: 15px !important; 
+    }
+
+    /* 5. BOTÓN CONSOLIDAR INGRESO (Siempre azul, letra blanca) */
     div.stForm button {
         background-color: #2488bc !important;
         color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
         font-weight: bold !important;
         border: none !important;
         height: 48px !important;
@@ -143,7 +151,7 @@ if opcion == "Stock":
                                 st.rerun()
 
 elif opcion == "Carga":
-    st.markdown("<h2>📥 Añadir Producto</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>Añadir Producto</h2>", unsafe_allow_html=True)
     with st.form("form_carga", clear_on_submit=True):
         st.write("Complete los campos obligatorios (*)")
         n = st.text_input("Modelo / Repuesto *")
@@ -167,7 +175,7 @@ elif opcion == "Carga":
                 supabase.table("historial").insert({"producto_nombre": n, "cantidad": s, "usuario": st.session_state.user}).execute()
 
 elif opcion == "Log":
-    st.markdown("<h2>📜 Historial</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>Historial</h2>", unsafe_allow_html=True)
     logs = supabase.table("historial").select("*").order("fecha", desc=True).execute().data
     if logs:
         df = pd.DataFrame(logs)
@@ -175,7 +183,7 @@ elif opcion == "Log":
         st.dataframe(df[['fecha', 'producto_nombre', 'cantidad', 'usuario']], use_container_width=True, hide_index=True)
 
 elif opcion == "Stats":
-    st.markdown("<h2>📊 Estadísticas</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>Estadísticas</h2>", unsafe_allow_html=True)
     p_data = supabase.table("productos").select("*").execute().data
     if p_data:
         df_p = pd.DataFrame(p_data)
@@ -183,11 +191,11 @@ elif opcion == "Stats":
         st.plotly_chart(fig, use_container_width=True)
 
 elif opcion == "Users":
-    st.markdown("<h2>👥 Usuarios</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>Usuarios</h2>", unsafe_allow_html=True)
     with st.form("nu"):
         un = st.text_input("Usuario")
         pw = st.text_input("Clave")
         rl = st.selectbox("Rol", ["Normal", "Super"])
-        if st.button("CREAR USUARIO"):
+        if st.form_submit_button("CREAR"):
             supabase.table("usuarios").insert({"usuario":un, "contrasena":pw, "rol":rl}).execute()
             st.success("Usuario creado.")
