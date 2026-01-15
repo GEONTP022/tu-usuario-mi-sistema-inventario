@@ -3,6 +3,7 @@ from supabase import create_client
 import pandas as pd
 import plotly.express as px
 from datetime import datetime, timedelta
+import time # Importamos libreria para efectos de tiempo
 
 # --- CONEXIÓN ---
 url = st.secrets["SUPABASE_URL"]
@@ -185,16 +186,14 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- VENTANAS FLOTANTES (CON PESTAÑAS PARA DEVOLUCIÓN) ---
+# --- VENTANAS FLOTANTES (CON EFECTOS DE CARGA) ---
 
 @st.dialog("Gestionar Inventario")
 def modal_gestion(producto):
     st.markdown(f"<h3 style='color:black;'>{producto['nombre']}</h3>", unsafe_allow_html=True)
     
-    # PESTAÑAS: SALIDA vs DEVOLUCIÓN
     tab_salida, tab_devolucion = st.tabs(["📉 REGISTRAR SALIDA", "↩️ DEVOLUCIÓN / INGRESO"])
     
-    # --- PESTAÑA 1: SALIDA ---
     with tab_salida:
         st.markdown(f"**Stock Actual:** {producto['stock']}")
         try: techs = [t['nombre'] for t in supabase.table("tecnicos").select("nombre").execute().data]
@@ -205,7 +204,6 @@ def modal_gestion(producto):
         with st.form("form_salida_modal"):
             tecnico = st.selectbox("Técnico", ["Seleccionar"] + techs, key="tec_sal")
             local = st.selectbox("Local", ["Seleccionar"] + locs, key="loc_sal")
-            # Validación para que no de error si stock es 0
             max_val = producto['stock'] if producto['stock'] > 0 else 1
             cantidad = st.number_input("Cantidad a RETIRAR", min_value=1, max_value=max_val, step=1, key="cant_sal")
             
@@ -215,16 +213,19 @@ def modal_gestion(producto):
                 elif tecnico == "Seleccionar" or local == "Seleccionar":
                     st.error("⚠️ Faltan datos.")
                 else:
-                    nuevo_stock = producto['stock'] - cantidad
-                    supabase.table("productos").update({"stock": nuevo_stock}).eq("id", producto['id']).execute()
-                    supabase.table("historial").insert({
-                        "producto_nombre": producto['nombre'], "cantidad": -cantidad,
-                        "usuario": st.session_state.user, "tecnico": tecnico, "local": local
-                    }).execute()
-                    st.success("Salida Registrada.")
+                    with st.spinner('Procesando salida...'):
+                        nuevo_stock = producto['stock'] - cantidad
+                        supabase.table("productos").update({"stock": nuevo_stock}).eq("id", producto['id']).execute()
+                        supabase.table("historial").insert({
+                            "producto_nombre": producto['nombre'], "cantidad": -cantidad,
+                            "usuario": st.session_state.user, "tecnico": tecnico, "local": local
+                        }).execute()
+                        time.sleep(1) # Efecto visual
+                    
+                    st.success("✅ ¡Listo!")
+                    time.sleep(0.5)
                     st.rerun()
 
-    # --- PESTAÑA 2: DEVOLUCIÓN ---
     with tab_devolucion:
         st.info("Use esto para devoluciones de técnicos o ingresos rápidos.")
         with st.form("form_devolucion_modal"):
@@ -232,16 +233,20 @@ def modal_gestion(producto):
             cant_dev = st.number_input("Cantidad a INGRESAR/DEVOLVER", min_value=1, step=1, key="cant_dev")
             
             if st.form_submit_button("CONFIRMAR DEVOLUCIÓN"):
-                nuevo_stock_dev = producto['stock'] + cant_dev
-                supabase.table("productos").update({"stock": nuevo_stock_dev}).eq("id", producto['id']).execute()
-                supabase.table("historial").insert({
-                    "producto_nombre": producto['nombre'], 
-                    "cantidad": cant_dev,
-                    "usuario": st.session_state.user, 
-                    "tecnico": razon,
-                    "local": "Almacén"
-                }).execute()
-                st.success("Devolución Registrada (Stock Aumentado).")
+                with st.spinner('Procesando devolución...'):
+                    nuevo_stock_dev = producto['stock'] + cant_dev
+                    supabase.table("productos").update({"stock": nuevo_stock_dev}).eq("id", producto['id']).execute()
+                    supabase.table("historial").insert({
+                        "producto_nombre": producto['nombre'], 
+                        "cantidad": cant_dev,
+                        "usuario": st.session_state.user, 
+                        "tecnico": razon,
+                        "local": "Almacén"
+                    }).execute()
+                    time.sleep(1)
+                
+                st.success("✅ ¡Listo!")
+                time.sleep(0.5)
                 st.rerun()
 
 @st.dialog("✨ Nuevo Producto")
@@ -264,32 +269,56 @@ def modal_nuevo_producto():
                 if existe.data:
                     st.error("⚠️ Ya existe.")
                 else:
-                    supabase.table("productos").insert({
-                        "nombre": n, "categoria": c, "marca": m, "codigo_bateria": cb,
-                        "stock": s, "precio_venta": p, "imagen_url": img
-                    }).execute()
+                    with st.spinner('Creando producto...'):
+                        supabase.table("productos").insert({
+                            "nombre": n, "categoria": c, "marca": m, "codigo_bateria": cb,
+                            "stock": s, "precio_venta": p, "imagen_url": img
+                        }).execute()
+                        
+                        supabase.table("historial").insert({
+                            "producto_nombre": n, "cantidad": s, "usuario": st.session_state.user,
+                            "tecnico": "Ingreso Inicial", "local": "Almacén"
+                        }).execute()
+                        time.sleep(1)
                     
-                    supabase.table("historial").insert({
-                        "producto_nombre": n, "cantidad": s, "usuario": st.session_state.user,
-                        "tecnico": "Ingreso Inicial", "local": "Almacén"
-                    }).execute()
-                    st.success("Creado.")
+                    st.success("✅ ¡Listo!")
+                    time.sleep(0.5)
                     st.rerun()
 
-@st.dialog("⚠️ Confirmar")
+# --- DIÁLOGO DE ELIMINACIÓN DE PRODUCTO (NUEVO) ---
+@st.dialog("⚠️ Confirmar Eliminación")
+def modal_borrar_producto(producto):
+    st.write(f"¿Estás seguro de eliminar **{producto['nombre']}**?")
+    st.warning("Esta acción borrará el producto del inventario permanentemente.")
+    
+    if st.button("SÍ, ELIMINAR DEFINITIVAMENTE", use_container_width=True):
+        with st.spinner('Eliminando...'):
+            supabase.table("productos").delete().eq("id", producto['id']).execute()
+            time.sleep(1)
+        st.success("✅ Eliminado correctamente.")
+        time.sleep(0.5)
+        st.rerun()
+
+@st.dialog("⚠️ Confirmar Eliminación")
 def modal_borrar_tecnico(nombre):
     st.write(f"¿Eliminar {nombre}?")
     if st.button("SÍ, ELIMINAR", use_container_width=True):
-        supabase.table("tecnicos").delete().eq("nombre", nombre).execute()
-        st.success("Hecho.")
+        with st.spinner('Eliminando...'):
+            supabase.table("tecnicos").delete().eq("nombre", nombre).execute()
+            time.sleep(1)
+        st.success("✅ ¡Listo!")
+        time.sleep(0.5)
         st.rerun()
 
-@st.dialog("⚠️ Confirmar")
+@st.dialog("⚠️ Confirmar Eliminación")
 def modal_borrar_local(nombre):
     st.write(f"¿Eliminar {nombre}?")
     if st.button("SÍ, ELIMINAR", use_container_width=True):
-        supabase.table("locales").delete().eq("nombre", nombre).execute()
-        st.success("Hecho.")
+        with st.spinner('Eliminando...'):
+            supabase.table("locales").delete().eq("nombre", nombre).execute()
+            time.sleep(1)
+        st.success("✅ ¡Listo!")
+        time.sleep(0.5)
         st.rerun()
 
 # --- PANEL IZQUIERDO ---
@@ -310,7 +339,7 @@ with st.sidebar:
         if st.button("📈 Estadísticas", use_container_width=True): st.session_state.menu = "Stats"
         if st.button("👥 Usuarios / Config", use_container_width=True): st.session_state.menu = "Users"
         if st.button("📞 Proveedores", use_container_width=True): st.session_state.menu = "Prov"
-        if st.button("⚙️ Reset Sistema", use_container_width=True): st.session_state.menu = "Reset"
+        # ELIMINADO EL RESET SYSTEM COMO PEDISTE
 
     st.markdown("<br><br>", unsafe_allow_html=True)
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
@@ -441,19 +470,28 @@ elif opcion == "Carga":
                 stock_add = st.number_input("Cantidad a AÑADIR (+)", min_value=0, value=0, step=1)
                 
                 if st.form_submit_button("CONSOLIDAR INGRESO"):
-                    total_stock = prod_data['stock'] + stock_add
-                    datos_update = { "stock": total_stock, "precio_venta": new_price, "imagen_url": new_img }
-                    if prod_data['categoria'] == "Baterías": datos_update["codigo_bateria"] = cod_bat_new
+                    with st.spinner('Guardando cambios...'):
+                        total_stock = prod_data['stock'] + stock_add
+                        datos_update = { "stock": total_stock, "precio_venta": new_price, "imagen_url": new_img }
+                        if prod_data['categoria'] == "Baterías": datos_update["codigo_bateria"] = cod_bat_new
 
-                    supabase.table("productos").update(datos_update).eq("id", prod_data['id']).execute()
+                        supabase.table("productos").update(datos_update).eq("id", prod_data['id']).execute()
+                        
+                        if stock_add > 0:
+                            supabase.table("historial").insert({
+                                "producto_nombre": prod_data['nombre'], "cantidad": stock_add,
+                                "usuario": st.session_state.user, "tecnico": "Ingreso Stock", "local": "Almacén"
+                            }).execute()
+                        time.sleep(1)
                     
-                    if stock_add > 0:
-                        supabase.table("historial").insert({
-                            "producto_nombre": prod_data['nombre'], "cantidad": stock_add,
-                            "usuario": st.session_state.user, "tecnico": "Ingreso Stock", "local": "Almacén"
-                        }).execute()
-                    st.success("Actualizado.")
+                    st.success("✅ ¡Listo!")
+                    time.sleep(0.5)
                     st.rerun()
+            
+            # --- ZONA DE ELIMINACIÓN DE PRODUCTO (NUEVO) ---
+            st.markdown("---")
+            if st.button("🗑️ ELIMINAR ESTE PRODUCTO DEL SISTEMA", type="primary"):
+                modal_borrar_producto(prod_data)
 
 elif opcion == "Log":
     st.markdown("<h2>📜 Historial General</h2>", unsafe_allow_html=True)
@@ -468,7 +506,6 @@ elif opcion == "Log":
     
     if logs:
         df = pd.DataFrame(logs)
-        # CORRECCIÓN DE ERROR DE TIPO: Eliminar zona horaria para comparar
         df['fecha_dt'] = pd.to_datetime(df['fecha']).dt.tz_localize(None)
         
         if len(date_range) == 2:
@@ -507,7 +544,6 @@ elif opcion == "Stats":
 
         if historial_db:
             df_hist = pd.DataFrame(historial_db)
-            # CORRECCIÓN DE ERROR DE TIPO: Eliminar zona horaria
             df_hist['fecha_dt'] = pd.to_datetime(df_hist['fecha']).dt.tz_localize(None)
             
             if len(date_range_stats) == 2:
@@ -556,14 +592,20 @@ elif opcion == "Users":
             if st.form_submit_button("CREAR"):
                 if supabase.table("usuarios").select("*").eq("usuario", un).execute().data: st.error("Existe.")
                 else:
-                    supabase.table("usuarios").insert({"usuario":un, "contrasena":pw, "rol":rl}).execute()
-                    st.success("Creado.")
+                    with st.spinner('Creando usuario...'):
+                        supabase.table("usuarios").insert({"usuario":un, "contrasena":pw, "rol":rl}).execute()
+                        time.sleep(1)
+                    st.success("✅ ¡Listo!")
+                    time.sleep(0.5)
     with tab2:
         with st.form("nt"):
             tn = st.text_input("Nombre")
             if st.form_submit_button("AGREGAR"):
-                supabase.table("tecnicos").insert({"nombre": tn}).execute()
-                st.success("Hecho.")
+                with st.spinner('Guardando...'):
+                    supabase.table("tecnicos").insert({"nombre": tn}).execute()
+                    time.sleep(1)
+                st.success("✅ ¡Listo!")
+                time.sleep(0.5)
                 st.rerun()
         st.write("---")
         tecs = supabase.table("tecnicos").select("*").execute().data
@@ -579,8 +621,11 @@ elif opcion == "Users":
         with st.form("nl"):
             ln = st.text_input("Nombre")
             if st.form_submit_button("AGREGAR"):
-                supabase.table("locales").insert({"nombre": ln}).execute()
-                st.success("Hecho.")
+                with st.spinner('Guardando...'):
+                    supabase.table("locales").insert({"nombre": ln}).execute()
+                    time.sleep(1)
+                st.success("✅ ¡Listo!")
+                time.sleep(0.5)
                 st.rerun()
         st.write("---")
         locs = supabase.table("locales").select("*").execute().data
@@ -601,17 +646,3 @@ elif opcion == "Prov":
             with st.container(border=True):
                 st.markdown(f"**{pr['nombre_contacto']}**")
                 st.link_button("WhatsApp", f"https://wa.me/{pr['whatsapp']}")
-
-elif opcion == "Reset":
-    st.markdown("<h2>⚙️ Reset</h2>", unsafe_allow_html=True)
-    col_r1, col_r2 = st.columns(2)
-    with col_r1:
-        if st.button("BORRAR STOCK TOTAL", use_container_width=True):
-            data = supabase.table("productos").select("id").execute().data
-            for item in data: supabase.table("productos").delete().eq("id", item['id']).execute()
-            st.success("Hecho.")
-    with col_r2:
-        if st.button("BORRAR HISTORIAL TOTAL", use_container_width=True):
-            data = supabase.table("historial").select("id").execute().data
-            for item in data: supabase.table("historial").delete().eq("id", item['id']).execute()
-            st.success("Hecho.")
