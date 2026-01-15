@@ -36,117 +36,110 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- CSS MAESTRO CORREGIDO (SEPARACIÓN DE COLORES) ---
+# --- CSS MAESTRO: SOLUCIÓN DE ETIQUETAS INVISIBLES ---
 st.markdown("""
     <style>
-    /* =========================================
-       1. ZONA PRINCIPAL (FONDO BLANCO Y LETRAS NEGRAS)
-       ========================================= */
+    /* 1. FONDO BLANCO GLOBAL */
     .stApp, .main, .block-container {
         background-color: #ffffff !important;
     }
 
-    /* FORZAR NEGRO SOLO EN EL ÁREA PRINCIPAL (.main) */
-    .main h1, .main h2, .main h3, .main p, .main span, .main label, .main div {
-        color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
+    /* 2. SOLUCIÓN CRÍTICA PARA LAS LETRAS INVISIBLES */
+    /* Apuntamos a las etiquetas exactas de Streamlit (Modelo, Categoría, etc.) */
+    div[data-testid="stWidgetLabel"] p, 
+    div[data-testid="stWidgetLabel"] label,
+    label,
+    .stMarkdown p, 
+    .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+        color: #000000 !important; /* Negro Obligatorio */
+        -webkit-text-fill-color: #000000 !important; /* Fuerza para navegadores webkit */
+        font-weight: 600 !important;
+        opacity: 1 !important;
     }
 
-    /* Corrección específica para etiquetas de formularios (Modelo, Categoría...) */
-    div[data-testid="stWidgetLabel"] p {
-        color: #000000 !important;
-        font-weight: 700 !important;
-    }
-
-    /* Inputs (Cajas de texto): Fondo blanco, borde gris, texto negro */
-    input, textarea, .stNumberInput input, .stSelectbox div[data-baseweb="select"] {
+    /* 3. INPUTS (CAJAS DE TEXTO) */
+    input, textarea, .stNumberInput input {
         background-color: #f8f9fa !important;
         color: #000000 !important;
-        border: 1px solid #ccc !important;
+        border: 1px solid #888 !important; /* Borde gris visible */
+    }
+    
+    /* Arreglo específico para listas desplegables (Selectbox) */
+    div[data-baseweb="select"] > div {
+        background-color: #f8f9fa !important;
+        color: #000000 !important;
+        border: 1px solid #888 !important;
+    }
+    div[data-baseweb="select"] span {
+        color: #000000 !important;
+    }
+    ul[data-testid="stSelectboxVirtualDropdown"] li {
+        background-color: #ffffff !important;
+        color: #000000 !important;
     }
 
-    /* =========================================
-       2. BARRA LATERAL (FONDO OSCURO Y LETRAS BLANCAS)
-       ========================================= */
+    /* 4. BARRA LATERAL (NO TOCAR - MANTENER OSCURA) */
     [data-testid="stSidebar"] {
         background-color: #1a222b !important;
     }
-
-    /* AQUÍ ESTÁ LA CORRECCIÓN: Forzamos BLANCO en el sidebar */
-    [data-testid="stSidebar"] h1, 
-    [data-testid="stSidebar"] h2, 
-    [data-testid="stSidebar"] h3, 
+    /* El texto del sidebar debe ser BLANCO */
     [data-testid="stSidebar"] p, 
     [data-testid="stSidebar"] span, 
-    [data-testid="stSidebar"] div,
-    [data-testid="stSidebar"] label {
+    [data-testid="stSidebar"] div {
         color: #ffffff !important;
         -webkit-text-fill-color: #ffffff !important;
     }
-
-    /* Botones del menú lateral (Transparentes y blancos) */
-    [data-testid="stSidebar"] .stButton button {
+    
+    /* Botones del menú lateral */
+    [data-testid="stSidebar"] button {
         background-color: transparent !important;
         border: none !important;
-        color: #bdc3c7 !important; /* Gris claro */
+        color: #bdc3c7 !important;
         text-align: left !important;
         padding-left: 15px !important;
-        box-shadow: none !important;
     }
-    
-    /* Hover de botones sidebar */
-    [data-testid="stSidebar"] .stButton button:hover {
+    [data-testid="stSidebar"] button:hover {
         background-color: rgba(255,255,255,0.1) !important;
-        color: #ffffff !important;
         border-left: 4px solid #3498db !important;
-    }
-    
-    /* Texto dentro del botón (arreglar color heredado) */
-    [data-testid="stSidebar"] .stButton button p {
-        color: inherit !important;
+        color: #ffffff !important;
     }
 
     /* Perfil */
     .profile-section { text-align: center !important; padding: 20px 0px; }
-    .profile-pic { 
-        width: 100px; height: 100px; border-radius: 50%; 
-        border: 3px solid #f39c12; object-fit: cover; 
-        display: block; margin: 0 auto 10px auto; 
-    }
+    .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
 
-    /* =========================================
-       3. ESTILO DE TARJETAS DE STOCK (ACHICADAS)
-       ========================================= */
+    /* 5. TARJETAS DE STOCK (Compactas y limpias) */
     div[data-testid="stVerticalBlockBorderWrapper"] {
         background-color: #ffffff !important;
-        border: 1px solid #e0e0e0 !important; /* Borde suave gris */
-        border-radius: 10px !important;
+        border: 1px solid #ddd !important;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05) !important;
         padding: 10px !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
     }
-    
-    /* Imágenes controladas */
     div[data-testid="stImage"] img {
         max-height: 120px !important;
         object-fit: contain !important;
     }
+    
+    /* Forzar textos dentro de las tarjetas a negro (por si acaso) */
+    div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] p,
+    div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] div {
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+    }
 
-    /* =========================================
-       4. BOTONES GLOBALES
-       ========================================= */
-    /* Botón Salida / Consolidar: AZUL (no negro) */
+    /* BOTONES DE ACCIÓN (Azul) */
     div.stForm button, div[data-testid="column"] button {
         background-color: #2488bc !important;
         color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important; /* Asegurar texto blanco en botón azul */
         border: none !important;
-        font-weight: bold !important;
     }
 
     [data-testid="stSidebarNav"] {display: none;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- PANEL IZQUIERDO (SIDEBAR) ---
+# --- PANEL IZQUIERDO ---
 with st.sidebar:
     st.markdown(f"""
         <div class="profile-section">
@@ -186,16 +179,12 @@ if opcion == "Stock":
         for i, p in enumerate(items):
             if (categoria == "Todos" or p['categoria'] == categoria) and (busqueda.lower() in p['nombre'].lower()):
                 with cols[i % 4]:
-                    # Usamos st.container con borde controlado por CSS arriba
                     with st.container(border=True):
                         st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=True)
-                        # Textos en HTML para asegurar color negro y tamaño compacto
-                        st.markdown(f"<div style='text-align:center; color:black; font-weight:bold; font-size:14px; margin-bottom:5px; height:40px; overflow:hidden;'>{p['nombre']}</div>", unsafe_allow_html=True)
-                        
+                        st.markdown(f"<div style='text-align:center; color:black; font-weight:bold; margin-bottom:5px; height:40px; overflow:hidden;'>{p['nombre']}</div>", unsafe_allow_html=True)
                         c1, c2 = st.columns(2)
                         with c1: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>U: {p['stock']}</div>", unsafe_allow_html=True)
                         with c2: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>S/ {p['precio_venta']}</div>", unsafe_allow_html=True)
-                        
                         st.markdown("<div style='margin-top:5px;'></div>", unsafe_allow_html=True)
                         if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True):
                             if p['stock'] > 0:
@@ -206,7 +195,7 @@ if opcion == "Stock":
 elif opcion == "Carga":
     st.markdown("<h2>📥 Añadir Producto</h2>", unsafe_allow_html=True)
     with st.form("form_carga", clear_on_submit=True):
-        st.markdown("<p style='color:black;'>Complete los campos obligatorios (*)</p>", unsafe_allow_html=True)
+        st.markdown("<p>Complete los campos obligatorios (*)</p>", unsafe_allow_html=True)
         
         n = st.text_input("Modelo / Repuesto *")
         c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
