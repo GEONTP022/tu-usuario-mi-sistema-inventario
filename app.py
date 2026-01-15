@@ -36,7 +36,7 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- CSS MAESTRO (IMÁGENES CENTRADAS + BOTONES STOCK) ---
+# --- CSS MAESTRO (IMÁGENES CENTRADAS) ---
 st.markdown("""
     <style>
     /* 1. FONDO BLANCO GLOBAL */
@@ -93,21 +93,23 @@ st.markdown("""
     div[data-testid="stVerticalBlockBorderWrapper"] {
         background-color: #ffffff !important;
         border: 1px solid #ddd !important;
-        padding: 10px !important;
+        padding: 15px !important;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
     }
 
-    /* --- CORRECCIÓN DE IMÁGENES: CENTRADAS Y GRANDES --- */
+    /* --- CORRECCIÓN DE IMÁGENES: CENTRADO ABSOLUTO --- */
     div[data-testid="stImage"] {
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        width: 100% !important;
-        margin-bottom: 10px !important;
+        text-align: center !important;
+        display: block !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
     }
     
     div[data-testid="stImage"] img {
-        max-height: 160px !important; /* Más grandes */
+        display: block !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        max-height: 180px !important; /* Altura controlada */
         width: auto !important;
         max-width: 100% !important;
         object-fit: contain !important;
@@ -130,14 +132,16 @@ st.markdown("""
     }
     div.stButton button p { color: #ffffff !important; }
 
-    /* Botón DESHABILITADO (Para NO STOCK - ROJO) */
-    button:disabled {
+    /* CORRECCIÓN: Botón DESHABILITADO (Para NO STOCK - ROJO) */
+    /* Usamos mayor especificidad para ganar al azul */
+    div.stButton button:disabled {
         background-color: #e74c3c !important; /* Rojo Intenso */
         color: white !important;
-        opacity: 1 !important; /* Quitar transparencia */
+        opacity: 1 !important;
         cursor: not-allowed !important;
+        border: 1px solid #c0392b !important;
     }
-    button:disabled p {
+    div.stButton button:disabled p {
         color: white !important;
     }
 
@@ -191,8 +195,8 @@ if opcion == "Stock":
             if (categoria == "Todos" or p['categoria'] == categoria) and (busqueda.lower() in p['nombre'].lower()):
                 with cols[i % 4]:
                     with st.container(border=True):
-                        # Imagen renderizada (CSS se encarga de centrarla y agrandarla)
-                        st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=False) # False para respetar CSS
+                        # Imagen renderizada con use_column_width=False para respetar el CSS de centrado
+                        st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=False)
                         
                         st.markdown(f"<div style='text-align:center; color:#000000; font-weight:bold; margin-bottom:5px; height:40px; overflow:hidden;'>{p['nombre']}</div>", unsafe_allow_html=True)
                         c1, c2 = st.columns(2)
@@ -208,7 +212,7 @@ if opcion == "Stock":
                                 supabase.table("historial").insert({"producto_nombre":p['nombre'], "cantidad":-1, "usuario":st.session_state.user}).execute()
                                 st.rerun()
                         else:
-                            # Botón deshabilitado (el CSS lo pone rojo)
+                            # Botón deshabilitado (el CSS lo pondrá rojo)
                             st.button("🚫 NO STOCK", key=f"ns_{p['id']}", disabled=True, use_container_width=True)
 
 elif opcion == "Carga":
@@ -271,7 +275,7 @@ elif opcion == "Prov":
                 st.markdown(f"**{pr['nombre_contacto']}**")
                 st.link_button("WhatsApp", f"https://wa.me/{pr['whatsapp']}")
 
-# --- RESET OCULTO (Solo visible si entran al menú) ---
+# --- RESET OCULTO ---
 elif opcion == "Reset":
     st.markdown("<h2>⚙️ Zona de Peligro</h2>", unsafe_allow_html=True)
     st.warning("⚠️ Estas acciones no se pueden deshacer.")
