@@ -36,14 +36,14 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- DISEÑO UI REFINADO (ALTA VISIBILIDAD) ---
+# --- DISEÑO UI REFINADO (ALTA VISIBILIDAD FORZADA) ---
 st.markdown("""
     <style>
-    /* 1. ÁREA CENTRAL: Fondo blanco y TEXTO NEGRO PURO */
+    /* 1. ÁREA CENTRAL: Fondo blanco y TEXTO NEGRO PURO FORZADO */
     .stApp { background-color: #ffffff !important; }
     
-    /* Forzar color negro en etiquetas, títulos y textos */
-    .main h1, .main h2, .main h3, .main label, .main p, .main span, .main b {
+    /* Forzar color negro en TODO el contenido principal */
+    .main h1, .main h2, .main h3, .main label, .main p, .main span, .main b, .main strong, div[data-baseweb="select"] {
         color: #000000 !important;
         font-weight: 700 !important;
         opacity: 1 !important;
@@ -68,14 +68,19 @@ st.markdown("""
     .sidebar-divider { height: 1px; background-color: #3498db; margin: 10px 0 20px 0; width: 100%; opacity: 0.5; }
     [data-testid="stSidebar"] button p { color: #ffffff !important; font-size: 15px !important; }
 
-    /* 3. INPUTS: Fondos claros para que el número se vea */
-    input, select, .stNumberInput div {
+    /* 3. INPUTS Y DESPLEGABLES: Colores fijos para evitar problemas con Modo Oscuro */
+    input, select, textarea, div[data-baseweb="select"] > div {
         background-color: #f1f3f4 !important;
         color: #000000 !important;
         border: 1px solid #000000 !important;
     }
+
+    /* Arreglo específico para las opciones dentro de los menús desplegables */
+    ul[role="listbox"] li {
+        color: #000000 !important;
+        background-color: #ffffff !important;
+    }
     
-    /* Corregir cuadros de Number Input que se veían feos */
     div[data-testid="stNumberInput"] div[role="group"] {
         background-color: #f1f3f4 !important;
         border: 1px solid #000000 !important;
@@ -126,7 +131,7 @@ opcion = st.session_state.menu
 if opcion == "Stock":
     st.markdown("<h2>Inventario General</h2>", unsafe_allow_html=True)
     col_a, col_b = st.columns([3, 1])
-    with col_a: busqueda = st.text_input("Buscar por modelo", placeholder="Ej: Samsung S23...")
+    with col_a: busqueda = st.text_input("Buscar por modelo", placeholder="Ej: Pantalla iPhone...")
     with col_b: categoria = st.selectbox("Apartado", ["Todos", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
 
     items = supabase.table("productos").select("*").order("nombre").execute().data
