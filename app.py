@@ -34,28 +34,34 @@ if not st.session_state.autenticado:
                 st.error("Credenciales incorrectas")
     st.stop()
 
-# --- DISEÑO UI PREMIUM RESPONSIVO (CORREGIDO) ---
+# --- DISEÑO UI PREMIUM (ALINEADO A LA IZQUIERDA) ---
 st.markdown("""
     <style>
     .stApp { background-color: #f8f9fa; color: #1e1e2f; }
     
-    /* SIDEBAR AUTO-AJUSTABLE (Eliminado 'fixed' para permitir expansión) */
     [data-testid="stSidebar"] {
         background-color: #1a222b !important;
         color: white !important;
+        min-width: 280px !important;
     }
 
-    /* PERFIL PROFESIONAL (Basado en imagen image_6cc48a.png) */
+    /* ELIMINAR ESPACIOS SOBRANTES A LA IZQUIERDA */
+    [data-testid="stSidebarUserContent"] {
+        padding-left: 0rem !important;
+        padding-right: 0rem !important;
+    }
+
+    /* PERFIL ALINEADO A LA IZQUIERDA */
     .profile-section {
-        text-align: center;
-        padding: 20px 10px;
+        text-align: left;
+        padding: 20px 0px 20px 20px;
         background: #1a222b;
     }
     .profile-pic {
-        width: 90px;
-        height: 90px;
+        width: 85px;
+        height: 85px;
         border-radius: 50%;
-        border: 3px solid #f39c12; /* Borde naranja segun referencia */
+        border: 3px solid #f39c12;
         margin-bottom: 10px;
         object-fit: cover;
     }
@@ -70,17 +76,17 @@ st.markdown("""
         opacity: 0.5;
     }
 
-    /* BOTONES CON ICONOS ALINEADOS A LA IZQUIERDA */
+    /* BOTONES RECTOS Y PEGADOS A LA IZQUIERDA */
     .stSidebar .stButton>button {
         background-color: transparent;
         color: #bdc3c7;
         border: none;
         border-radius: 0;
-        height: 45px;
+        height: 48px;
         text-align: left;
         font-size: 14px;
         width: 100%;
-        padding-left: 20px;
+        padding-left: 20px !important;
         transition: 0.2s;
         border-left: 0px solid #3498db;
     }
@@ -88,7 +94,7 @@ st.markdown("""
     .stSidebar .stButton>button:hover {
         background-color: #2c3e50 !important;
         color: white !important;
-        border-left: 4px solid #3498db !important;
+        border-left: 5px solid #3498db !important;
     }
     
     [data-testid="stSidebarNav"] {display: none;}
@@ -97,7 +103,6 @@ st.markdown("""
 
 # --- PANEL IZQUIERDO (SIDEBAR) ---
 with st.sidebar:
-    # Perfil segun imagen_6cc48a.png
     st.markdown(f"""
         <div class="profile-section">
             <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="profile-pic">
@@ -107,7 +112,6 @@ with st.sidebar:
         <div class="sidebar-divider"></div>
     """, unsafe_allow_html=True)
     
-    # Navegación con iconos formales blancos
     if st.button("📊 Dashboard / Stock", use_container_width=True): st.session_state.menu = "Stock"
     
     if st.session_state.rol == "Super":
@@ -122,13 +126,13 @@ with st.sidebar:
         st.session_state.autenticado = False
         st.rerun()
 
-# --- ÁREA CENTRAL (Mantenida intacta) ---
+# --- ÁREA CENTRAL ---
 opcion = st.session_state.menu
 
 if opcion == "Stock":
     st.markdown("<h2 style='color:#1a222b;'>Inventario General</h2>", unsafe_allow_html=True)
     col_a, col_b = st.columns([3, 1])
-    with col_a: busqueda = st.text_input("", placeholder="🔍 Buscar por modelo...")
+    with col_a: busqueda = st.text_input("", placeholder="🔍 Buscar modelo...")
     with col_b: categoria = st.selectbox("Categoría", ["Todos", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
 
     items = supabase.table("productos").select("*").order("nombre").execute().data
@@ -138,7 +142,7 @@ if opcion == "Stock":
             if (categoria == "Todos" or p['categoria'] == categoria) and (busqueda.lower() in p['nombre'].lower()):
                 with cols[i % 4]:
                     with st.container(border=True):
-                        st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_container_width=True)
+                        st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=True)
                         st.markdown(f"**{p['nombre']}**")
                         cs, cp = st.columns(2)
                         cs.write(f"U: {p['stock']}")
