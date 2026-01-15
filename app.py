@@ -36,7 +36,7 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- CSS MAESTRO (FIX VISUAL + ALINEACIÓN) ---
+# --- CSS MAESTRO (SOLUCIÓN DE VISIBILIDAD TOTAL) ---
 st.markdown("""
     <style>
     /* 1. FONDO BLANCO GLOBAL */
@@ -65,34 +65,70 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    /* 3. ETIQUETAS, TEXTOS Y MODALES (NEGRO OBLIGATORIO) */
-    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p {
+    /* 3. TEXTOS NEGROS OBLIGATORIOS */
+    /* Esto arregla los títulos que no se veían */
+    div[data-testid="stWidgetLabel"] p, 
+    label, 
+    .stMarkdown p, 
+    h1, h2, h3, 
+    .stDialog p, 
+    .stDialog label,
+    div[role="dialog"] p {
         color: #000000 !important;
         -webkit-text-fill-color: #000000 !important;
         font-weight: 700 !important;
     }
 
-    /* 4. INPUTS Y CAJAS DE TEXTO (FIX VISIBILIDAD) */
+    /* 4. CAJAS DE TEXTO (INPUTS) - VISIBILIDAD CRÍTICA */
     input, textarea, .stNumberInput input {
         background-color: #ffffff !important;
         color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
-        border: 1px solid #999 !important;
-        caret-color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important; /* Fuerza negro en Chrome */
+        border: 1px solid #888888 !important;
+        caret-color: #000000 !important; /* El palito para escribir negro */
     }
-    /* Selectbox y desplegables */
+    
+    /* Arreglo para el texto gris de "Seleccionar" (Placeholder) */
+    ::placeholder {
+        color: #666666 !important;
+        -webkit-text-fill-color: #666666 !important;
+        opacity: 1 !important;
+    }
+
+    /* 5. MENÚS DESPLEGABLES (SELECTBOX) */
     div[data-baseweb="select"] > div {
         background-color: #ffffff !important;
         color: #000000 !important;
-        border: 1px solid #999 !important;
+        border: 1px solid #888888 !important;
     }
-    div[data-baseweb="select"] span { color: #000000 !important; -webkit-text-fill-color: #000000 !important; }
+    /* Texto seleccionado */
+    div[data-baseweb="select"] span { 
+        color: #000000 !important; 
+        -webkit-text-fill-color: #000000 !important;
+    }
+    /* Opciones de la lista */
+    ul[data-testid="stSelectboxVirtualDropdown"] {
+        background-color: #ffffff !important;
+    }
     ul[data-testid="stSelectboxVirtualDropdown"] li {
         background-color: #ffffff !important;
         color: #000000 !important;
     }
+    ul[data-testid="stSelectboxVirtualDropdown"] li:hover {
+        background-color: #f0f2f6 !important;
+    }
 
-    /* 5. TARJETAS DE STOCK (ALINEACIÓN PERFECTA) */
+    /* 6. VENTANAS FLOTANTES (MODALES) */
+    div[role="dialog"] {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+    }
+    div[role="dialog"] input {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    /* 7. TARJETAS DE STOCK (ALINEACIÓN) */
     div[data-testid="stVerticalBlockBorderWrapper"] {
         background-color: #ffffff !important;
         border: 1px solid #ddd !important;
@@ -103,8 +139,6 @@ st.markdown("""
         flex-direction: column;
         justify-content: space-between;
     }
-
-    /* Imágenes centradas y contenidas */
     div[data-testid="stImage"] {
         display: flex !important;
         justify-content: center !important; 
@@ -122,14 +156,14 @@ st.markdown("""
         object-fit: contain !important;
     }
 
-    /* 6. BOTONES */
+    /* 8. BOTONES */
     div.stButton button {
         background-color: #2488bc !important;
         color: #ffffff !important;
         border: none !important;
         font-weight: bold !important;
         width: 100% !important;
-        margin-top: auto !important; /* Empuja el botón al fondo */
+        margin-top: auto !important;
     }
     div.stButton button p { color: #ffffff !important; }
 
@@ -142,10 +176,9 @@ st.markdown("""
     }
     div.stButton button:disabled p { color: white !important; }
     
-    /* Ventanas Flotantes (Modales) */
-    div[role="dialog"] {
-        background-color: #ffffff !important;
-    }
+    /* Pestañas */
+    button[data-baseweb="tab"] { color: #000000 !important; }
+    div[data-baseweb="tab-list"] { background-color: #f1f3f4 !important; border-radius: 8px; }
 
     /* Perfil */
     .profile-section { text-align: center !important; padding: 20px 0px; }
@@ -270,7 +303,7 @@ if opcion == "Stock":
             if (categoria == "Todos" or p['categoria'] == categoria) and (busqueda.lower() in p['nombre'].lower()):
                 with cols[i % 4]:
                     with st.container(border=True):
-                        # Imagen centrada
+                        # Imagen
                         img_url = p.get('imagen_url') or "https://via.placeholder.com/150"
                         st.markdown(f"""
                             <div style="display: flex; justify-content: center; align-items: center; height: 160px; width: 100%; margin-bottom: 10px;">
@@ -278,8 +311,7 @@ if opcion == "Stock":
                             </div>
                         """, unsafe_allow_html=True)
                         
-                        # --- BLOQUE DE TEXTO CON ALTURA FIJA PARA ALINEACIÓN ---
-                        # Esto asegura que todas las tarjetas tengan el mismo alto de texto
+                        # Texto alineado
                         marca_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase;'>{p.get('marca', '')}</div>" if p.get('marca') else "<div style='height:16px;'></div>"
                         
                         st.markdown(f"""
@@ -288,12 +320,10 @@ if opcion == "Stock":
                                 <div style="color:black; font-weight:bold; font-size:15px; line-height:1.2; margin-top:2px;">{p['nombre']}</div>
                             </div>
                         """, unsafe_allow_html=True)
-                        # -------------------------------------------------------
 
                         c1, c2 = st.columns(2)
                         with c1: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>U: {p['stock']}</div>", unsafe_allow_html=True)
                         with c2: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>S/ {p['precio_venta']}</div>", unsafe_allow_html=True)
-                        
                         st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
                         
                         if p['stock'] > 0:
@@ -311,6 +341,7 @@ elif opcion == "Carga":
     all_products = supabase.table("productos").select("*").order("nombre").execute().data
     nombres_prod = [p['nombre'] for p in all_products]
     
+    st.write("Seleccione un producto existente para añadir stock o editarlo.")
     seleccion = st.selectbox("Modelo / Repuesto (Busca aquí)", ["Seleccionar"] + nombres_prod)
     
     if seleccion != "Seleccionar":
