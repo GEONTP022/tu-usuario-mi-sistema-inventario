@@ -185,7 +185,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- VENTANAS FLOTANTES (AHORA CON PESTAÑAS PARA DEVOLUCIÓN) ---
+# --- VENTANAS FLOTANTES (CON PESTAÑAS PARA DEVOLUCIÓN) ---
 
 @st.dialog("Gestionar Inventario")
 def modal_gestion(producto):
@@ -194,7 +194,7 @@ def modal_gestion(producto):
     # PESTAÑAS: SALIDA vs DEVOLUCIÓN
     tab_salida, tab_devolucion = st.tabs(["📉 REGISTRAR SALIDA", "↩️ DEVOLUCIÓN / INGRESO"])
     
-    # --- PESTAÑA 1: SALIDA (LO DE SIEMPRE) ---
+    # --- PESTAÑA 1: SALIDA ---
     with tab_salida:
         st.markdown(f"**Stock Actual:** {producto['stock']}")
         try: techs = [t['nombre'] for t in supabase.table("tecnicos").select("nombre").execute().data]
@@ -205,10 +205,14 @@ def modal_gestion(producto):
         with st.form("form_salida_modal"):
             tecnico = st.selectbox("Técnico", ["Seleccionar"] + techs, key="tec_sal")
             local = st.selectbox("Local", ["Seleccionar"] + locs, key="loc_sal")
-            cantidad = st.number_input("Cantidad a RETIRAR", min_value=1, max_value=producto['stock'], step=1, key="cant_sal")
+            # Validación para que no de error si stock es 0
+            max_val = producto['stock'] if producto['stock'] > 0 else 1
+            cantidad = st.number_input("Cantidad a RETIRAR", min_value=1, max_value=max_val, step=1, key="cant_sal")
             
             if st.form_submit_button("CONFIRMAR SALIDA"):
-                if tecnico == "Seleccionar" or local == "Seleccionar":
+                if producto['stock'] <= 0:
+                     st.error("⚠️ No hay stock para retirar.")
+                elif tecnico == "Seleccionar" or local == "Seleccionar":
                     st.error("⚠️ Faltan datos.")
                 else:
                     nuevo_stock = producto['stock'] - cantidad
@@ -220,7 +224,7 @@ def modal_gestion(producto):
                     st.success("Salida Registrada.")
                     st.rerun()
 
-    # --- PESTAÑA 2: DEVOLUCIÓN (NUEVO) ---
+    # --- PESTAÑA 2: DEVOLUCIÓN ---
     with tab_devolucion:
         st.info("Use esto para devoluciones de técnicos o ingresos rápidos.")
         with st.form("form_devolucion_modal"):
@@ -230,12 +234,11 @@ def modal_gestion(producto):
             if st.form_submit_button("CONFIRMAR DEVOLUCIÓN"):
                 nuevo_stock_dev = producto['stock'] + cant_dev
                 supabase.table("productos").update({"stock": nuevo_stock_dev}).eq("id", producto['id']).execute()
-                # Registramos en historial con cantidad positiva
                 supabase.table("historial").insert({
                     "producto_nombre": producto['nombre'], 
                     "cantidad": cant_dev,
                     "usuario": st.session_state.user, 
-                    "tecnico": razon,  # Guardamos el motivo en el campo técnico para verlo fácil
+                    "tecnico": razon,
                     "local": "Almacén"
                 }).execute()
                 st.success("Devolución Registrada (Stock Aumentado).")
@@ -377,24 +380,19 @@ if opcion == "Stock":
                         </div>
                     """, unsafe_allow_html=True)
 
-                    # --- ALERTA STOCK BAJO VISUAL ---
-                    if p['stock'] <= 2:
-                         st.markdown(f"<div style='text-align:center; color:#e74c3c; font-weight:bold; font-size:12px; margin-bottom:5px;'>⚠️ STOCK BAJO ({p['stock']})</div>", unsafe_allow_html=True)
-                    else:
-                        st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
-                    # --------------------------------
-
                     c1, c2 = st.columns(2)
                     with c1: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>U: {p['stock']}</div>", unsafe_allow_html=True)
                     with c2: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>S/ {p['precio_venta']}</div>", unsafe_allow_html=True)
-                    st.markdown("<div style='margin-top:5px;'></div>", unsafe_allow_html=True)
+                    st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
                     
+                    # --- BOTONES RESTAURADOS ---
                     if p['stock'] > 0:
-                        # Botón cambiado a GESTIONAR para incluir devoluciones
-                        if st.button("GESTIONAR", key=f"s_{p['id']}", use_container_width=True): modal_gestion(p)
+                        # Botón azul SALIDA (abre modal con pestañas)
+                        if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True): modal_gestion(p)
                     else:
-                         # Si no hay stock, igual permitimos gestionar para devoluciones/ingresos
-                        if st.button("SIN STOCK (GESTIONAR)", key=f"ns_{p['id']}", use_container_width=True): modal_gestion(p)
+                         # Botón rojo NO STOCK (bloqueado)
+                        st.button("🚫 NO STOCK", key=f"ns_{p['id']}", disabled=True, use_container_width=True)
+                    # ---------------------------
 
 elif opcion == "Carga":
     c_title, c_btn = st.columns([3, 1])
@@ -460,10 +458,8 @@ elif opcion == "Carga":
 elif opcion == "Log":
     st.markdown("<h2>📜 Historial General</h2>", unsafe_allow_html=True)
     
-    # --- FILTRO DE FECHAS (NUEVO) ---
     col_d1, col_d2 = st.columns([1, 3])
     with col_d1:
-        # Por defecto ultimos 30 dias
         today = datetime.now()
         last_month = today - timedelta(days=30)
         date_range = st.date_input("Filtrar por Fecha", (last_month, today))
@@ -472,12 +468,11 @@ elif opcion == "Log":
     
     if logs:
         df = pd.DataFrame(logs)
-        df['fecha_dt'] = pd.to_datetime(df['fecha']) # Para filtrar
+        df['fecha_dt'] = pd.to_datetime(df['fecha'])
         
-        # Aplicar filtro de fecha
         if len(date_range) == 2:
             start_date = pd.to_datetime(date_range[0])
-            end_date = pd.to_datetime(date_range[1]) + timedelta(days=1) # Incluir el dia final
+            end_date = pd.to_datetime(date_range[1]) + timedelta(days=1)
             df = df[(df['fecha_dt'] >= start_date) & (df['fecha_dt'] < end_date)]
             
         df['fecha'] = df['fecha_dt'].dt.strftime('%d/%m/%Y %H:%M')
@@ -489,7 +484,6 @@ elif opcion == "Log":
 elif opcion == "Stats":
     st.markdown("<h2>📊 Control y Estadísticas</h2>", unsafe_allow_html=True)
     
-    # Filtro Fechas Stats
     date_range_stats = st.date_input("Rango de Análisis", (datetime.now() - timedelta(days=30), datetime.now()))
 
     productos_db = supabase.table("productos").select("*").execute().data
@@ -514,13 +508,11 @@ elif opcion == "Stats":
             df_hist = pd.DataFrame(historial_db)
             df_hist['fecha_dt'] = pd.to_datetime(df_hist['fecha'])
             
-            # Aplicar filtro fechas
             if len(date_range_stats) == 2:
                 s_date = pd.to_datetime(date_range_stats[0])
                 e_date = pd.to_datetime(date_range_stats[1]) + timedelta(days=1)
                 df_hist = df_hist[(df_hist['fecha_dt'] >= s_date) & (df_hist['fecha_dt'] < e_date)]
             
-            # Solo salidas reales (negativas)
             df_salidas = df_hist[df_hist['cantidad'] < 0].copy()
             df_salidas['cantidad'] = df_salidas['cantidad'].abs()
             
