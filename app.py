@@ -36,107 +36,82 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- CSS MAESTRO (SOLUCIÓN VISUAL COMPLETA) ---
+# --- CSS CORREGIDO (Menú limpio + Letras Negras) ---
 st.markdown("""
     <style>
-    /* =========================================
-       1. FORZAR MODO CLARO EN EL ÁREA PRINCIPAL
-       ========================================= */
-    :root {
-        --primary-color: #2488bc;
-        --background-color: #ffffff;
-        --secondary-background-color: #f0f2f6;
-        --text-color: #000000;
-        --font: "sans-serif";
-    }
-
-    /* Fondo blanco absoluto para la zona de trabajo */
+    /* 1. FONDO BLANCO EN EL ÁREA PRINCIPAL */
     .stApp, .main, .block-container {
         background-color: #ffffff !important;
     }
 
-    /* TEXTOS NEGROS OBLIGATORIOS (Títulos, etiquetas, párrafos) */
-    .main h1, .main h2, .main h3, .main p, .main span, .main div, .main label {
+    /* 2. FORZAR LETRAS NEGRAS EN EL ÁREA BLANCA (Main) */
+    /* Esto arregla que no se vea "Modelo", "Categoría", etc. */
+    .main label, .main h2, .main p, .main div[data-testid="stMarkdownContainer"] p {
         color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
         font-weight: 600 !important;
     }
 
-    /* Corrección específica para que 'Modelo', 'Categoría' se vean */
-    div[data-testid="stMarkdownContainer"] p {
+    /* 3. INPUTS (Cajas de texto): Fondo blanco y texto negro */
+    .stTextInput input, .stNumberInput input, .stSelectbox div[data-baseweb="select"] {
         color: #000000 !important;
+        background-color: #ffffff !important;
+        border: 1px solid #cccccc !important;
     }
     
-    label[data-testid="stWidgetLabel"] p {
-        color: #000000 !important;
-        font-size: 14px !important;
-    }
-
-    /* INPUTS (Cajas de texto): Fondo blanco, Borde negro, Texto negro */
-    input, textarea, .stNumberInput input, .stSelectbox div[data-baseweb="select"] {
+    /* Arreglo para lista desplegable (Selectbox options) */
+    ul[data-testid="stSelectboxVirtualDropdown"] li {
         background-color: #ffffff !important;
         color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
-        border-color: #000000 !important;
     }
 
-    /* =========================================
-       2. BARRA LATERAL (SIDEBAR) ESTILO PREMIUM
-       ========================================= */
+    /* 4. BARRA LATERAL (SIDEBAR): Fondo Oscuro */
     [data-testid="stSidebar"] {
         background-color: #1a222b !important;
     }
+    /* Texto general del sidebar en blanco */
+    [data-testid="stSidebar"] p, [data-testid="stSidebar"] span {
+        color: #ffffff !important;
+    }
+
+    /* 5. CORRECCIÓN DE BOTONES DEL MENÚ (Volver a estilo transparente) */
+    /* Quitamos el borde y el fondo gris que se veía feo */
+    [data-testid="stSidebar"] .stButton button {
+        background-color: transparent !important;
+        border: none !important;
+        color: #bdc3c7 !important;
+        text-align: left !important;
+        padding-left: 15px !important;
+        box-shadow: none !important;
+    }
     
+    /* Efecto Hover (Al pasar el mouse) */
+    [data-testid="stSidebar"] .stButton button:hover {
+        color: #ffffff !important;
+        background-color: rgba(255,255,255,0.05) !important;
+        border-left: 4px solid #3498db !important;
+    }
+
     /* Perfil Centrado */
     .profile-section {
         text-align: center !important;
         padding: 20px 10px;
-        margin-bottom: 10px;
+        margin-bottom: 20px;
     }
     .profile-pic {
-        width: 90px; height: 90px; 
+        width: 100px; height: 100px; 
         border-radius: 50%; 
-        border: 3px solid #f39c12; 
+        border: 4px solid #f39c12; 
         object-fit: cover;
         display: block; margin: 0 auto 10px auto;
     }
-    .profile-name { color: #ffffff !important; font-size: 18px; font-weight: bold; margin: 0; }
-    .profile-status { color: #f39c12 !important; font-size: 12px; margin: 0; }
 
-    /* BOTONES DEL MENÚ: Transparentes y limpios (COMO ANTES) */
-    .stSidebar .stButton>button {
-        background-color: transparent !important; /* Sin fondo de caja */
-        color: #bdc3c7 !important;                /* Texto gris claro */
-        border: none !important;                  /* Sin bordes */
-        text-align: left !important;
-        padding-left: 15px !important;
-        font-size: 15px !important;
-        transition: all 0.3s ease;
-        box-shadow: none !important;
-    }
-
-    /* Efecto al pasar el mouse: Se vuelven blancos y brillantes */
-    .stSidebar .stButton>button:hover {
-        color: #ffffff !important;
-        background-color: rgba(255,255,255,0.05) !important; /* Sutil fondo */
-        padding-left: 20px !important; /* Pequeño desplazamiento a la derecha */
-        border-left: 4px solid #3498db !important; /* Línea azul elegante */
-    }
-    
-    /* Texto dentro de los botones del sidebar siempre visible */
-    .stSidebar p {
-        color: inherit !important;
-    }
-
-    /* =========================================
-       3. BOTÓN DE ACCIÓN (AZUL SÓLIDO)
-       ========================================= */
+    /* Botón Acción Principal (Azul) */
     div.stForm button {
         background-color: #2488bc !important;
-        color: white !important;
+        color: #ffffff !important;
         border: none !important;
+        height: 45px !important;
         font-weight: bold !important;
-        width: 100%;
     }
 
     [data-testid="stSidebarNav"] {display: none;}
@@ -148,13 +123,13 @@ with st.sidebar:
     st.markdown(f"""
         <div class="profile-section">
             <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="profile-pic">
-            <p class="profile-name">{st.session_state.user.upper()}</p>
-            <p class="profile-status">{st.session_state.rol.upper()} USER</p>
+            <p style="font-size:18px; font-weight:bold; margin:0; color:white;">{st.session_state.user.upper()}</p>
+            <p style="font-size:12px; color:#f39c12; margin:0;">{st.session_state.rol.upper()} USER</p>
         </div>
-        <div style="height: 1px; background: #3498db; opacity: 0.3; margin-bottom: 20px;"></div>
+        <div style="height:1px; background-color:#3498db; opacity:0.3; margin-bottom:15px;"></div>
     """, unsafe_allow_html=True)
     
-    # Botones limpios (sin cajas)
+    # Botones limpios como antes
     if st.button("📊 Dashboard / Stock", use_container_width=True): st.session_state.menu = "Stock"
     
     if st.session_state.rol == "Super":
@@ -173,7 +148,7 @@ with st.sidebar:
 opcion = st.session_state.menu
 
 if opcion == "Stock":
-    st.markdown("<h2>Inventario General</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color:black;'>Inventario General</h2>", unsafe_allow_html=True)
     col_a, col_b = st.columns([3, 1])
     with col_a: busqueda = st.text_input("Buscar por modelo", placeholder="Ej: Pantalla iPhone...")
     with col_b: categoria = st.selectbox("Apartado", ["Todos", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
@@ -197,11 +172,10 @@ if opcion == "Stock":
                                 st.rerun()
 
 elif opcion == "Carga":
-    st.markdown("<h2>📥 Añadir Producto</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color:black;'>📥 Añadir Producto</h2>", unsafe_allow_html=True)
     with st.form("form_carga", clear_on_submit=True):
         st.markdown("<p style='color:black;'>Complete los campos obligatorios (*)</p>", unsafe_allow_html=True)
         
-        # Estos campos ahora tendrán etiquetas NEGRAS forzadas
         n = st.text_input("Modelo / Repuesto *")
         c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
         s = st.number_input("Cantidad a añadir", min_value=1, step=1)
@@ -223,7 +197,7 @@ elif opcion == "Carga":
                 supabase.table("historial").insert({"producto_nombre": n, "cantidad": s, "usuario": st.session_state.user}).execute()
 
 elif opcion == "Log":
-    st.markdown("<h2>📜 Historial</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color:black;'>📜 Historial</h2>", unsafe_allow_html=True)
     logs = supabase.table("historial").select("*").order("fecha", desc=True).execute().data
     if logs:
         df = pd.DataFrame(logs)
@@ -231,7 +205,7 @@ elif opcion == "Log":
         st.dataframe(df[['fecha', 'producto_nombre', 'cantidad', 'usuario']], use_container_width=True, hide_index=True)
 
 elif opcion == "Stats":
-    st.markdown("<h2>📊 Estadísticas</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color:black;'>📊 Estadísticas</h2>", unsafe_allow_html=True)
     p_data = supabase.table("productos").select("*").execute().data
     if p_data:
         df_p = pd.DataFrame(p_data)
@@ -239,7 +213,7 @@ elif opcion == "Stats":
         st.plotly_chart(fig, use_container_width=True)
 
 elif opcion == "Users":
-    st.markdown("<h2>👥 Usuarios</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color:black;'>👥 Usuarios</h2>", unsafe_allow_html=True)
     with st.form("nu"):
         un = st.text_input("Usuario")
         pw = st.text_input("Clave")
