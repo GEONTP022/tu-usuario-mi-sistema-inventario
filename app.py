@@ -36,66 +36,68 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- CSS CORREGIDO (Menú limpio + Letras Negras) ---
+# --- CSS: ARREGLO FINAL DE COLORES ---
 st.markdown("""
     <style>
-    /* 1. FONDO BLANCO EN EL ÁREA PRINCIPAL */
+    /* =========================================
+       1. ZONA PRINCIPAL (FONDO BLANCO)
+       ========================================= */
     .stApp, .main, .block-container {
         background-color: #ffffff !important;
     }
 
-    /* 2. FORZAR LETRAS NEGRAS EN EL ÁREA BLANCA (Main) */
-    /* Esto arregla que no se vea "Modelo", "Categoría", etc. */
-    .main label, .main h2, .main p, .main div[data-testid="stMarkdownContainer"] p {
+    /* !!! CORRECCIÓN CRÍTICA DE ETIQUETAS !!! */
+    /* Esto pone en NEGRO las palabras "Modelo", "Categoría", "Precio", etc. */
+    div[data-testid="stWidgetLabel"] p, 
+    div[data-testid="stWidgetLabel"] label,
+    label p,
+    .stMarkdown p, 
+    .stMarkdown h2 {
         color: #000000 !important;
-        font-weight: 600 !important;
+        font-weight: 700 !important;
+        opacity: 1 !important;
+        -webkit-text-fill-color: #000000 !important;
     }
 
-    /* 3. INPUTS (Cajas de texto): Fondo blanco y texto negro */
-    .stTextInput input, .stNumberInput input, .stSelectbox div[data-baseweb="select"] {
+    /* Textos generales del inventario (U: 5, S/ 45.0, Nombre del repuesto) */
+    div[data-testid="column"] p, div[data-testid="column"] span {
         color: #000000 !important;
+    }
+
+    /* 2. INPUTS (Cajas de Escribir) */
+    input, textarea, .stNumberInput input {
         background-color: #ffffff !important;
-        border: 1px solid #cccccc !important;
+        color: #000000 !important;
+        border: 1px solid #000000 !important;
     }
     
-    /* Arreglo para lista desplegable (Selectbox options) */
-    ul[data-testid="stSelectboxVirtualDropdown"] li {
+    /* Menú desplegable (Categoría) */
+    div[data-baseweb="select"] > div {
         background-color: #ffffff !important;
+        color: #000000 !important;
+        border: 1px solid #000000 !important;
+    }
+    /* Opciones de la lista desplegable */
+    div[role="listbox"] ul li, div[role="listbox"] ul li div {
+        color: #000000 !important;
+        background-color: #ffffff !important;
+    }
+    /* Texto seleccionado en el desplegable */
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] span {
         color: #000000 !important;
     }
 
-    /* 4. BARRA LATERAL (SIDEBAR): Fondo Oscuro */
+    /* =========================================
+       3. BARRA LATERAL (OSCURA Y LIMPIA)
+       ========================================= */
     [data-testid="stSidebar"] {
         background-color: #1a222b !important;
     }
-    /* Texto general del sidebar en blanco */
-    [data-testid="stSidebar"] p, [data-testid="stSidebar"] span {
-        color: #ffffff !important;
-    }
-
-    /* 5. CORRECCIÓN DE BOTONES DEL MENÚ (Volver a estilo transparente) */
-    /* Quitamos el borde y el fondo gris que se veía feo */
-    [data-testid="stSidebar"] .stButton button {
-        background-color: transparent !important;
-        border: none !important;
-        color: #bdc3c7 !important;
-        text-align: left !important;
-        padding-left: 15px !important;
-        box-shadow: none !important;
-    }
     
-    /* Efecto Hover (Al pasar el mouse) */
-    [data-testid="stSidebar"] .stButton button:hover {
-        color: #ffffff !important;
-        background-color: rgba(255,255,255,0.05) !important;
-        border-left: 4px solid #3498db !important;
-    }
-
-    /* Perfil Centrado */
+    /* PERFIL CENTRADO */
     .profile-section {
         text-align: center !important;
         padding: 20px 10px;
-        margin-bottom: 20px;
     }
     .profile-pic {
         width: 100px; height: 100px; 
@@ -104,13 +106,32 @@ st.markdown("""
         object-fit: cover;
         display: block; margin: 0 auto 10px auto;
     }
+    
+    /* BOTONES DEL MENÚ (Transparentes, sin cuadros feos) */
+    .stSidebar .stButton>button {
+        background-color: transparent !important;
+        border: none !important;
+        color: #bdc3c7 !important;
+        text-align: left !important;
+        padding-left: 15px !important;
+        box-shadow: none !important;
+    }
+    .stSidebar .stButton>button:hover {
+        background-color: rgba(255,255,255,0.05) !important;
+        color: #ffffff !important;
+        border-left: 4px solid #3498db !important;
+    }
+    
+    /* Texto dentro del sidebar siempre blanco */
+    [data-testid="stSidebar"] p, [data-testid="stSidebar"] span {
+        color: #ffffff !important;
+    }
 
-    /* Botón Acción Principal (Azul) */
+    /* BOTÓN AZUL (Consolidar / Guardar) */
     div.stForm button {
         background-color: #2488bc !important;
         color: #ffffff !important;
         border: none !important;
-        height: 45px !important;
         font-weight: bold !important;
     }
 
@@ -126,12 +147,10 @@ with st.sidebar:
             <p style="font-size:18px; font-weight:bold; margin:0; color:white;">{st.session_state.user.upper()}</p>
             <p style="font-size:12px; color:#f39c12; margin:0;">{st.session_state.rol.upper()} USER</p>
         </div>
-        <div style="height:1px; background-color:#3498db; opacity:0.3; margin-bottom:15px;"></div>
+        <div style="height:1px; background-color:#3498db; opacity:0.3; margin-bottom:20px;"></div>
     """, unsafe_allow_html=True)
     
-    # Botones limpios como antes
     if st.button("📊 Dashboard / Stock", use_container_width=True): st.session_state.menu = "Stock"
-    
     if st.session_state.rol == "Super":
         if st.button("📥 Añadir Producto", use_container_width=True): st.session_state.menu = "Carga"
         if st.button("📋 Historial", use_container_width=True): st.session_state.menu = "Log"
@@ -148,7 +167,7 @@ with st.sidebar:
 opcion = st.session_state.menu
 
 if opcion == "Stock":
-    st.markdown("<h2 style='color:black;'>Inventario General</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>Inventario General</h2>", unsafe_allow_html=True)
     col_a, col_b = st.columns([3, 1])
     with col_a: busqueda = st.text_input("Buscar por modelo", placeholder="Ej: Pantalla iPhone...")
     with col_b: categoria = st.selectbox("Apartado", ["Todos", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
@@ -161,7 +180,7 @@ if opcion == "Stock":
                 with cols[i % 4]:
                     with st.container(border=True):
                         st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=True)
-                        st.markdown(f"<p style='margin:0; color:black;'><b>{p['nombre']}</b></p>", unsafe_allow_html=True)
+                        st.markdown(f"<p style='margin:0; font-weight:bold;'>{p['nombre']}</p>", unsafe_allow_html=True)
                         cs, cp = st.columns(2)
                         cs.write(f"U: {p['stock']}")
                         cp.write(f"S/ {p['precio_venta']}")
@@ -172,9 +191,9 @@ if opcion == "Stock":
                                 st.rerun()
 
 elif opcion == "Carga":
-    st.markdown("<h2 style='color:black;'>📥 Añadir Producto</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>📥 Añadir Producto</h2>", unsafe_allow_html=True)
     with st.form("form_carga", clear_on_submit=True):
-        st.markdown("<p style='color:black;'>Complete los campos obligatorios (*)</p>", unsafe_allow_html=True)
+        st.markdown("<p>Complete los campos obligatorios (*)</p>", unsafe_allow_html=True)
         
         n = st.text_input("Modelo / Repuesto *")
         c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
@@ -197,7 +216,7 @@ elif opcion == "Carga":
                 supabase.table("historial").insert({"producto_nombre": n, "cantidad": s, "usuario": st.session_state.user}).execute()
 
 elif opcion == "Log":
-    st.markdown("<h2 style='color:black;'>📜 Historial</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>📜 Historial</h2>", unsafe_allow_html=True)
     logs = supabase.table("historial").select("*").order("fecha", desc=True).execute().data
     if logs:
         df = pd.DataFrame(logs)
@@ -205,7 +224,7 @@ elif opcion == "Log":
         st.dataframe(df[['fecha', 'producto_nombre', 'cantidad', 'usuario']], use_container_width=True, hide_index=True)
 
 elif opcion == "Stats":
-    st.markdown("<h2 style='color:black;'>📊 Estadísticas</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>📊 Estadísticas</h2>", unsafe_allow_html=True)
     p_data = supabase.table("productos").select("*").execute().data
     if p_data:
         df_p = pd.DataFrame(p_data)
@@ -213,7 +232,7 @@ elif opcion == "Stats":
         st.plotly_chart(fig, use_container_width=True)
 
 elif opcion == "Users":
-    st.markdown("<h2 style='color:black;'>👥 Usuarios</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>👥 Usuarios</h2>", unsafe_allow_html=True)
     with st.form("nu"):
         un = st.text_input("Usuario")
         pw = st.text_input("Clave")
