@@ -8,7 +8,7 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
-st.set_page_config(page_title="VillaFix | Sistema", page_icon="🛠️", layout="wide")
+st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide")
 
 # --- LÓGICA DE SESIÓN ---
 if 'autenticado' not in st.session_state:
@@ -34,110 +34,130 @@ if not st.session_state.autenticado:
                 st.error("Credenciales incorrectas")
     st.stop()
 
-# --- DISEÑO UI (BARRA AZUL, ICONOS BLANCOS, ALINEACIÓN IZQUIERDA) ---
+# --- DISEÑO UI PREMIUM (SIDEBAR OSCURO CON PERFIL) ---
 st.markdown("""
     <style>
     .stApp { background-color: #f8f9fa; color: #1e1e2f; }
     
+    /* SIDEBAR OSCURO */
     [data-testid="stSidebar"] {
-        background-color: #2488bc !important;
+        background-color: #1a222b !important;
         color: white !important;
-        padding: 0px !important;
+        min-width: 280px !important;
     }
 
-    /* Contenedor del Logo y Título */
-    .sidebar-brand-container {
-        padding: 20px 0px 5px 15px;
-        text-align: left;
+    /* CONTENEDOR DE PERFIL */
+    .profile-section {
+        text-align: center;
+        padding: 30px 10px;
+        background: linear-gradient(180deg, #1a222b 0%, #242f3d 100%);
+    }
+    .profile-pic {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        border: 3px solid #f39c12;
+        margin-bottom: 10px;
+        object-fit: cover;
+    }
+    .profile-name {
+        font-size: 18px;
+        font-weight: bold;
+        color: white;
+        margin-bottom: 0;
+    }
+    .profile-status {
+        font-size: 12px;
+        color: #bdc3c7;
     }
 
-    .sidebar-title {
-        color: white; font-size: 20px; font-weight: bold;
-        margin-top: 10px;
+    /* SEPARADOR AZUL */
+    .sidebar-divider {
+        height: 2px;
+        background-color: #2488bc;
+        margin: 10px 0;
+        width: 100%;
     }
 
-    .sidebar-user {
-        font-size: 13px; color: rgba(255,255,255,0.8);
-        padding-left: 15px; margin-bottom: 20px;
-    }
-
+    /* BOTONES DE MENÚ */
     .stSidebar .stButton>button {
-        background-color: transparent; color: white; border: none;
-        border-radius: 25px 0px 0px 25px; height: 45px;
-        margin-left: 10px; width: calc(100% - 10px);
-        text-align: left; font-size: 15px; transition: 0.3s;
-        padding-left: 15px;
+        background-color: transparent;
+        color: #ecf0f1;
+        border: none;
+        border-radius: 0;
+        height: 50px;
+        text-align: left;
+        font-size: 15px;
+        width: 100%;
+        padding-left: 20px;
+        transition: 0.2s;
+        border-left: 0px solid #2488bc;
     }
     
-    .stSidebar .stButton>button:hover, .stSidebar .stButton>button:focus {
-        background-color: #ffffff !important;
-        color: #2488bc !important;
-        font-weight: bold;
+    .stSidebar .stButton>button:hover {
+        background-color: #242f3d !important;
+        color: white !important;
+        border-left: 5px solid #2488bc !important;
     }
 
-    .sidebar-header {
-        font-size: 11px; color: rgba(255,255,255,0.6);
-        font-weight: bold; margin: 25px 0px 5px 15px;
-        text-transform: uppercase;
-    }
+    /* OCULTAR ELEMENTOS POR DEFECTO DE STREAMLIT EN SIDEBAR */
+    [data-testid="stSidebarNav"] {display: none;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- PANEL IZQUIERDO ---
+# --- PANEL IZQUIERDO (SIDEBAR) ---
 with st.sidebar:
-    # --- AQUÍ PUEDES PONER TU LOGO ---
-    # Opción 1: Link de internet. Opción 2: Sube el archivo a GitHub y usa "tu_logo.png"
-    url_tu_logo = "https://cdn-icons-png.flaticon.com/512/2991/2991148.png" # <--- CAMBIA ESTE LINK
+    # SECCIÓN DE PERFIL (Basado en tu referencia)
+    st.markdown(f"""
+        <div class="profile-section">
+            <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="profile-pic">
+            <p class="profile-name">{st.session_state.user.capitalize()}</p>
+            <p class="profile-status">Administrador</p>
+        </div>
+        <div class="sidebar-divider"></div>
+    """, unsafe_allow_html=True)
     
-    st.markdown('<div class="sidebar-brand-container">', unsafe_allow_html=True)
-    st.image(url_tu_logo, width=60) # Ajusta el ancho según tu logo
-    st.markdown('<div class="sidebar-title">VillaFix Admin</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.markdown(f'<div class="sidebar-user">👤 {st.session_state.user}</div>', unsafe_allow_html=True)
-    
-    # ... Resto del menú lateral igual ...
-    st.markdown('<p class="sidebar-header">Gestión</p>', unsafe_allow_html=True)
-    if st.button("⬜ Inicio / Stock", use_container_width=True): st.session_state.menu = "Stock"
+    # NAVEGACIÓN
+    if st.button("⬜ Dashboard / Stock", use_container_width=True): st.session_state.menu = "Stock"
     
     if st.session_state.rol == "Super":
-        if st.button("➕ Nuevo Producto", use_container_width=True): st.session_state.menu = "Carga"
-        st.markdown('<p class="sidebar-header">Reportes</p>', unsafe_allow_html=True)
-        if st.button("📋 Historial", use_container_width=True): st.session_state.menu = "Log"
-        if st.button("📊 Estadísticas", use_container_width=True): st.session_state.menu = "Stats"
-        st.markdown('<p class="sidebar-header">Admin</p>', unsafe_allow_html=True)
-        if st.button("👥 Usuarios", use_container_width=True): st.session_state.menu = "Users"
-        if st.button("📞 Proveedores", use_container_width=True): st.session_state.menu = "Prov"
+        if st.button("⬜ Nuevo Producto", use_container_width=True): st.session_state.menu = "Carga"
+        if st.button("⬜ Historial", use_container_width=True): st.session_state.menu = "Log"
+        if st.button("⬜ Estadísticas", use_container_width=True): st.session_state.menu = "Stats"
+        if st.button("⬜ Usuarios", use_container_width=True): st.session_state.menu = "Users"
+        if st.button("⬜ Proveedores", use_container_width=True): st.session_state.menu = "Prov"
 
     st.markdown("<br><br>", unsafe_allow_html=True)
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state.autenticado = False
         st.rerun()
 
-# --- LÓGICA DE SECCIONES (STOCK, CARGA, LOG, STATS, USERS, PROV) ---
-# (Mantener igual que el código anterior sin cambios)
+# --- ÁREA CENTRAL (TODAS LAS FUNCIONES MANTENIDAS) ---
 opcion = st.session_state.menu
 
 if opcion == "Stock":
-    st.markdown("<h2 style='color:#2488bc;'>Inventario General</h2>", unsafe_allow_html=True)
-    # ... código de inventario ...
+    st.markdown("<h2 style='color:#1a222b;'>Inventario General</h2>", unsafe_allow_html=True)
+    col_a, col_b = st.columns([3, 1])
+    with col_a: busqueda = st.text_input("", placeholder="🔍 Buscar repuesto...")
+    with col_b: categoria = st.selectbox("Categoría", ["Todos", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
+
     items = supabase.table("productos").select("*").order("nombre").execute().data
     if items:
         cols = st.columns(4)
         for i, p in enumerate(items):
-            # (Busqueda y filtro de categoria...)
-            with cols[i % 4]:
-                with st.container(border=True):
-                    st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_container_width=True)
-                    st.markdown(f"**{p['nombre']}**")
-                    cs, cp = st.columns(2)
-                    cs.write(f"U: {p['stock']}")
-                    cp.write(f"S/ {p['precio_venta']}")
-                    if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True):
-                        if p['stock'] > 0:
-                            supabase.table("productos").update({"stock": p['stock']-1}).eq("id", p['id']).execute()
-                            supabase.table("historial").insert({"producto_nombre":p['nombre'], "cantidad":-1, "usuario":st.session_state.user}).execute()
-                            st.rerun()
+            if (categoria == "Todos" or p['categoria'] == categoria) and (busqueda.lower() in p['nombre'].lower()):
+                with cols[i % 4]:
+                    with st.container(border=True):
+                        st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_container_width=True)
+                        st.markdown(f"**{p['nombre']}**")
+                        cs, cp = st.columns(2)
+                        cs.write(f"U: {p['stock']}")
+                        cp.write(f"S/ {p['precio_venta']}")
+                        if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True):
+                            if p['stock'] > 0:
+                                supabase.table("productos").update({"stock": p['stock']-1}).eq("id", p['id']).execute()
+                                supabase.table("historial").insert({"producto_nombre":p['nombre'], "cantidad":-1, "usuario":st.session_state.user}).execute()
+                                st.rerun()
 
 elif opcion == "Carga":
     st.header("➕ Nuevo Producto")
@@ -150,7 +170,7 @@ elif opcion == "Carga":
         if st.form_submit_button("GUARDAR EN VILLAFIX"):
             if n and c:
                 supabase.table("productos").insert({"nombre":n, "categoria":c, "stock":s, "precio_venta":p, "imagen_url":img}).execute()
-                st.success("Guardado.")
+                st.success("Guardado correctamente.")
 
 elif opcion == "Log":
     st.header("📜 Historial")
@@ -165,7 +185,7 @@ elif opcion == "Stats":
     p_data = supabase.table("productos").select("*").execute().data
     if p_data:
         df_p = pd.DataFrame(p_data)
-        fig = px.pie(df_p, names='categoria', values='stock', hole=0.4, title="Stock por Categoría")
+        fig = px.pie(df_p, names='categoria', values='stock', hole=0.4, title="Distribución de Stock")
         st.plotly_chart(fig, use_container_width=True)
 
 elif opcion == "Users":
