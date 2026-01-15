@@ -36,24 +36,24 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- CSS MAESTRO: SOLUCIÓN DE ETIQUETAS INVISIBLES ---
+# --- CSS MAESTRO (SOLUCIÓN DEFINITIVA DE COLORES Y ESTILOS) ---
 st.markdown("""
     <style>
-    /* 1. FONDO BLANCO GLOBAL */
+    /* 1. FONDO BLANCO GLOBAL EN ZONA CENTRAL */
     .stApp, .main, .block-container {
         background-color: #ffffff !important;
     }
 
-    /* 2. SOLUCIÓN CRÍTICA PARA LAS LETRAS INVISIBLES */
-    /* Apuntamos a las etiquetas exactas de Streamlit (Modelo, Categoría, etc.) */
+    /* 2. ETIQUETAS Y TEXTOS EN NEGRO (SOLUCIÓN MODELO/CATEGORÍA) */
+    /* Apuntamos a todas las clases posibles de etiquetas para forzar el negro */
+    .stTextInput label, .stNumberInput label, .stSelectbox label,
     div[data-testid="stWidgetLabel"] p, 
-    div[data-testid="stWidgetLabel"] label,
-    label,
-    .stMarkdown p, 
-    .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
-        color: #000000 !important; /* Negro Obligatorio */
-        -webkit-text-fill-color: #000000 !important; /* Fuerza para navegadores webkit */
-        font-weight: 600 !important;
+    div[data-testid="stWidgetLabel"],
+    label p, label, 
+    .stMarkdown p, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown span {
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+        font-weight: 700 !important;
         opacity: 1 !important;
     }
 
@@ -61,42 +61,33 @@ st.markdown("""
     input, textarea, .stNumberInput input {
         background-color: #f8f9fa !important;
         color: #000000 !important;
-        border: 1px solid #888 !important; /* Borde gris visible */
+        border: 1px solid #888 !important;
     }
     
-    /* Arreglo específico para listas desplegables (Selectbox) */
+    /* Arreglo Selectbox (Menús desplegables) */
     div[data-baseweb="select"] > div {
         background-color: #f8f9fa !important;
         color: #000000 !important;
         border: 1px solid #888 !important;
     }
-    div[data-baseweb="select"] span {
-        color: #000000 !important;
-    }
+    div[data-baseweb="select"] span { color: #000000 !important; }
     ul[data-testid="stSelectboxVirtualDropdown"] li {
         background-color: #ffffff !important;
         color: #000000 !important;
     }
 
-    /* 4. BARRA LATERAL (NO TOCAR - MANTENER OSCURA) */
-    [data-testid="stSidebar"] {
-        background-color: #1a222b !important;
-    }
-    /* El texto del sidebar debe ser BLANCO */
-    [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] span, 
-    [data-testid="stSidebar"] div {
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
+    /* 4. BARRA LATERAL (OSCURA) */
+    [data-testid="stSidebar"] { background-color: #1a222b !important; }
+    
+    /* Texto del Sidebar BLANCO */
+    [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] div, [data-testid="stSidebar"] label {
+        color: #ffffff !important; -webkit-text-fill-color: #ffffff !important;
     }
     
-    /* Botones del menú lateral */
+    /* Botones Sidebar (Transparentes) */
     [data-testid="stSidebar"] button {
-        background-color: transparent !important;
-        border: none !important;
-        color: #bdc3c7 !important;
-        text-align: left !important;
-        padding-left: 15px !important;
+        background-color: transparent !important; border: none !important;
+        color: #bdc3c7 !important; text-align: left !important; padding-left: 15px !important;
     }
     [data-testid="stSidebar"] button:hover {
         background-color: rgba(255,255,255,0.1) !important;
@@ -108,33 +99,28 @@ st.markdown("""
     .profile-section { text-align: center !important; padding: 20px 0px; }
     .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
 
-    /* 5. TARJETAS DE STOCK (Compactas y limpias) */
+    /* 5. TARJETAS STOCK (Limpias y ordenadas) */
     div[data-testid="stVerticalBlockBorderWrapper"] {
         background-color: #ffffff !important;
         border: 1px solid #ddd !important;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05) !important;
         padding: 10px !important;
     }
-    div[data-testid="stImage"] img {
-        max-height: 120px !important;
-        object-fit: contain !important;
-    }
+    div[data-testid="stImage"] img { max-height: 120px !important; object-fit: contain !important; }
     
-    /* Forzar textos dentro de las tarjetas a negro (por si acaso) */
-    div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] p,
-    div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] div {
-        color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
+    /* Textos dentro de tarjetas forzados a negro */
+    div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] * {
+        color: #000000 !important; -webkit-text-fill-color: #000000 !important;
     }
 
-    /* BOTONES DE ACCIÓN (Azul) */
+    /* BOTONES ACCIÓN (Azules) */
     div.stForm button, div[data-testid="column"] button {
         background-color: #2488bc !important;
         color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important; /* Asegurar texto blanco en botón azul */
+        -webkit-text-fill-color: #ffffff !important;
         border: none !important;
     }
-
+    
     [data-testid="stSidebarNav"] {display: none;}
     </style>
     """, unsafe_allow_html=True)
@@ -158,6 +144,8 @@ with st.sidebar:
         if st.button("📈 Estadísticas", use_container_width=True): st.session_state.menu = "Stats"
         if st.button("👥 Usuarios", use_container_width=True): st.session_state.menu = "Users"
         if st.button("📞 Proveedores", use_container_width=True): st.session_state.menu = "Prov"
+        # --- NUEVA OPCIÓN DE BORRADO ---
+        if st.button("⚙️ Reset / Eliminar", use_container_width=True): st.session_state.menu = "Reset"
 
     st.markdown("<br><br>", unsafe_allow_html=True)
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
@@ -181,10 +169,10 @@ if opcion == "Stock":
                 with cols[i % 4]:
                     with st.container(border=True):
                         st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=True)
-                        st.markdown(f"<div style='text-align:center; color:black; font-weight:bold; margin-bottom:5px; height:40px; overflow:hidden;'>{p['nombre']}</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='text-align:center; font-weight:bold; margin-bottom:5px; height:40px; overflow:hidden;'>{p['nombre']}</div>", unsafe_allow_html=True)
                         c1, c2 = st.columns(2)
-                        with c1: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>U: {p['stock']}</div>", unsafe_allow_html=True)
-                        with c2: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>S/ {p['precio_venta']}</div>", unsafe_allow_html=True)
+                        with c1: st.markdown(f"<div style='text-align:center; font-size:13px;'>U: {p['stock']}</div>", unsafe_allow_html=True)
+                        with c2: st.markdown(f"<div style='text-align:center; font-size:13px;'>S/ {p['precio_venta']}</div>", unsafe_allow_html=True)
                         st.markdown("<div style='margin-top:5px;'></div>", unsafe_allow_html=True)
                         if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True):
                             if p['stock'] > 0:
@@ -242,3 +230,47 @@ elif opcion == "Users":
         if st.form_submit_button("CREAR"):
             supabase.table("usuarios").insert({"usuario":un, "contrasena":pw, "rol":rl}).execute()
             st.success("Usuario creado.")
+
+elif opcion == "Prov":
+    st.markdown("<h2>📞 Proveedores</h2>", unsafe_allow_html=True)
+    provs = supabase.table("proveedores").select("*").execute().data
+    if provs:
+        for pr in provs:
+            with st.container(border=True):
+                st.markdown(f"**{pr['nombre_contacto']}**")
+                st.link_button("WhatsApp", f"https://wa.me/{pr['whatsapp']}")
+
+# --- NUEVA SECCIÓN DE RESET (SOLO SUPER USUARIOS) ---
+elif opcion == "Reset":
+    st.markdown("<h2>⚙️ Zona de Peligro</h2>", unsafe_allow_html=True)
+    st.warning("⚠️ CUIDADO: Estas acciones borrarán los datos permanentemente.")
+    
+    st.markdown("---")
+    
+    col_d1, col_d2 = st.columns(2)
+    
+    with col_d1:
+        st.markdown("<h3>🗑️ Borrar Inventario</h3>", unsafe_allow_html=True)
+        st.info("Elimina todos los productos registrados.")
+        if st.button("ELIMINAR TODO EL STOCK", use_container_width=True):
+            # Lógica para borrar todos los productos (segura para Supabase)
+            try:
+                # Obtenemos todos los IDs para borrarlos
+                data = supabase.table("productos").select("id").execute().data
+                for item in data:
+                    supabase.table("productos").delete().eq("id", item['id']).execute()
+                st.success("✅ Inventario vaciado correctamente.")
+            except Exception as e:
+                st.error(f"Error al borrar: {e}")
+
+    with col_d2:
+        st.markdown("<h3>🗑️ Borrar Historial</h3>", unsafe_allow_html=True)
+        st.info("Elimina el registro de movimientos.")
+        if st.button("ELIMINAR TODO EL HISTORIAL", use_container_width=True):
+            try:
+                data = supabase.table("historial").select("id").execute().data
+                for item in data:
+                    supabase.table("historial").delete().eq("id", item['id']).execute()
+                st.success("✅ Historial eliminado correctamente.")
+            except Exception as e:
+                st.error(f"Error al borrar: {e}")
