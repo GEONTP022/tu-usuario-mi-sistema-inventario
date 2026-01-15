@@ -291,7 +291,7 @@ opcion = st.session_state.menu
 if opcion == "Stock":
     st.markdown("<h2>Inventario General</h2>", unsafe_allow_html=True)
     col_a, col_b = st.columns([3, 1])
-    with col_a: busqueda = st.text_input("Buscar por modelo", placeholder="Ej: Pantalla iPhone...")
+    with col_a: busqueda = st.text_input("Buscar por modelo, marca o código...", placeholder="Ej: Pantalla iPhone, Oppo, COD-123...")
     with col_b: categoria = st.selectbox("Apartado", ["Todos", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
 
     items = supabase.table("productos").select("*").order("nombre").execute().data
@@ -300,7 +300,15 @@ if opcion == "Stock":
         filtered_items = []
         busqueda_lower = busqueda.lower()
         for p in items:
-            match_busqueda = (busqueda_lower in p['nombre'].lower()) or (busqueda_lower in (p.get('marca') or '').lower())
+            # --- BUSQUEDA EXTENDIDA: NOMBRE, MARCA O CÓDIGO ---
+            nombre_prod = p['nombre'].lower()
+            marca_prod = (p.get('marca') or '').lower()
+            codigo_prod = (p.get('codigo_bateria') or '').lower()
+            
+            match_busqueda = (busqueda_lower in nombre_prod) or \
+                             (busqueda_lower in marca_prod) or \
+                             (busqueda_lower in codigo_prod)
+            
             match_categoria = (categoria == "Todos" or p['categoria'] == categoria)
             if match_busqueda and match_categoria:
                 filtered_items.append(p)
@@ -313,7 +321,6 @@ if opcion == "Stock":
         for i, p in enumerate(filtered_items):
             with cols[i % 4]:
                 with st.container(border=True):
-                    # Imagen
                     img_url = p.get('imagen_url') or "https://via.placeholder.com/150"
                     st.markdown(f"""
                         <div style="display: flex; justify-content: center; align-items: center; height: 160px; width: 100%; margin-bottom: 10px;">
@@ -321,15 +328,12 @@ if opcion == "Stock":
                         </div>
                     """, unsafe_allow_html=True)
                     
-                    # --- BLOQUE DE TEXTO (Alineación con Marca y Código) ---
                     marca_val = p.get('marca', '')
                     marca_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase;'>{marca_val}</div>" if marca_val else "<div style='height:16px;'></div>"
                     
-                    # CÓDIGO BATERÍA (SIN EMOJI, MISMO ESTILO QUE MARCA)
                     cod_bat = p.get('codigo_bateria')
                     cod_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase; margin-top:2px;'>{cod_bat}</div>" if cod_bat else ""
                     
-                    # Altura 90px
                     st.markdown(f"""
                         <div style="text-align:center; height:90px; display:flex; flex-direction:column; justify-content:flex-start; align-items:center;">
                             {marca_html}
@@ -337,7 +341,6 @@ if opcion == "Stock":
                             {cod_html}
                         </div>
                     """, unsafe_allow_html=True)
-                    # -------------------------------------------------------
 
                     c1, c2 = st.columns(2)
                     with c1: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>U: {p['stock']}</div>", unsafe_allow_html=True)
@@ -357,17 +360,26 @@ elif opcion == "Carga":
     
     all_products = supabase.table("productos").select("*").order("nombre").execute().data
     
+    # --- BUSQUEDA MEJORADA EN CARGA (Nombre, Marca, Código) ---
     opciones_map = {}
     for p in all_products:
         marca = p.get('marca') or ""
-        if marca: display_text = f"{marca} - {p['nombre']}"
-        else: display_text = p['nombre']
+        codigo = p.get('codigo_bateria')
+        
+        # Construimos el texto del buscador
+        base_text = f"{marca} - {p['nombre']}" if marca else p['nombre']
+        
+        if codigo:
+            display_text = f"{base_text} ({codigo})"
+        else:
+            display_text = base_text
+            
         opciones_map[display_text] = p
 
     lista_opciones = sorted(list(opciones_map.keys()))
     
     st.write("Seleccione un producto existente para añadir stock o editarlo.")
-    seleccion_str = st.selectbox("Modelo / Repuesto (Busca por Marca o Modelo)", ["Seleccionar"] + lista_opciones)
+    seleccion_str = st.selectbox("Modelo / Repuesto (Busca por Marca, Modelo o Código)", ["Seleccionar"] + lista_opciones)
     
     if seleccion_str != "Seleccionar":
         prod_data = opciones_map[seleccion_str]
@@ -392,8 +404,6 @@ elif opcion == "Carga":
 
                 st.divider()
                 st.markdown(f"**Stock Actual:** {prod_data['stock']}")
-                
-                # --- CAMBIO: INICIA EN 0 PARA NO OBLIGAR A SUMAR ---
                 stock_add = st.number_input("Cantidad a AÑADIR (+)", min_value=0, value=0, step=1)
                 
                 if st.form_submit_button("CONSOLIDAR INGRESO"):
@@ -407,7 +417,6 @@ elif opcion == "Carga":
 
                     supabase.table("productos").update(datos_update).eq("id", prod_data['id']).execute()
                     
-                    # Solo guardamos historial si hubo ingreso real de stock
                     if stock_add > 0:
                         supabase.table("historial").insert({
                             "producto_nombre": prod_data['nombre'], "cantidad": stock_add,
