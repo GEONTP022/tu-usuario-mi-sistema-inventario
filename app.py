@@ -3,104 +3,105 @@ from supabase import create_client
 import pandas as pd
 import plotly.express as px
 
-# --- CONEXIÓN ---
+# --- CONEXIÓN A BASE DE DATOS ---
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
+# --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide")
 
-# --- LÓGICA DE SESIÓN ---
+# --- LÓGICA DE SESIÓN (LOGIN) ---
 if 'autenticado' not in st.session_state:
     st.session_state.autenticado = False
     st.session_state.rol = None
     st.session_state.user = None
     st.session_state.menu = "Stock"
 
-# --- LOGIN ---
 if not st.session_state.autenticado:
     st.markdown("<h1 style='text-align:center; color:#2488bc;'>VILLAFIX ACCESS</h1>", unsafe_allow_html=True)
     with st.container(border=True):
         u = st.text_input("Usuario")
         p = st.text_input("Contraseña", type="password")
         if st.button("INGRESAR AL SISTEMA", use_container_width=True):
-            res = supabase.table("usuarios").select("*").eq("usuario", u).eq("contrasena", p).execute()
-            if res.data:
-                st.session_state.autenticado = True
-                st.session_state.rol = res.data[0]['rol']
-                st.session_state.user = u
-                st.rerun()
-            else:
-                st.error("Credenciales incorrectas")
+            try:
+                res = supabase.table("usuarios").select("*").eq("usuario", u).eq("contrasena", p).execute()
+                if res.data:
+                    st.session_state.autenticado = True
+                    st.session_state.rol = res.data[0]['rol']
+                    st.session_state.user = u
+                    st.rerun()
+                else:
+                    st.error("Credenciales incorrectas")
+            except Exception as e:
+                st.error("Error de conexión. Verifique su base de datos.")
     st.stop()
 
-# --- DISEÑO UI REFINADO (ALTA LEGIBILIDAD) ---
+# --- DISEÑO UI REFINADO (ALTA LEGIBILIDAD Y PERFIL CENTRADO) ---
 st.markdown("""
     <style>
-    /* FONDO CLARO Y TEXTO OSCURO PARA EL ÁREA CENTRAL */
-    .stApp { 
-        background-color: #fcfcfc; 
-        color: #1a1a1a !important; 
-    }
+    /* Fondo principal y textos centrales */
+    .stApp { background-color: #fcfcfc; color: #1a1a1a !important; }
     
-    /* FORZAR COLOR DE LETRAS EN FORMULARIOS Y ETIQUETAS */
-    label, p, span, .stMarkdown {
+    /* Legibilidad total de etiquetas y textos */
+    label, p, span, .stMarkdown, .stSubheader {
         color: #1a1a1a !important;
-        font-weight: 500;
+        font-weight: 600 !important;
     }
 
-    h1, h2, h3, h4 {
-        color: #1a222b !important;
+    /* Botones de formulario siempre visibles y legibles */
+    .stButton>button {
+        background-color: #1a222b !important;
+        color: white !important;
+        opacity: 1 !important;
+        border: none !important;
         font-weight: bold !important;
     }
 
-    /* BARRA LATERAL (SE MANTIENE OSCURA SEGÚN LO ACORDADO) */
+    /* BARRA LATERAL OSCURA */
     [data-testid="stSidebar"] {
         background-color: #1a222b !important;
         color: white !important;
     }
-    [data-testid="stSidebar"] label, [data-testid="stSidebar"] p {
-        color: white !important;
-    }
 
+    /* PERFIL CENTRADO CORRECTAMENTE */
     .profile-section {
-        text-align: left;
-        padding: 20px 0px 20px 20px;
+        text-align: center; /* Centrado solicitado */
+        padding: 30px 10px;
         background: #1a222b;
     }
     .profile-pic {
-        width: 85px; height: 85px; border-radius: 50%;
-        border: 3px solid #f39c12; margin-bottom: 10px; object-fit: cover;
+        width: 100px; height: 100px; border-radius: 50%;
+        border: 4px solid #f39c12; margin-bottom: 10px; object-fit: cover;
     }
-    .profile-name { font-size: 16px; font-weight: bold; color: white !important; margin: 0; }
-    .profile-status { font-size: 11px; color: #95a5a6 !important; margin-bottom: 5px; }
+    .profile-name { font-size: 18px; font-weight: bold; color: white !important; margin: 0; }
+    .profile-status { font-size: 12px; color: #f39c12 !important; margin-bottom: 5px; }
 
     .sidebar-divider {
-        height: 1px; background-color: #3498db; margin: 5px 0 15px 0; width: 100%; opacity: 0.5;
+        height: 1px; background-color: #3498db; margin: 10px 0 20px 0; width: 100%; opacity: 0.5;
     }
 
+    /* Botones del menú lateral */
     .stSidebar .stButton>button {
-        background-color: transparent; color: #bdc3c7; border: none;
-        border-radius: 0; height: 48px; text-align: left; font-size: 14px;
-        width: 100%; padding-left: 20px !important; transition: 0.2s;
+        background-color: transparent !important; color: #bdc3c7 !important; 
+        text-align: left !important; padding-left: 20px !important;
     }
     .stSidebar .stButton>button:hover {
         background-color: #2c3e50 !important; color: white !important;
         border-left: 5px solid #3498db !important;
     }
-    
-    [data-testid="stSidebarNav"] {display: none;}
 
-    /* INPUTS Y SELECTS CON BORDE MÁS OSCURO PARA QUE SE VEAN */
-    input, select, textarea {
-        border: 1px solid #ced4da !important;
-        color: #1a1a1a !important;
+    /* Inputs visibles con fondo oscuro y texto claro (Estilo formulario) */
+    input, select, .stNumberInput div {
+        background-color: #262730 !important;
+        color: white !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
 # --- PANEL IZQUIERDO (SIDEBAR) ---
 with st.sidebar:
+    # Perfil centrado
     st.markdown(f"""
         <div class="profile-section">
             <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="profile-pic">
@@ -130,8 +131,8 @@ opcion = st.session_state.menu
 if opcion == "Stock":
     st.markdown("<h2>Inventario General</h2>", unsafe_allow_html=True)
     col_a, col_b = st.columns([3, 1])
-    with col_a: busqueda = st.text_input("Buscar modelo o repuesto", placeholder="Escriba aquí...")
-    with col_b: categoria = st.selectbox("Filtrar por Apartado", ["Todos", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
+    with col_a: busqueda = st.text_input("Buscar por modelo", placeholder="Escriba aquí...")
+    with col_b: categoria = st.selectbox("Categoría", ["Todos", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
 
     items = supabase.table("productos").select("*").order("nombre").execute().data
     if items:
@@ -141,10 +142,10 @@ if opcion == "Stock":
                 with cols[i % 4]:
                     with st.container(border=True):
                         st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=True)
-                        st.markdown(f"<p style='font-size: 16px; margin-bottom: 2px;'><b>{p['nombre']}</b></p>", unsafe_allow_html=True)
+                        st.markdown(f"<p style='margin-bottom:0px;'><b>{p['nombre']}</b></p>", unsafe_allow_html=True)
                         cs, cp = st.columns(2)
-                        cs.markdown(f"<p style='color:#1a1a1a;'>U: {p['stock']}</p>", unsafe_allow_html=True)
-                        cp.markdown(f"<p style='color:#1a1a1a;'>S/ {p['precio_venta']}</p>", unsafe_allow_html=True)
+                        cs.write(f"U: {p['stock']}")
+                        cp.write(f"S/ {p['precio_venta']}")
                         if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True):
                             if p['stock'] > 0:
                                 supabase.table("productos").update({"stock": p['stock']-1}).eq("id", p['id']).execute()
@@ -153,41 +154,30 @@ if opcion == "Stock":
 
 elif opcion == "Carga":
     st.markdown("<h2>📥 Añadir Producto</h2>", unsafe_allow_html=True)
-    
     with st.form("form_carga", clear_on_submit=True):
-        st.info("Complete los datos. Si el modelo ya existe, se sumará a las cantidades actuales.")
-        
+        st.write("Complete los campos obligatorios (*)")
         n = st.text_input("Modelo / Repuesto *")
         c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
         s = st.number_input("Cantidad a añadir", min_value=1, step=1)
-        p = st.number_input("Precio Venta (S/) *", min_value=0.0, step=0.50)
+        p = st.number_input("Precio Venta (S/) *", min_value=0.0, step=1.0)
         img = st.text_input("URL Imagen (Opcional)")
         
-        enviar = st.form_submit_button("CONSOLIDAR INGRESO", use_container_width=True)
-        
-        if enviar:
-            errores = []
-            if not n: errores.append("Modelo")
-            if c == "Seleccionar": errores.append("Categoría")
-            if p <= 0: errores.append("Precio")
-            
-            if errores:
-                st.warning(f"⚠️ Falta completar: {', '.join(errores)}. Por favor, rellene todos los campos obligatorios.")
+        if st.form_submit_button("CONSOLIDAR INGRESO", use_container_width=True):
+            if not n or c == "Seleccionar" or p <= 0:
+                st.warning("⚠️ Falta completar campos obligatorios: Nombre, Categoría y Precio.")
             else:
                 existe = supabase.table("productos").select("*").eq("nombre", n).execute()
                 if existe.data:
-                    id_prod = existe.data[0]['id']
                     nuevo_stock = existe.data[0]['stock'] + s
-                    supabase.table("productos").update({"stock": nuevo_stock, "precio_venta": p, "imagen_url": img}).eq("id", id_prod).execute()
-                    st.success(f"✅ Stock actualizado. Total: {nuevo_stock}")
+                    supabase.table("productos").update({"stock": nuevo_stock, "precio_venta": p, "imagen_url": img}).eq("id", existe.data[0]['id']).execute()
+                    st.success(f"✅ Stock actualizado: {nuevo_stock}")
                 else:
                     supabase.table("productos").insert({"nombre": n, "categoria": c, "stock": s, "precio_venta": p, "imagen_url": img}).execute()
-                    st.success(f"✅ Nuevo producto '{n}' creado.")
-                
+                    st.success(f"✅ Producto '{n}' creado.")
                 supabase.table("historial").insert({"producto_nombre": n, "cantidad": s, "usuario": st.session_state.user}).execute()
 
 elif opcion == "Log":
-    st.markdown("<h2>📜 Historial de Movimientos</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>📜 Historial</h2>", unsafe_allow_html=True)
     logs = supabase.table("historial").select("*").order("fecha", desc=True).execute().data
     if logs:
         df = pd.DataFrame(logs)
@@ -203,15 +193,11 @@ elif opcion == "Stats":
         st.plotly_chart(fig, use_container_width=True)
 
 elif opcion == "Users":
-    st.markdown("<h2>👥 Gestión de Usuarios</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>👥 Usuarios</h2>", unsafe_allow_html=True)
     with st.form("nu"):
         un = st.text_input("Usuario")
         pw = st.text_input("Clave")
         rl = st.selectbox("Rol", ["Normal", "Super"])
-        if st.form_submit_button("CREAR ACCESO"):
+        if st.form_submit_button("CREAR USUARIO"):
             supabase.table("usuarios").insert({"usuario":un, "contrasena":pw, "rol":rl}).execute()
             st.success("Usuario creado.")
-
-elif opcion == "Prov":
-    st.markdown("<h2>📞 Proveedores</h2>", unsafe_allow_html=True)
-    # Lógica de proveedores mantenida...
