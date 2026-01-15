@@ -37,31 +37,31 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- DISEÑO UI PROFESIONAL (ALTO CONTRASTE Y PERFIL CENTRADO) ---
+# --- DISEÑO UI REFINADO (ALTA LEGIBILIDAD) ---
 st.markdown("""
     <style>
-    /* 1. ÁREA CENTRAL: Fondo blanco y texto negro para lectura perfecta */
-    .stApp { 
-        background-color: #ffffff !important; 
-    }
+    /* 1. ÁREA CENTRAL: Fondo blanco y texto negro sólido */
+    .stApp { background-color: #ffffff !important; }
     
-    /* Forzar visibilidad de textos en toda la app central */
-    [data-testid="stHeader"], .main .block-container, label, p, span, .stMarkdown {
+    /* Forzar visibilidad de etiquetas y textos en la zona blanca */
+    .main label, .main p, .main span, .main .stMarkdown, .main h2 {
         color: #000000 !important;
+        font-weight: 600 !important;
+    }
+
+    /* 2. BARRA LATERAL: Fondo oscuro y TEXTO EN BLANCO (Solicitado) */
+    [data-testid="stSidebar"] {
+        background-color: #1a222b !important;
+    }
+
+    /* Texto de botones del sidebar en blanco puro */
+    [data-testid="stSidebar"] button p {
+        color: #ffffff !important;
+        font-size: 15px !important;
         font-weight: 500 !important;
     }
 
-    h1, h2, h3, h4 {
-        color: #1a222b !important;
-    }
-
-    /* 2. BARRA LATERAL: Estilo Oscuro Premium */
-    [data-testid="stSidebar"] {
-        background-color: #1a222b !important;
-        color: #ffffff !important;
-    }
-
-    /* PERFIL CENTRADO */
+    /* PERFIL TOTALMENTE CENTRADO */
     .profile-section {
         text-align: center !important; 
         padding: 30px 10px;
@@ -69,44 +69,42 @@ st.markdown("""
     }
     .profile-pic {
         width: 100px; height: 100px; border-radius: 50%;
-        border: 4px solid #f39c12; margin-bottom: 10px; object-fit: cover;
+        border: 4px solid #f39c12; margin-bottom: 15px; object-fit: cover;
     }
-    .profile-name { font-size: 18px; font-weight: bold; color: #ffffff !important; margin: 0; }
+    .profile-name { font-size: 19px; font-weight: bold; color: #ffffff !important; margin: 0; }
     .profile-status { font-size: 12px; color: #f39c12 !important; margin-bottom: 5px; }
 
     .sidebar-divider {
         height: 1px; background-color: #3498db; margin: 10px 0 20px 0; width: 100%; opacity: 0.5;
     }
 
-    /* BOTONES DEL MENÚ LATERAL */
+    /* BOTONES DEL MENÚ LATERAL - Sin efectos raros, alineación limpia */
     .stSidebar .stButton>button {
         background-color: transparent !important; 
-        color: #bdc3c7 !important; 
-        text-align: left !important; 
-        padding-left: 20px !important;
         border: none !important;
+        text-align: left !important;
+        padding-left: 15px !important;
     }
     .stSidebar .stButton>button:hover {
-        background-color: #2c3e50 !important; 
-        color: #ffffff !important;
+        background-color: #2c3e50 !important;
         border-left: 5px solid #3498db !important;
     }
 
-    /* 3. FORMULARIOS: Campos claros con bordes definidos */
-    input, select, .stNumberInput div {
-        background-color: #f8f9fa !important;
-        color: #000000 !important;
-        border: 1px solid #ced4da !important;
-    }
-
-    /* BOTÓN DE ACCIÓN (Añadir/Consolidar) SIEMPRE VISIBLE */
-    div.stForm button {
+    /* 3. BOTONES DE ACCIÓN (Añadir/Consolidar) - SIEMPRE AZUL CON LETRA BLANCA */
+    div.stForm button[kind="primaryFormSubmit"], div.stForm button {
         background-color: #2488bc !important;
         color: #ffffff !important;
-        border: none !important;
-        font-weight: bold !important;
-        height: 45px !important;
         opacity: 1 !important;
+        font-weight: bold !important;
+        border: none !important;
+        height: 45px !important;
+    }
+
+    /* Corregir inputs para que se vea lo que se escribe */
+    input, select, .stNumberInput div {
+        background-color: #f1f3f4 !important;
+        color: #000000 !important;
+        border: 1px solid #bdc3c7 !important;
     }
     
     [data-testid="stSidebarNav"] {display: none;}
@@ -115,6 +113,7 @@ st.markdown("""
 
 # --- PANEL IZQUIERDO (SIDEBAR) ---
 with st.sidebar:
+    # Perfil centrado
     st.markdown(f"""
         <div class="profile-section">
             <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="profile-pic">
@@ -144,8 +143,8 @@ opcion = st.session_state.menu
 if opcion == "Stock":
     st.markdown("<h2>Inventario General</h2>", unsafe_allow_html=True)
     col_a, col_b = st.columns([3, 1])
-    with col_a: busqueda = st.text_input("Buscar por modelo", placeholder="Escriba aquí...")
-    with col_b: categoria = st.selectbox("Apartado", ["Todos", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
+    with col_a: busqueda = st.text_input("Buscar por modelo", placeholder="Ej: iPhone 11...")
+    with col_b: categoria = st.selectbox("Categoría", ["Todos", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
 
     items = supabase.table("productos").select("*").order("nombre").execute().data
     if items:
@@ -155,7 +154,7 @@ if opcion == "Stock":
                 with cols[i % 4]:
                     with st.container(border=True):
                         st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=True)
-                        st.markdown(f"<p style='margin-bottom:0px; font-weight:bold;'>{p['nombre']}</p>", unsafe_allow_html=True)
+                        st.markdown(f"<p style='margin-bottom:0px; color:black;'><b>{p['nombre']}</b></p>", unsafe_allow_html=True)
                         cs, cp = st.columns(2)
                         cs.write(f"U: {p['stock']}")
                         cp.write(f"S/ {p['precio_venta']}")
@@ -177,16 +176,16 @@ elif opcion == "Carga":
         
         if st.form_submit_button("CONSOLIDAR INGRESO", use_container_width=True):
             if not n or c == "Seleccionar" or p <= 0:
-                st.warning("⚠️ Falta completar campos obligatorios: Nombre, Categoría y Precio.")
+                st.warning("⚠️ Complete: Nombre, Categoría y Precio.")
             else:
                 existe = supabase.table("productos").select("*").eq("nombre", n).execute()
                 if existe.data:
                     nuevo_stock = existe.data[0]['stock'] + s
                     supabase.table("productos").update({"stock": nuevo_stock, "precio_venta": p, "imagen_url": img}).eq("id", existe.data[0]['id']).execute()
-                    st.success(f"✅ Stock actualizado: {nuevo_stock}")
+                    st.success(f"✅ Stock actualizado!")
                 else:
                     supabase.table("productos").insert({"nombre": n, "categoria": c, "stock": s, "precio_venta": p, "imagen_url": img}).execute()
-                    st.success(f"✅ Producto '{n}' creado.")
+                    st.success(f"✅ Creado!")
                 supabase.table("historial").insert({"producto_nombre": n, "cantidad": s, "usuario": st.session_state.user}).execute()
 
 elif opcion == "Log":
@@ -202,7 +201,7 @@ elif opcion == "Stats":
     p_data = supabase.table("productos").select("*").execute().data
     if p_data:
         df_p = pd.DataFrame(p_data)
-        fig = px.pie(df_p, names='categoria', values='stock', hole=0.4, title="Distribución de Stock")
+        fig = px.pie(df_p, names='categoria', values='stock', hole=0.4, title="Stock por Categoría")
         st.plotly_chart(fig, use_container_width=True)
 
 elif opcion == "Users":
