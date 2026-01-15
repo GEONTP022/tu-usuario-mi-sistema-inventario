@@ -36,110 +36,80 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- CSS: ARREGLO FINAL DE COLORES ---
+# --- CSS: ESTILOS ---
 st.markdown("""
     <style>
-    /* =========================================
-       1. ZONA PRINCIPAL (FONDO BLANCO)
-       ========================================= */
-    .stApp, .main, .block-container {
-        background-color: #ffffff !important;
-    }
+    /* 1. FONDO Y TEXTOS GENERALES (NEGRO OBLIGATORIO) */
+    .stApp, .main, .block-container { background-color: #ffffff !important; }
 
-    /* !!! CORRECCIÓN CRÍTICA DE ETIQUETAS !!! */
-    /* Esto pone en NEGRO las palabras "Modelo", "Categoría", "Precio", etc. */
+    /* Forzar todas las letras a negro (Labels, Títulos, Párrafos) */
     div[data-testid="stWidgetLabel"] p, 
     div[data-testid="stWidgetLabel"] label,
-    label p,
-    .stMarkdown p, 
-    .stMarkdown h2 {
+    label p, .stMarkdown p, .stMarkdown h2, .stMarkdown h3, div p {
         color: #000000 !important;
         font-weight: 700 !important;
         opacity: 1 !important;
         -webkit-text-fill-color: #000000 !important;
     }
 
-    /* Textos generales del inventario (U: 5, S/ 45.0, Nombre del repuesto) */
-    div[data-testid="column"] p, div[data-testid="column"] span {
-        color: #000000 !important;
+    /* 2. ARREGLO DE TARJETAS DE STOCK (TU PEDIDO ACTUAL) */
+    /* Cuadros con borde negro visible y tamaño controlado */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        border: 1px solid #000000 !important; /* Borde negro visible */
+        background-color: #ffffff !important;
+        border-radius: 8px !important;
+        padding: 10px !important;
+        margin-bottom: 15px !important;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.1) !important; /* Sombra suave */
     }
 
-    /* 2. INPUTS (Cajas de Escribir) */
+    /* Controlar imágenes para que no sean gigantes */
+    div[data-testid="stImage"] img {
+        height: 120px !important; /* Altura fija para achicar cuadros */
+        object-fit: contain !important; /* Que la imagen no se deforme */
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Alineación de textos dentro de la tarjeta */
+    div[data-testid="column"] h2, div[data-testid="column"] p {
+        text-align: center !important;
+    }
+
+    /* 3. INPUTS Y FORMULARIOS (Mantenido de la versión anterior) */
     input, textarea, .stNumberInput input {
         background-color: #ffffff !important;
         color: #000000 !important;
         border: 1px solid #000000 !important;
     }
-    
-    /* Menú desplegable (Categoría) */
     div[data-baseweb="select"] > div {
         background-color: #ffffff !important;
         color: #000000 !important;
         border: 1px solid #000000 !important;
     }
-    /* Opciones de la lista desplegable */
     div[role="listbox"] ul li, div[role="listbox"] ul li div {
         color: #000000 !important;
         background-color: #ffffff !important;
     }
-    /* Texto seleccionado en el desplegable */
     div[data-testid="stSelectbox"] div[data-baseweb="select"] span {
         color: #000000 !important;
     }
 
-    /* =========================================
-       3. BARRA LATERAL (OSCURA Y LIMPIA)
-       ========================================= */
-    [data-testid="stSidebar"] {
-        background-color: #1a222b !important;
-    }
-    
-    /* PERFIL CENTRADO */
-    .profile-section {
-        text-align: center !important;
-        padding: 20px 10px;
-    }
-    .profile-pic {
-        width: 100px; height: 100px; 
-        border-radius: 50%; 
-        border: 4px solid #f39c12; 
-        object-fit: cover;
-        display: block; margin: 0 auto 10px auto;
-    }
-    
-    /* BOTONES DEL MENÚ (Transparentes, sin cuadros feos) */
-    .stSidebar .stButton>button {
-        background-color: transparent !important;
-        border: none !important;
-        color: #bdc3c7 !important;
-        text-align: left !important;
-        padding-left: 15px !important;
-        box-shadow: none !important;
-    }
-    .stSidebar .stButton>button:hover {
-        background-color: rgba(255,255,255,0.05) !important;
-        color: #ffffff !important;
-        border-left: 4px solid #3498db !important;
-    }
-    
-    /* Texto dentro del sidebar siempre blanco */
-    [data-testid="stSidebar"] p, [data-testid="stSidebar"] span {
-        color: #ffffff !important;
-    }
+    /* 4. BARRA LATERAL (Mantenido) */
+    [data-testid="stSidebar"] { background-color: #1a222b !important; }
+    .profile-section { text-align: center !important; padding: 20px 10px; }
+    .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 4px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
+    .stSidebar .stButton>button { background-color: transparent !important; border: none !important; color: #bdc3c7 !important; text-align: left !important; padding-left: 15px !important; box-shadow: none !important; }
+    .stSidebar .stButton>button:hover { background-color: rgba(255,255,255,0.05) !important; color: #ffffff !important; border-left: 4px solid #3498db !important; }
+    [data-testid="stSidebar"] p, [data-testid="stSidebar"] span { color: #ffffff !important; }
 
-    /* BOTÓN AZUL (Consolidar / Guardar) */
-    div.stForm button {
-        background-color: #2488bc !important;
-        color: #ffffff !important;
-        border: none !important;
-        font-weight: bold !important;
-    }
-
+    /* BOTÓN AZUL */
+    div.stForm button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; }
     [data-testid="stSidebarNav"] {display: none;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- PANEL IZQUIERDO (SIDEBAR) ---
+# --- PANEL IZQUIERDO ---
 with st.sidebar:
     st.markdown(f"""
         <div class="profile-section">
@@ -157,7 +127,6 @@ with st.sidebar:
         if st.button("📈 Estadísticas", use_container_width=True): st.session_state.menu = "Stats"
         if st.button("👥 Usuarios", use_container_width=True): st.session_state.menu = "Users"
         if st.button("📞 Proveedores", use_container_width=True): st.session_state.menu = "Prov"
-
     st.markdown("<br><br>", unsafe_allow_html=True)
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state.autenticado = False
@@ -178,12 +147,16 @@ if opcion == "Stock":
         for i, p in enumerate(items):
             if (categoria == "Todos" or p['categoria'] == categoria) and (busqueda.lower() in p['nombre'].lower()):
                 with cols[i % 4]:
-                    with st.container(border=True):
+                    with st.container(border=True): # El borde negro ahora se fuerza por CSS arriba
                         st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=True)
-                        st.markdown(f"<p style='margin:0; font-weight:bold;'>{p['nombre']}</p>", unsafe_allow_html=True)
-                        cs, cp = st.columns(2)
-                        cs.write(f"U: {p['stock']}")
-                        cp.write(f"S/ {p['precio_venta']}")
+                        # Usamos st.markdown con HTML para forzar centrado y color negro
+                        st.markdown(f"<div style='text-align:center; color:black; font-weight:bold; margin-bottom:5px;'>{p['nombre']}</div>", unsafe_allow_html=True)
+                        
+                        c1, c2 = st.columns(2)
+                        with c1: st.markdown(f"<div style='text-align:center; color:black;'>U: {p['stock']}</div>", unsafe_allow_html=True)
+                        with c2: st.markdown(f"<div style='text-align:center; color:black;'>S/ {p['precio_venta']}</div>", unsafe_allow_html=True)
+                        
+                        st.markdown("<div style='margin-top:5px;'></div>", unsafe_allow_html=True)
                         if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True):
                             if p['stock'] > 0:
                                 supabase.table("productos").update({"stock": p['stock']-1}).eq("id", p['id']).execute()
@@ -194,13 +167,11 @@ elif opcion == "Carga":
     st.markdown("<h2>📥 Añadir Producto</h2>", unsafe_allow_html=True)
     with st.form("form_carga", clear_on_submit=True):
         st.markdown("<p>Complete los campos obligatorios (*)</p>", unsafe_allow_html=True)
-        
         n = st.text_input("Modelo / Repuesto *")
         c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
         s = st.number_input("Cantidad a añadir", min_value=1, step=1)
         p = st.number_input("Precio Venta (S/) *", min_value=0.0, step=0.5)
         img = st.text_input("URL Imagen (Opcional)")
-        
         if st.form_submit_button("CONSOLIDAR INGRESO"):
             if not n or c == "Seleccionar" or p <= 0:
                 st.warning("⚠️ Falta completar Nombre, Categoría o Precio.")
