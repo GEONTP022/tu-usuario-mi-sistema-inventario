@@ -36,10 +36,12 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- CSS DE FUERZA BRUTA (FIX DEFINITIVO MODO OSCURO) ---
+# --- CSS MAESTRO (SOLUCIÓN VISUAL COMPLETA) ---
 st.markdown("""
     <style>
-    /* 1. REDEFINIR VARIABLES GLOBALES A MODO CLARO */
+    /* =========================================
+       1. FORZAR MODO CLARO EN EL ÁREA PRINCIPAL
+       ========================================= */
     :root {
         --primary-color: #2488bc;
         --background-color: #ffffff;
@@ -48,75 +50,93 @@ st.markdown("""
         --font: "sans-serif";
     }
 
-    /* 2. FORZAR FONDO BLANCO Y TEXTO NEGRO EN EL CONTENEDOR PRINCIPAL */
-    [data-testid="stAppViewContainer"], .main {
+    /* Fondo blanco absoluto para la zona de trabajo */
+    .stApp, .main, .block-container {
         background-color: #ffffff !important;
-        color: #000000 !important;
     }
 
-    /* 3. ETIQUETAS (LABELS) - MODELO, CATEGORIA, PRECIO */
-    /* Apuntamos a todos los textos markdown y labels dentro de los widgets */
-    .stMarkdown, .stMarkdown p, label, .stTextInput label, .stNumberInput label, .stSelectbox label {
+    /* TEXTOS NEGROS OBLIGATORIOS (Títulos, etiquetas, párrafos) */
+    .main h1, .main h2, .main h3, .main p, .main span, .main div, .main label {
         color: #000000 !important;
         -webkit-text-fill-color: #000000 !important;
         font-weight: 600 !important;
-        opacity: 1 !important;
     }
 
-    /* 4. CAMPOS DE ESCRITURA (INPUTS) */
-    /* Forzamos fondo blanco y letra negra dentro de la caja de texto */
-    input.st-ai, input.st-ah, textarea, .stNumberInput input {
-        background-color: #ffffff !important;
+    /* Corrección específica para que 'Modelo', 'Categoría' se vean */
+    div[data-testid="stMarkdownContainer"] p {
         color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
-        border-color: #cccccc !important;
-        caret-color: #000000 !important; /* El palito que parpadea al escribir */
     }
     
-    /* Borde de los inputs para que se vean bien */
-    div[data-baseweb="input"], div[data-testid="stNumberInput"] {
-        background-color: #ffffff !important;
-        border: 1px solid #444444 !important;
-        border-radius: 5px !important;
+    label[data-testid="stWidgetLabel"] p {
+        color: #000000 !important;
+        font-size: 14px !important;
     }
 
-    /* 5. MENÚS DESPLEGABLES (SELECTBOX) */
-    /* El texto seleccionado */
-    div[data-baseweb="select"] > div {
+    /* INPUTS (Cajas de texto): Fondo blanco, Borde negro, Texto negro */
+    input, textarea, .stNumberInput input, .stSelectbox div[data-baseweb="select"] {
         background-color: #ffffff !important;
-        color: #000000 !important;
-        border-color: #444444 !important;
-    }
-    /* Las opciones al abrir la lista */
-    div[data-baseweb="popover"] div, ul[role="listbox"] li {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-    }
-    /* El texto dentro del select */
-    div[data-baseweb="select"] span {
         color: #000000 !important;
         -webkit-text-fill-color: #000000 !important;
+        border-color: #000000 !important;
     }
 
-    /* 6. SIDEBAR (MANTENER OSCURO) */
-    [data-testid="stSidebar"] { 
-        background-color: #1a222b !important; 
+    /* =========================================
+       2. BARRA LATERAL (SIDEBAR) ESTILO PREMIUM
+       ========================================= */
+    [data-testid="stSidebar"] {
+        background-color: #1a222b !important;
     }
-    [data-testid="stSidebar"] * {
-        color: #ffffff !important; /* Todo texto en sidebar blanco */
+    
+    /* Perfil Centrado */
+    .profile-section {
+        text-align: center !important;
+        padding: 20px 10px;
+        margin-bottom: 10px;
     }
-    .profile-section { text-align: center !important; padding: 30px 10px; width: 100%; }
-    .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 4px solid #f39c12; margin-bottom: 15px; object-fit: cover; display: block; margin-left: auto; margin-right: auto; }
-    .profile-name { font-size: 19px; font-weight: bold; color: #ffffff !important; margin: 0; }
-    .profile-status { font-size: 12px; color: #f39c12 !important; -webkit-text-fill-color: #f39c12 !important; margin-bottom: 5px; }
-    .sidebar-divider { height: 1px; background-color: #3498db; margin: 10px 0 20px 0; width: 100%; opacity: 0.5; }
+    .profile-pic {
+        width: 90px; height: 90px; 
+        border-radius: 50%; 
+        border: 3px solid #f39c12; 
+        object-fit: cover;
+        display: block; margin: 0 auto 10px auto;
+    }
+    .profile-name { color: #ffffff !important; font-size: 18px; font-weight: bold; margin: 0; }
+    .profile-status { color: #f39c12 !important; font-size: 12px; margin: 0; }
 
-    /* BOTÓN AZUL */
+    /* BOTONES DEL MENÚ: Transparentes y limpios (COMO ANTES) */
+    .stSidebar .stButton>button {
+        background-color: transparent !important; /* Sin fondo de caja */
+        color: #bdc3c7 !important;                /* Texto gris claro */
+        border: none !important;                  /* Sin bordes */
+        text-align: left !important;
+        padding-left: 15px !important;
+        font-size: 15px !important;
+        transition: all 0.3s ease;
+        box-shadow: none !important;
+    }
+
+    /* Efecto al pasar el mouse: Se vuelven blancos y brillantes */
+    .stSidebar .stButton>button:hover {
+        color: #ffffff !important;
+        background-color: rgba(255,255,255,0.05) !important; /* Sutil fondo */
+        padding-left: 20px !important; /* Pequeño desplazamiento a la derecha */
+        border-left: 4px solid #3498db !important; /* Línea azul elegante */
+    }
+    
+    /* Texto dentro de los botones del sidebar siempre visible */
+    .stSidebar p {
+        color: inherit !important;
+    }
+
+    /* =========================================
+       3. BOTÓN DE ACCIÓN (AZUL SÓLIDO)
+       ========================================= */
     div.stForm button {
         background-color: #2488bc !important;
-        color: #ffffff !important;
+        color: white !important;
         border: none !important;
         font-weight: bold !important;
+        width: 100%;
     }
 
     [data-testid="stSidebarNav"] {display: none;}
@@ -131,10 +151,12 @@ with st.sidebar:
             <p class="profile-name">{st.session_state.user.upper()}</p>
             <p class="profile-status">{st.session_state.rol.upper()} USER</p>
         </div>
-        <div class="sidebar-divider"></div>
+        <div style="height: 1px; background: #3498db; opacity: 0.3; margin-bottom: 20px;"></div>
     """, unsafe_allow_html=True)
     
+    # Botones limpios (sin cajas)
     if st.button("📊 Dashboard / Stock", use_container_width=True): st.session_state.menu = "Stock"
+    
     if st.session_state.rol == "Super":
         if st.button("📥 Añadir Producto", use_container_width=True): st.session_state.menu = "Carga"
         if st.button("📋 Historial", use_container_width=True): st.session_state.menu = "Log"
@@ -164,7 +186,7 @@ if opcion == "Stock":
                 with cols[i % 4]:
                     with st.container(border=True):
                         st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=True)
-                        st.markdown(f"<p style='margin-bottom:0px; color:black;'><b>{p['nombre']}</b></p>", unsafe_allow_html=True)
+                        st.markdown(f"<p style='margin:0; color:black;'><b>{p['nombre']}</b></p>", unsafe_allow_html=True)
                         cs, cp = st.columns(2)
                         cs.write(f"U: {p['stock']}")
                         cp.write(f"S/ {p['precio_venta']}")
@@ -177,20 +199,16 @@ if opcion == "Stock":
 elif opcion == "Carga":
     st.markdown("<h2>📥 Añadir Producto</h2>", unsafe_allow_html=True)
     with st.form("form_carga", clear_on_submit=True):
-        # Texto negro forzado
-        st.write("Complete los campos obligatorios (*)")
+        st.markdown("<p style='color:black;'>Complete los campos obligatorios (*)</p>", unsafe_allow_html=True)
         
-        # Inputs normales
+        # Estos campos ahora tendrán etiquetas NEGRAS forzadas
         n = st.text_input("Modelo / Repuesto *")
         c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
-        
-        # Inputs numéricos corregidos
         s = st.number_input("Cantidad a añadir", min_value=1, step=1)
         p = st.number_input("Precio Venta (S/) *", min_value=0.0, step=0.5)
-        
         img = st.text_input("URL Imagen (Opcional)")
         
-        if st.form_submit_button("CONSOLIDAR INGRESO", use_container_width=True):
+        if st.form_submit_button("CONSOLIDAR INGRESO"):
             if not n or c == "Seleccionar" or p <= 0:
                 st.warning("⚠️ Falta completar Nombre, Categoría o Precio.")
             else:
