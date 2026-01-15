@@ -36,7 +36,7 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- CSS MAESTRO (IMÁGENES CENTRADAS) ---
+# --- CSS MAESTRO (FIX DE IMAGEN CENTRADA) ---
 st.markdown("""
     <style>
     /* 1. FONDO BLANCO GLOBAL */
@@ -97,24 +97,26 @@ st.markdown("""
         box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
     }
 
-    /* --- CORRECCIÓN DE IMÁGENES: CENTRADO ABSOLUTO --- */
+    /* --- CORRECCIÓN CRÍTICA DE IMÁGENES: CENTRADO TOTAL --- */
+    /* 1. Forzamos al contenedor de la imagen a ser flex y centrar contenido */
     div[data-testid="stImage"] {
-        text-align: center !important;
-        display: block !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
+        display: flex !important;
+        justify-content: center !important; 
+        align-items: center !important;
+        width: 100% !important;
+        margin: 0 auto !important;
     }
     
-    div[data-testid="stImage"] img {
+    /* 2. Forzamos a la imagen misma a tener márgenes automáticos */
+    div[data-testid="stImage"] > img {
         display: block !important;
         margin-left: auto !important;
         margin-right: auto !important;
-        max-height: 180px !important; /* Altura controlada */
+        max-height: 190px !important; /* Tamaño grande */
         width: auto !important;
-        max-width: 100% !important;
         object-fit: contain !important;
     }
-    /* -------------------------------------------------- */
+    /* ------------------------------------------------------ */
 
     /* Textos dentro de tarjetas (Negro) */
     div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] p,
@@ -123,7 +125,7 @@ st.markdown("""
     }
 
     /* 6. BOTONES */
-    /* Botón Estándar (Azul - Salida / Consolidar) */
+    /* Botón Estándar (Azul) */
     div.stButton button {
         background-color: #2488bc !important;
         color: #ffffff !important;
@@ -132,10 +134,9 @@ st.markdown("""
     }
     div.stButton button p { color: #ffffff !important; }
 
-    /* CORRECCIÓN: Botón DESHABILITADO (Para NO STOCK - ROJO) */
-    /* Usamos mayor especificidad para ganar al azul */
+    /* Botón DESHABILITADO (NO STOCK - ROJO) */
     div.stButton button:disabled {
-        background-color: #e74c3c !important; /* Rojo Intenso */
+        background-color: #e74c3c !important; /* Rojo */
         color: white !important;
         opacity: 1 !important;
         cursor: not-allowed !important;
@@ -195,7 +196,7 @@ if opcion == "Stock":
             if (categoria == "Todos" or p['categoria'] == categoria) and (busqueda.lower() in p['nombre'].lower()):
                 with cols[i % 4]:
                     with st.container(border=True):
-                        # Imagen renderizada con use_column_width=False para respetar el CSS de centrado
+                        # Imagen sin use_column_width=True para que el CSS controle el centrado
                         st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=False)
                         
                         st.markdown(f"<div style='text-align:center; color:#000000; font-weight:bold; margin-bottom:5px; height:40px; overflow:hidden;'>{p['nombre']}</div>", unsafe_allow_html=True)
