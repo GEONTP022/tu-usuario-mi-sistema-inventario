@@ -36,97 +36,136 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- CSS: ESTILOS ---
+# --- CSS MAESTRO CORREGIDO (SEPARACIÓN DE COLORES) ---
 st.markdown("""
     <style>
-    /* 1. FONDO Y TEXTOS GENERALES (NEGRO OBLIGATORIO) */
-    .stApp, .main, .block-container { background-color: #ffffff !important; }
+    /* =========================================
+       1. ZONA PRINCIPAL (FONDO BLANCO Y LETRAS NEGRAS)
+       ========================================= */
+    .stApp, .main, .block-container {
+        background-color: #ffffff !important;
+    }
 
-    /* Forzar todas las letras a negro (Labels, Títulos, Párrafos) */
-    div[data-testid="stWidgetLabel"] p, 
-    div[data-testid="stWidgetLabel"] label,
-    label p, .stMarkdown p, .stMarkdown h2, .stMarkdown h3, div p {
+    /* FORZAR NEGRO SOLO EN EL ÁREA PRINCIPAL (.main) */
+    .main h1, .main h2, .main h3, .main p, .main span, .main label, .main div {
         color: #000000 !important;
-        font-weight: 700 !important;
-        opacity: 1 !important;
         -webkit-text-fill-color: #000000 !important;
     }
 
-    /* 2. ARREGLO DE TARJETAS DE STOCK (TU PEDIDO ACTUAL) */
-    /* Cuadros con borde negro visible y tamaño controlado */
+    /* Corrección específica para etiquetas de formularios (Modelo, Categoría...) */
+    div[data-testid="stWidgetLabel"] p {
+        color: #000000 !important;
+        font-weight: 700 !important;
+    }
+
+    /* Inputs (Cajas de texto): Fondo blanco, borde gris, texto negro */
+    input, textarea, .stNumberInput input, .stSelectbox div[data-baseweb="select"] {
+        background-color: #f8f9fa !important;
+        color: #000000 !important;
+        border: 1px solid #ccc !important;
+    }
+
+    /* =========================================
+       2. BARRA LATERAL (FONDO OSCURO Y LETRAS BLANCAS)
+       ========================================= */
+    [data-testid="stSidebar"] {
+        background-color: #1a222b !important;
+    }
+
+    /* AQUÍ ESTÁ LA CORRECCIÓN: Forzamos BLANCO en el sidebar */
+    [data-testid="stSidebar"] h1, 
+    [data-testid="stSidebar"] h2, 
+    [data-testid="stSidebar"] h3, 
+    [data-testid="stSidebar"] p, 
+    [data-testid="stSidebar"] span, 
+    [data-testid="stSidebar"] div,
+    [data-testid="stSidebar"] label {
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+    }
+
+    /* Botones del menú lateral (Transparentes y blancos) */
+    [data-testid="stSidebar"] .stButton button {
+        background-color: transparent !important;
+        border: none !important;
+        color: #bdc3c7 !important; /* Gris claro */
+        text-align: left !important;
+        padding-left: 15px !important;
+        box-shadow: none !important;
+    }
+    
+    /* Hover de botones sidebar */
+    [data-testid="stSidebar"] .stButton button:hover {
+        background-color: rgba(255,255,255,0.1) !important;
+        color: #ffffff !important;
+        border-left: 4px solid #3498db !important;
+    }
+    
+    /* Texto dentro del botón (arreglar color heredado) */
+    [data-testid="stSidebar"] .stButton button p {
+        color: inherit !important;
+    }
+
+    /* Perfil */
+    .profile-section { text-align: center !important; padding: 20px 0px; }
+    .profile-pic { 
+        width: 100px; height: 100px; border-radius: 50%; 
+        border: 3px solid #f39c12; object-fit: cover; 
+        display: block; margin: 0 auto 10px auto; 
+    }
+
+    /* =========================================
+       3. ESTILO DE TARJETAS DE STOCK (ACHICADAS)
+       ========================================= */
     div[data-testid="stVerticalBlockBorderWrapper"] {
-        border: 1px solid #000000 !important; /* Borde negro visible */
         background-color: #ffffff !important;
-        border-radius: 8px !important;
+        border: 1px solid #e0e0e0 !important; /* Borde suave gris */
+        border-radius: 10px !important;
         padding: 10px !important;
-        margin-bottom: 15px !important;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.1) !important; /* Sombra suave */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
     }
-
-    /* Controlar imágenes para que no sean gigantes */
+    
+    /* Imágenes controladas */
     div[data-testid="stImage"] img {
-        height: 120px !important; /* Altura fija para achicar cuadros */
-        object-fit: contain !important; /* Que la imagen no se deforme */
-        margin-left: auto;
-        margin-right: auto;
+        max-height: 120px !important;
+        object-fit: contain !important;
     }
 
-    /* Alineación de textos dentro de la tarjeta */
-    div[data-testid="column"] h2, div[data-testid="column"] p {
-        text-align: center !important;
+    /* =========================================
+       4. BOTONES GLOBALES
+       ========================================= */
+    /* Botón Salida / Consolidar: AZUL (no negro) */
+    div.stForm button, div[data-testid="column"] button {
+        background-color: #2488bc !important;
+        color: #ffffff !important;
+        border: none !important;
+        font-weight: bold !important;
     }
 
-    /* 3. INPUTS Y FORMULARIOS (Mantenido de la versión anterior) */
-    input, textarea, .stNumberInput input {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-        border: 1px solid #000000 !important;
-    }
-    div[data-baseweb="select"] > div {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-        border: 1px solid #000000 !important;
-    }
-    div[role="listbox"] ul li, div[role="listbox"] ul li div {
-        color: #000000 !important;
-        background-color: #ffffff !important;
-    }
-    div[data-testid="stSelectbox"] div[data-baseweb="select"] span {
-        color: #000000 !important;
-    }
-
-    /* 4. BARRA LATERAL (Mantenido) */
-    [data-testid="stSidebar"] { background-color: #1a222b !important; }
-    .profile-section { text-align: center !important; padding: 20px 10px; }
-    .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 4px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
-    .stSidebar .stButton>button { background-color: transparent !important; border: none !important; color: #bdc3c7 !important; text-align: left !important; padding-left: 15px !important; box-shadow: none !important; }
-    .stSidebar .stButton>button:hover { background-color: rgba(255,255,255,0.05) !important; color: #ffffff !important; border-left: 4px solid #3498db !important; }
-    [data-testid="stSidebar"] p, [data-testid="stSidebar"] span { color: #ffffff !important; }
-
-    /* BOTÓN AZUL */
-    div.stForm button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; }
     [data-testid="stSidebarNav"] {display: none;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- PANEL IZQUIERDO ---
+# --- PANEL IZQUIERDO (SIDEBAR) ---
 with st.sidebar:
     st.markdown(f"""
         <div class="profile-section">
             <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="profile-pic">
-            <p style="font-size:18px; font-weight:bold; margin:0; color:white;">{st.session_state.user.upper()}</p>
-            <p style="font-size:12px; color:#f39c12; margin:0;">{st.session_state.rol.upper()} USER</p>
+            <p style="font-size:18px; font-weight:bold; margin:0; color:white !important;">{st.session_state.user.upper()}</p>
+            <p style="font-size:12px; color:#f39c12 !important; margin:0;">{st.session_state.rol.upper()} USER</p>
         </div>
         <div style="height:1px; background-color:#3498db; opacity:0.3; margin-bottom:20px;"></div>
     """, unsafe_allow_html=True)
     
     if st.button("📊 Dashboard / Stock", use_container_width=True): st.session_state.menu = "Stock"
+    
     if st.session_state.rol == "Super":
         if st.button("📥 Añadir Producto", use_container_width=True): st.session_state.menu = "Carga"
         if st.button("📋 Historial", use_container_width=True): st.session_state.menu = "Log"
         if st.button("📈 Estadísticas", use_container_width=True): st.session_state.menu = "Stats"
         if st.button("👥 Usuarios", use_container_width=True): st.session_state.menu = "Users"
         if st.button("📞 Proveedores", use_container_width=True): st.session_state.menu = "Prov"
+
     st.markdown("<br><br>", unsafe_allow_html=True)
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state.autenticado = False
@@ -147,14 +186,15 @@ if opcion == "Stock":
         for i, p in enumerate(items):
             if (categoria == "Todos" or p['categoria'] == categoria) and (busqueda.lower() in p['nombre'].lower()):
                 with cols[i % 4]:
-                    with st.container(border=True): # El borde negro ahora se fuerza por CSS arriba
+                    # Usamos st.container con borde controlado por CSS arriba
+                    with st.container(border=True):
                         st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=True)
-                        # Usamos st.markdown con HTML para forzar centrado y color negro
-                        st.markdown(f"<div style='text-align:center; color:black; font-weight:bold; margin-bottom:5px;'>{p['nombre']}</div>", unsafe_allow_html=True)
+                        # Textos en HTML para asegurar color negro y tamaño compacto
+                        st.markdown(f"<div style='text-align:center; color:black; font-weight:bold; font-size:14px; margin-bottom:5px; height:40px; overflow:hidden;'>{p['nombre']}</div>", unsafe_allow_html=True)
                         
                         c1, c2 = st.columns(2)
-                        with c1: st.markdown(f"<div style='text-align:center; color:black;'>U: {p['stock']}</div>", unsafe_allow_html=True)
-                        with c2: st.markdown(f"<div style='text-align:center; color:black;'>S/ {p['precio_venta']}</div>", unsafe_allow_html=True)
+                        with c1: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>U: {p['stock']}</div>", unsafe_allow_html=True)
+                        with c2: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>S/ {p['precio_venta']}</div>", unsafe_allow_html=True)
                         
                         st.markdown("<div style='margin-top:5px;'></div>", unsafe_allow_html=True)
                         if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True):
@@ -166,12 +206,14 @@ if opcion == "Stock":
 elif opcion == "Carga":
     st.markdown("<h2>📥 Añadir Producto</h2>", unsafe_allow_html=True)
     with st.form("form_carga", clear_on_submit=True):
-        st.markdown("<p>Complete los campos obligatorios (*)</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color:black;'>Complete los campos obligatorios (*)</p>", unsafe_allow_html=True)
+        
         n = st.text_input("Modelo / Repuesto *")
         c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
         s = st.number_input("Cantidad a añadir", min_value=1, step=1)
         p = st.number_input("Precio Venta (S/) *", min_value=0.0, step=0.5)
         img = st.text_input("URL Imagen (Opcional)")
+        
         if st.form_submit_button("CONSOLIDAR INGRESO"):
             if not n or c == "Seleccionar" or p <= 0:
                 st.warning("⚠️ Falta completar Nombre, Categoría o Precio.")
