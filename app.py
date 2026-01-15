@@ -3,86 +3,93 @@ from supabase import create_client
 import pandas as pd
 import plotly.express as px
 
-# --- CONEXIÓN ---
+# --- CONEXIÓN A BASE DE DATOS ---
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
+# --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide")
 
-# --- LÓGICA DE SESIÓN ---
+# --- LÓGICA DE SESIÓN (LOGIN) ---
 if 'autenticado' not in st.session_state:
     st.session_state.autenticado = False
     st.session_state.rol = None
     st.session_state.user = None
     st.session_state.menu = "Stock"
 
-# --- LOGIN ---
+# --- INTERFAZ DE ACCESO ---
 if not st.session_state.autenticado:
     st.markdown("<h1 style='text-align:center; color:#2488bc;'>VILLAFIX ACCESS</h1>", unsafe_allow_html=True)
     with st.container(border=True):
         u = st.text_input("Usuario")
         p = st.text_input("Contraseña", type="password")
         if st.button("INGRESAR AL SISTEMA", use_container_width=True):
-            res = supabase.table("usuarios").select("*").eq("usuario", u).eq("contrasena", p).execute()
-            if res.data:
-                st.session_state.autenticado = True
-                st.session_state.rol = res.data[0]['rol']
-                st.session_state.user = u
-                st.rerun()
-            else:
-                st.error("Credenciales incorrectas")
+            try:
+                res = supabase.table("usuarios").select("*").eq("usuario", u).eq("contrasena", p).execute()
+                if res.data:
+                    st.session_state.autenticado = True
+                    st.session_state.rol = res.data[0]['rol']
+                    st.session_state.user = u
+                    st.rerun()
+                else:
+                    st.error("Credenciales incorrectas")
+            except Exception as e:
+                st.error(f"Error de conexión: {e}")
     st.stop()
 
-# --- DISEÑO UI PREMIUM (SIDEBAR OSCURO CON PERFIL) ---
+# --- DISEÑO UI PREMIUM (SIDEBAR FIJO CON PERFIL) ---
 st.markdown("""
     <style>
-    .stApp { background-color: #f8f9fa; color: #1e1e2f; }
+    /* Fondo principal y tipografía */
+    .stApp { background-color: #f8f9fa; color: #1e1e2f; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     
-    /* SIDEBAR OSCURO */
+    /* SIDEBAR FIJO Y OSCURO */
     [data-testid="stSidebar"] {
         background-color: #1a222b !important;
         color: white !important;
         min-width: 280px !important;
+        border-right: 1px solid #2c3e50;
     }
 
-    /* CONTENEDOR DE PERFIL */
+    /* CONTENEDOR DE PERFIL (Basado en imagen image_6cc48a.png) */
     .profile-section {
         text-align: center;
         padding: 30px 10px;
-        background: linear-gradient(180deg, #1a222b 0%, #242f3d 100%);
+        background: #1a222b;
     }
     .profile-pic {
-        width: 100px;
-        height: 100px;
+        width: 110px;
+        height: 110px;
         border-radius: 50%;
-        border: 3px solid #f39c12;
-        margin-bottom: 10px;
+        border: 4px solid #f39c12; /* Borde naranja de la referencia */
+        margin-bottom: 15px;
         object-fit: cover;
     }
     .profile-name {
         font-size: 18px;
         font-weight: bold;
         color: white;
-        margin-bottom: 0;
+        margin: 0;
     }
     .profile-status {
-        font-size: 12px;
-        color: #bdc3c7;
+        font-size: 13px;
+        color: #95a5a6;
+        margin-bottom: 10px;
     }
 
-    /* SEPARADOR AZUL */
+    /* SEPARADOR AZUL DELGADO */
     .sidebar-divider {
-        height: 2px;
-        background-color: #2488bc;
-        margin: 10px 0;
+        height: 1px;
+        background-color: #3498db;
+        margin: 5px 0 15px 0;
         width: 100%;
     }
 
-    /* BOTONES DE MENÚ */
+    /* BOTONES DE MENÚ ALINEADOS A LA IZQUIERDA */
     .stSidebar .stButton>button {
         background-color: transparent;
-        color: #ecf0f1;
+        color: #bdc3c7;
         border: none;
         border-radius: 0;
         height: 50px;
@@ -90,24 +97,33 @@ st.markdown("""
         font-size: 15px;
         width: 100%;
         padding-left: 20px;
-        transition: 0.2s;
-        border-left: 0px solid #2488bc;
+        transition: all 0.2s ease;
+        border-left: 0px solid #3498db;
     }
     
-    .stSidebar .stButton>button:hover {
-        background-color: #242f3d !important;
+    /* Hover y Selección activa */
+    .stSidebar .stButton>button:hover, .stSidebar .stButton>button:active {
+        background-color: #2c3e50 !important;
         color: white !important;
-        border-left: 5px solid #2488bc !important;
+        border-left: 5px solid #3498db !important;
     }
 
-    /* OCULTAR ELEMENTOS POR DEFECTO DE STREAMLIT EN SIDEBAR */
+    /* Ocultar elementos innecesarios */
     [data-testid="stSidebarNav"] {display: none;}
+    
+    /* Ajuste de tarjetas de productos */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background-color: white !important;
+        border-radius: 12px !important;
+        border: 1px solid #e1e4e8 !important;
+        padding: 15px !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
 # --- PANEL IZQUIERDO (SIDEBAR) ---
 with st.sidebar:
-    # SECCIÓN DE PERFIL (Basado en tu referencia)
+    # SECCIÓN DE PERFIL
     st.markdown(f"""
         <div class="profile-section">
             <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="profile-pic">
@@ -117,7 +133,7 @@ with st.sidebar:
         <div class="sidebar-divider"></div>
     """, unsafe_allow_html=True)
     
-    # NAVEGACIÓN
+    # NAVEGACIÓN (Iconos monocromáticos blancos)
     if st.button("⬜ Dashboard / Stock", use_container_width=True): st.session_state.menu = "Stock"
     
     if st.session_state.rol == "Super":
@@ -127,12 +143,12 @@ with st.sidebar:
         if st.button("⬜ Usuarios", use_container_width=True): st.session_state.menu = "Users"
         if st.button("⬜ Proveedores", use_container_width=True): st.session_state.menu = "Prov"
 
-    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top: 50px;'></div>", unsafe_allow_html=True)
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state.autenticado = False
         st.rerun()
 
-# --- ÁREA CENTRAL (TODAS LAS FUNCIONES MANTENIDAS) ---
+# --- ÁREA CENTRAL ---
 opcion = st.session_state.menu
 
 if opcion == "Stock":
@@ -156,7 +172,11 @@ if opcion == "Stock":
                         if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True):
                             if p['stock'] > 0:
                                 supabase.table("productos").update({"stock": p['stock']-1}).eq("id", p['id']).execute()
-                                supabase.table("historial").insert({"producto_nombre":p['nombre'], "cantidad":-1, "usuario":st.session_state.user}).execute()
+                                supabase.table("historial").insert({
+                                    "producto_nombre": p['nombre'], 
+                                    "cantidad": -1, 
+                                    "usuario": st.session_state.user
+                                }).execute()
                                 st.rerun()
 
 elif opcion == "Carga":
@@ -167,17 +187,17 @@ elif opcion == "Carga":
         s = st.number_input("Stock inicial", min_value=1)
         p = st.number_input("Precio Venta (S/)", min_value=0.0)
         img = st.text_input("URL Imagen")
-        if st.form_submit_button("GUARDAR EN VILLAFIX"):
+        if st.form_submit_button("GUARDAR"):
             if n and c:
                 supabase.table("productos").insert({"nombre":n, "categoria":c, "stock":s, "precio_venta":p, "imagen_url":img}).execute()
                 st.success("Guardado correctamente.")
 
 elif opcion == "Log":
-    st.header("📜 Historial")
+    st.header("📜 Historial de Movimientos")
     logs = supabase.table("historial").select("*").order("fecha", desc=True).execute().data
     if logs:
         df = pd.DataFrame(logs)
-        df['fecha'] = pd.to_datetime(df['fecha']).dt.strftime('%d/%m %H:%M')
+        df['fecha'] = pd.to_datetime(df['fecha']).dt.strftime('%d/%m/%Y %H:%M')
         st.dataframe(df[['fecha', 'producto_nombre', 'cantidad', 'usuario']], use_container_width=True, hide_index=True)
 
 elif opcion == "Stats":
@@ -189,9 +209,11 @@ elif opcion == "Stats":
         st.plotly_chart(fig, use_container_width=True)
 
 elif opcion == "Users":
-    st.header("👥 Usuarios")
+    st.header("👥 Gestión de Usuarios")
     with st.form("nu"):
-        un, pw, rl = st.text_input("Usuario"), st.text_input("Clave"), st.selectbox("Rol", ["Normal", "Super"])
+        un = st.text_input("Usuario")
+        pw = st.text_input("Clave")
+        rl = st.selectbox("Rol", ["Normal", "Super"])
         if st.form_submit_button("CREAR"):
             supabase.table("usuarios").insert({"usuario":un, "contrasena":pw, "rol":rl}).execute()
             st.success("Usuario creado.")
