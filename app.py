@@ -36,7 +36,7 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- CSS MAESTRO (CORRECCIÓN DE VISIBILIDAD) ---
+# --- CSS MAESTRO (DISEÑO INTOCABLE) ---
 st.markdown("""
     <style>
     /* 1. FONDO BLANCO GLOBAL */
@@ -44,7 +44,7 @@ st.markdown("""
         background-color: #ffffff !important;
     }
 
-    /* 2. BARRA LATERAL (OSCURA) */
+    /* 2. BARRA LATERAL (OSCURA Y LIMPIA) */
     [data-testid="stSidebar"] {
         background-color: #1a222b !important;
     }
@@ -65,72 +65,31 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    /* 3. ARREGLO CRÍTICO DE LECTURA (TEXTOS Y ETIQUETAS) */
-    /* Fuerza color negro en todos los textos principales, etiquetas y diálogos */
-    div[data-testid="stWidgetLabel"] p, 
-    label, 
-    .stMarkdown p, 
-    h1, h2, h3, 
-    .stDialog p, 
-    .stDialog label,
-    div[role="dialog"] p,
-    div[role="dialog"] label {
+    /* 3. ETIQUETAS Y TEXTOS NEGROS */
+    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label {
         color: #000000 !important;
         -webkit-text-fill-color: #000000 !important;
         font-weight: 700 !important;
     }
 
-    /* 4. ARREGLO DE INPUTS (CAJAS DE TEXTO) */
-    /* Fondo blanco, Borde gris, TEXTO NEGRO VISIBLE */
+    /* 4. INPUTS */
     input, textarea, .stNumberInput input {
-        background-color: #ffffff !important;
+        background-color: #f8f9fa !important;
         color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
-        border: 1px solid #cccccc !important;
-        caret-color: #000000 !important; /* Cursor negro */
+        border: 1px solid #aaa !important;
     }
-    
-    /* Placeholders (Texto de ayuda) que se vea gris oscuro, no invisible */
-    ::placeholder {
-        color: #666666 !important;
-        opacity: 1 !important;
-    }
-
-    /* 5. ARREGLO DE LISTAS DESPLEGABLES (SELECTBOX) */
     div[data-baseweb="select"] > div {
-        background-color: #ffffff !important;
+        background-color: #f8f9fa !important;
         color: #000000 !important;
-        border: 1px solid #cccccc !important;
+        border: 1px solid #aaa !important;
     }
-    div[data-baseweb="select"] span { 
-        color: #000000 !important; 
-        -webkit-text-fill-color: #000000 !important;
-    }
-    /* Opciones del menú desplegable */
-    ul[data-testid="stSelectboxVirtualDropdown"] {
-        background-color: #ffffff !important;
-    }
+    div[data-baseweb="select"] span { color: #000000 !important; }
     ul[data-testid="stSelectboxVirtualDropdown"] li {
         background-color: #ffffff !important;
         color: #000000 !important;
     }
-    /* Opción seleccionada o hover */
-    ul[data-testid="stSelectboxVirtualDropdown"] li:hover, 
-    ul[data-testid="stSelectboxVirtualDropdown"] li[aria-selected="true"] {
-        background-color: #e6f7ff !important;
-    }
 
-    /* 6. ARREGLO DE VENTANAS FLOTANTES (MODALES) */
-    /* Forzar fondo blanco en el modal para que las letras negras se vean */
-    div[role="dialog"] {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-    }
-    div[data-testid="stDialog"] {
-        background-color: #ffffff !important;
-    }
-
-    /* 7. TARJETAS DE STOCK */
+    /* 5. TARJETAS DE STOCK */
     div[data-testid="stVerticalBlockBorderWrapper"] {
         background-color: #ffffff !important;
         border: 1px solid #ddd !important;
@@ -138,6 +97,8 @@ st.markdown("""
         box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
         height: 100% !important; 
     }
+
+    /* IMÁGENES CENTRADAS */
     div[data-testid="stImage"] {
         display: flex !important;
         justify-content: center !important; 
@@ -155,12 +116,14 @@ st.markdown("""
         object-fit: contain !important;
         flex-grow: 0 !important;
     }
+
+    /* Textos dentro de tarjetas (Negro) */
     div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] p,
     div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] div {
         color: #000000 !important;
     }
 
-    /* 8. BOTONES */
+    /* 6. BOTONES */
     div.stButton button {
         background-color: #2488bc !important;
         color: #ffffff !important;
@@ -170,7 +133,7 @@ st.markdown("""
     }
     div.stButton button p { color: #ffffff !important; }
 
-    /* Botón NO STOCK (ROJO) */
+    /* Botón NO STOCK / PELIGRO (ROJO) */
     div.stButton button:disabled, button[kind="secondary"] {
         background-color: #e74c3c !important;
         color: white !important;
@@ -180,7 +143,7 @@ st.markdown("""
     }
     div.stButton button:disabled p { color: white !important; }
     
-    /* Pestañas */
+    /* Pestañas (Tabs) */
     button[data-baseweb="tab"] { color: #000000 !important; }
     div[data-baseweb="tab-list"] { background-color: #f1f3f4 !important; border-radius: 8px; }
 
@@ -319,6 +282,14 @@ if opcion == "Stock":
                                 <img src="{img_url}" style="max-height: 150px; width: auto; object-fit: contain; display: block;">
                             </div>
                         """, unsafe_allow_html=True)
+                        
+                        # --- AQUÍ ESTÁ EL CAMBIO: AGREGAR MARCA SI EXISTE ---
+                        marca_texto = p.get('marca')
+                        if marca_texto:
+                            # Pequeña etiqueta de marca encima del nombre
+                            st.markdown(f"<div style='text-align:center; color:#555555; font-size:11px; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:-3px;'>{marca_texto}</div>", unsafe_allow_html=True)
+                        # ----------------------------------------------------
+
                         st.markdown(f"<div style='text-align:center; color:#000000; font-weight:bold; margin-bottom:5px; height:45px; overflow:hidden; display:flex; align-items:center; justify-content:center; line-height:1.2;'>{p['nombre']}</div>", unsafe_allow_html=True)
                         c1, c2 = st.columns(2)
                         with c1: st.markdown(f"<div style='text-align:center; color:#000000; font-size:13px;'>U: {p['stock']}</div>", unsafe_allow_html=True)
@@ -332,7 +303,6 @@ if opcion == "Stock":
                             st.button("🚫 NO STOCK", key=f"ns_{p['id']}", disabled=True, use_container_width=True)
 
 elif opcion == "Carga":
-    # CABECERA Y BOTÓN NUEVO
     c_title, c_btn = st.columns([3, 1])
     with c_title:
         st.markdown("<h2>📥 Añadir / Reponer Stock</h2>", unsafe_allow_html=True)
@@ -340,7 +310,6 @@ elif opcion == "Carga":
         if st.button("➕ NUEVO PRODUCTO", use_container_width=True):
             modal_nuevo_producto()
     
-    # CARGA PRODUCTOS
     all_products = supabase.table("productos").select("*").order("nombre").execute().data
     nombres_prod = [p['nombre'] for p in all_products]
     
@@ -349,7 +318,6 @@ elif opcion == "Carga":
     
     if seleccion != "Seleccionar":
         prod_data = next((item for item in all_products if item["nombre"] == seleccion), None)
-        
         if prod_data:
             with st.form("form_update_stock"):
                 col_u1, col_u2 = st.columns(2)
