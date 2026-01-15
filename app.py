@@ -36,57 +36,47 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- DISEÑO UI REFINADO (ALTA VISIBILIDAD FORZADA) ---
+# --- DISEÑO UI REFORZADO (ALTA VISIBILIDAD DE LETRAS) ---
 st.markdown("""
     <style>
-    /* 1. ÁREA CENTRAL: Fondo blanco y TEXTO NEGRO PURO FORZADO */
-    .stApp { background-color: #ffffff !important; }
+    /* 1. FONDO BLANCO PURO PARA TODO EL CONTENIDO CENTRAL */
+    .stApp, .main, .block-container { 
+        background-color: #ffffff !important; 
+    }
     
-    /* Forzar color negro en TODO el contenido principal */
-    .main h1, .main h2, .main h3, .main label, .main p, .main span, .main b, .main strong, div[data-baseweb="select"] {
+    /* 2. FORZAR LETRAS EN NEGRO PURO (Solución para laptop y móvil) */
+    /* Esto aplica a etiquetas, párrafos, títulos y componentes de entrada */
+    .main label, .main p, .main span, .main b, .main h2, .main h1, .main .stMarkdown {
         color: #000000 !important;
         font-weight: 700 !important;
         opacity: 1 !important;
     }
 
-    /* 2. BARRA LATERAL: Perfil centrado y texto blanco */
+    /* 3. ARREGLO DE MENÚS DESPLEGABLES (Categorías) */
+    /* Asegura que el texto seleccionado y las opciones de la lista sean negras */
+    div[data-baseweb="select"] > div, div[role="listbox"] li {
+        color: #000000 !important;
+        background-color: #f1f3f4 !important;
+    }
+
+    /* 4. CAMPOS DE ENTRADA (Inputs y Números) */
+    input, select, .stNumberInput input {
+        background-color: #f1f3f4 !important;
+        color: #000000 !important;
+        border: 2px solid #000000 !important;
+        border-radius: 8px !important;
+    }
+
+    /* 5. BARRA LATERAL (Mantiene tu diseño de perfil centrado) */
     [data-testid="stSidebar"] { background-color: #1a222b !important; }
-    
-    .profile-section { 
-        text-align: center !important; 
-        padding: 30px 10px; 
-        width: 100%;
-    }
-    .profile-pic { 
-        width: 100px; height: 100px; border-radius: 50%; 
-        border: 4px solid #f39c12; margin-bottom: 10px; object-fit: cover;
-        display: block; margin-left: auto; margin-right: auto;
-    }
+    .profile-section { text-align: center !important; padding: 30px 10px; }
+    .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 4px solid #f39c12; margin-bottom: 15px; object-fit: cover; margin-left: auto; margin-right: auto; display: block; }
     .profile-name { font-size: 19px; font-weight: bold; color: #ffffff !important; margin: 0; }
     .profile-status { font-size: 12px; color: #f39c12 !important; margin-bottom: 5px; }
-    
     .sidebar-divider { height: 1px; background-color: #3498db; margin: 10px 0 20px 0; width: 100%; opacity: 0.5; }
     [data-testid="stSidebar"] button p { color: #ffffff !important; font-size: 15px !important; }
 
-    /* 3. INPUTS Y DESPLEGABLES: Colores fijos para evitar problemas con Modo Oscuro */
-    input, select, textarea, div[data-baseweb="select"] > div {
-        background-color: #f1f3f4 !important;
-        color: #000000 !important;
-        border: 1px solid #000000 !important;
-    }
-
-    /* Arreglo específico para las opciones dentro de los menús desplegables */
-    ul[role="listbox"] li {
-        color: #000000 !important;
-        background-color: #ffffff !important;
-    }
-    
-    div[data-testid="stNumberInput"] div[role="group"] {
-        background-color: #f1f3f4 !important;
-        border: 1px solid #000000 !important;
-    }
-
-    /* 4. BOTÓN CONSOLIDAR: Azul sólido, texto blanco, siempre visible */
+    /* 6. BOTÓN CONSOLIDAR INGRESO (Siempre azul, letra blanca) */
     div.stForm button {
         background-color: #2488bc !important;
         color: #ffffff !important;
@@ -131,7 +121,7 @@ opcion = st.session_state.menu
 if opcion == "Stock":
     st.markdown("<h2>Inventario General</h2>", unsafe_allow_html=True)
     col_a, col_b = st.columns([3, 1])
-    with col_a: busqueda = st.text_input("Buscar por modelo", placeholder="Ej: Pantalla iPhone...")
+    with col_a: busqueda = st.text_input("Buscar por modelo", placeholder="Ej: iPhone 13...")
     with col_b: categoria = st.selectbox("Apartado", ["Todos", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
 
     items = supabase.table("productos").select("*").order("nombre").execute().data
@@ -142,7 +132,7 @@ if opcion == "Stock":
                 with cols[i % 4]:
                     with st.container(border=True):
                         st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=True)
-                        st.markdown(f"<p style='margin-bottom:0px;'><b>{p['nombre']}</b></p>", unsafe_allow_html=True)
+                        st.markdown(f"<p style='margin-bottom:0px; color:black;'><b>{p['nombre']}</b></p>", unsafe_allow_html=True)
                         cs, cp = st.columns(2)
                         cs.write(f"U: {p['stock']}")
                         cp.write(f"S/ {p['precio_venta']}")
@@ -164,7 +154,7 @@ elif opcion == "Carga":
         
         if st.form_submit_button("CONSOLIDAR INGRESO"):
             if not n or c == "Seleccionar" or p <= 0:
-                st.warning("⚠️ Complete: Nombre, Categoría y Precio.")
+                st.warning("⚠️ Falta completar Nombre, Categoría o Precio.")
             else:
                 existe = supabase.table("productos").select("*").eq("nombre", n).execute()
                 if existe.data:
@@ -198,6 +188,6 @@ elif opcion == "Users":
         un = st.text_input("Usuario")
         pw = st.text_input("Clave")
         rl = st.selectbox("Rol", ["Normal", "Super"])
-        if st.form_submit_button("CREAR"):
+        if st.button("CREAR USUARIO"):
             supabase.table("usuarios").insert({"usuario":un, "contrasena":pw, "rol":rl}).execute()
             st.success("Usuario creado.")
