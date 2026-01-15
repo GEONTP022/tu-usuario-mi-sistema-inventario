@@ -80,13 +80,11 @@ st.markdown("""
         border: 1px solid #888888 !important;
         caret-color: #000000 !important;
     }
-    /* Input deshabilitado (Disabled) */
     input:disabled {
         background-color: #e9ecef !important;
         color: #555555 !important;
         -webkit-text-fill-color: #555555 !important;
     }
-    
     ::placeholder {
         color: #666666 !important;
         -webkit-text-fill-color: #666666 !important;
@@ -216,7 +214,6 @@ def modal_nuevo_producto():
         n = st.text_input("Nombre / Modelo *")
         c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
         
-        # Opciones condicionales
         m = st.text_input("Marca (Solo si aplica)")
         cb = st.text_input("Código de Batería (Solo para Baterías)")
 
@@ -299,50 +296,65 @@ if opcion == "Stock":
     with col_a: busqueda = st.text_input("Buscar por modelo", placeholder="Ej: Pantalla iPhone...")
     with col_b: categoria = st.selectbox("Apartado", ["Todos", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
 
+    # 1. Traer todos los datos ordenados alfabéticamente
     items = supabase.table("productos").select("*").order("nombre").execute().data
+    
     if items:
-        cols = st.columns(4)
-        for i, p in enumerate(items):
-            # --- FILTRO MEJORADO: BUSCA EN NOMBRE O MARCA ---
-            busqueda_lower = busqueda.lower()
+        # 2. Filtrar en una lista nueva (NO DIBUJAR TODAVÍA)
+        filtered_items = []
+        busqueda_lower = busqueda.lower()
+
+        for p in items:
             nombre_prod = p['nombre'].lower()
             marca_prod = (p.get('marca') or '').lower()
             
-            # Si la búsqueda está en el nombre O en la marca
+            # Coincidencia de búsqueda
             match_busqueda = (busqueda_lower in nombre_prod) or (busqueda_lower in marca_prod)
-            
-            if (categoria == "Todos" or p['categoria'] == categoria) and match_busqueda:
-                with cols[i % 4]:
-                    with st.container(border=True):
-                        # Imagen
-                        img_url = p.get('imagen_url') or "https://via.placeholder.com/150"
-                        st.markdown(f"""
-                            <div style="display: flex; justify-content: center; align-items: center; height: 160px; width: 100%; margin-bottom: 10px;">
-                                <img src="{img_url}" style="max-height: 150px; width: auto; object-fit: contain; display: block;">
-                            </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Texto alineado
-                        marca_val = p.get('marca', '')
-                        marca_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase;'>{marca_val}</div>" if marca_val else "<div style='height:16px;'></div>"
-                        
-                        st.markdown(f"""
-                            <div style="text-align:center; height:70px; display:flex; flex-direction:column; justify-content:flex-start; align-items:center;">
-                                {marca_html}
-                                <div style="color:black; font-weight:bold; font-size:15px; line-height:1.2; margin-top:2px;">{p['nombre']}</div>
-                            </div>
-                        """, unsafe_allow_html=True)
+            # Coincidencia de categoría
+            match_categoria = (categoria == "Todos" or p['categoria'] == categoria)
 
-                        c1, c2 = st.columns(2)
-                        with c1: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>U: {p['stock']}</div>", unsafe_allow_html=True)
-                        with c2: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>S/ {p['precio_venta']}</div>", unsafe_allow_html=True)
-                        st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
-                        
-                        if p['stock'] > 0:
-                            if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True):
-                                modal_salida(p)
-                        else:
-                            st.button("🚫 NO STOCK", key=f"ns_{p['id']}", disabled=True, use_container_width=True)
+            if match_busqueda and match_categoria:
+                filtered_items.append(p)
+        
+        # 3. Ordenamiento inteligente (Lo que pediste: modelo específico primero)
+        # Python sort es estable. Si ya viene ordenado por nombre, esto solo mueve al principio lo que empieza con la búsqueda.
+        if busqueda_lower:
+            filtered_items.sort(key=lambda x: 0 if x['nombre'].lower().startswith(busqueda_lower) else 1)
+
+        # 4. Dibujar la cuadrícula SIN HUECOS
+        cols = st.columns(4)
+        for i, p in enumerate(filtered_items):
+            with cols[i % 4]: # El índice 'i' ahora es continuo (0, 1, 2, 3...) llenando los espacios
+                with st.container(border=True):
+                    # Imagen
+                    img_url = p.get('imagen_url') or "https://via.placeholder.com/150"
+                    st.markdown(f"""
+                        <div style="display: flex; justify-content: center; align-items: center; height: 160px; width: 100%; margin-bottom: 10px;">
+                            <img src="{img_url}" style="max-height: 150px; width: auto; object-fit: contain; display: block;">
+                        </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Texto alineado
+                    marca_val = p.get('marca', '')
+                    marca_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase;'>{marca_val}</div>" if marca_val else "<div style='height:16px;'></div>"
+                    
+                    st.markdown(f"""
+                        <div style="text-align:center; height:70px; display:flex; flex-direction:column; justify-content:flex-start; align-items:center;">
+                            {marca_html}
+                            <div style="color:black; font-weight:bold; font-size:15px; line-height:1.2; margin-top:2px;">{p['nombre']}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+                    c1, c2 = st.columns(2)
+                    with c1: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>U: {p['stock']}</div>", unsafe_allow_html=True)
+                    with c2: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>S/ {p['precio_venta']}</div>", unsafe_allow_html=True)
+                    st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
+                    
+                    if p['stock'] > 0:
+                        if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True):
+                            modal_salida(p)
+                    else:
+                        st.button("🚫 NO STOCK", key=f"ns_{p['id']}", disabled=True, use_container_width=True)
 
 elif opcion == "Carga":
     c_title, c_btn = st.columns([3, 1])
@@ -363,14 +375,10 @@ elif opcion == "Carga":
                 col_u1, col_u2 = st.columns(2)
                 
                 with col_u1:
-                    # Categoría (BLOQUEADA)
                     st.text_input("Categoría", value=prod_data['categoria'], disabled=True)
-                    
-                    # Marca (BLOQUEADA)
                     marca_val = prod_data.get('marca') or ""
                     st.text_input("Marca", value=marca_val, disabled=True)
                     
-                    # Código de Batería (SOLO SI ES BATERÍA)
                     cod_bat_new = ""
                     if prod_data['categoria'] == "Baterías":
                         current_code = prod_data.get('codigo_bateria') or ""
@@ -388,13 +396,11 @@ elif opcion == "Carga":
                 if st.form_submit_button("CONSOLIDAR INGRESO"):
                     total_stock = prod_data['stock'] + stock_add
                     
-                    # Preparamos los datos a actualizar
                     datos_update = {
                         "stock": total_stock, 
                         "precio_venta": new_price, 
                         "imagen_url": new_img
                     }
-                    
                     if prod_data['categoria'] == "Baterías":
                         datos_update["codigo_bateria"] = cod_bat_new
 
