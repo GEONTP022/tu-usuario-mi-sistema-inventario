@@ -228,8 +228,13 @@ def modal_nuevo_producto():
                     st.error("⚠️ Ya existe.")
                 else:
                     supabase.table("productos").insert({
-                        "nombre": n, "categoria": c, "marca": m, "codigo_bateria": cb,
-                        "stock": s, "precio_venta": p, "imagen_url": img
+                        "nombre": n, 
+                        "categoria": c, 
+                        "marca": m, 
+                        "codigo_bateria": cb,
+                        "stock": s, 
+                        "precio_venta": p, 
+                        "imagen_url": img
                     }).execute()
                     
                     supabase.table("historial").insert({
@@ -300,7 +305,7 @@ if opcion == "Stock":
             if match_busqueda and match_categoria:
                 filtered_items.append(p)
         
-        # Ordenamiento inteligente
+        # Ordenamiento
         if busqueda_lower:
             filtered_items.sort(key=lambda x: 0 if x['nombre'].lower().startswith(busqueda_lower) else 1)
 
@@ -308,6 +313,7 @@ if opcion == "Stock":
         for i, p in enumerate(filtered_items):
             with cols[i % 4]:
                 with st.container(border=True):
+                    # Imagen
                     img_url = p.get('imagen_url') or "https://via.placeholder.com/150"
                     st.markdown(f"""
                         <div style="display: flex; justify-content: center; align-items: center; height: 160px; width: 100%; margin-bottom: 10px;">
@@ -315,14 +321,23 @@ if opcion == "Stock":
                         </div>
                     """, unsafe_allow_html=True)
                     
+                    # --- BLOQUE DE TEXTO (Alineación con Marca y Código) ---
                     marca_val = p.get('marca', '')
                     marca_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase;'>{marca_val}</div>" if marca_val else "<div style='height:16px;'></div>"
+                    
+                    # Nuevo: Código de Batería
+                    cod_bat = p.get('codigo_bateria')
+                    cod_html = f"<div style='color:#2488bc; font-size:11px; font-weight:bold; margin-top:2px;'>🔋 {cod_bat}</div>" if cod_bat else ""
+                    
+                    # Altura aumentada a 90px para acomodar todo y mantener alineación
                     st.markdown(f"""
-                        <div style="text-align:center; height:70px; display:flex; flex-direction:column; justify-content:flex-start; align-items:center;">
+                        <div style="text-align:center; height:90px; display:flex; flex-direction:column; justify-content:flex-start; align-items:center;">
                             {marca_html}
                             <div style="color:black; font-weight:bold; font-size:15px; line-height:1.2; margin-top:2px;">{p['nombre']}</div>
+                            {cod_html}
                         </div>
                     """, unsafe_allow_html=True)
+                    # -------------------------------------------------------
 
                     c1, c2 = st.columns(2)
                     with c1: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>U: {p['stock']}</div>", unsafe_allow_html=True)
@@ -342,25 +357,19 @@ elif opcion == "Carga":
     
     all_products = supabase.table("productos").select("*").order("nombre").execute().data
     
-    # --- LÓGICA DE BÚSQUEDA MEJORADA PARA MOSTRAR MARCA ---
     opciones_map = {}
     for p in all_products:
         marca = p.get('marca') or ""
-        # Creamos una etiqueta amigable: "Marca - Modelo" o solo "Modelo"
-        if marca:
-            display_text = f"{marca} - {p['nombre']}"
-        else:
-            display_text = p['nombre']
-        opciones_map[display_text] = p # Guardamos el objeto completo referenciado por su nombre bonito
+        if marca: display_text = f"{marca} - {p['nombre']}"
+        else: display_text = p['nombre']
+        opciones_map[display_text] = p
 
-    # Ordenamos la lista para que se vea bien
     lista_opciones = sorted(list(opciones_map.keys()))
     
     st.write("Seleccione un producto existente para añadir stock o editarlo.")
     seleccion_str = st.selectbox("Modelo / Repuesto (Busca por Marca o Modelo)", ["Seleccionar"] + lista_opciones)
     
     if seleccion_str != "Seleccionar":
-        # Recuperamos los datos usando el mapa, no buscando por nombre exacto en la DB
         prod_data = opciones_map[seleccion_str]
         
         if prod_data:
