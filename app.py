@@ -217,14 +217,7 @@ def modal_nuevo_producto():
         c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
         
         # Opciones condicionales
-        m = ""
-        cb = ""
-        
-        # Marca siempre visible pero opcional
         m = st.text_input("Marca (Solo si aplica)")
-        
-        # Código de Batería solo como texto informativo aqui (streamlit forms son estáticos)
-        # Nota: En el modal de creación ponemos el campo general, o lo dejamos para edición posterior
         cb = st.text_input("Código de Batería (Solo para Baterías)")
 
         s = st.number_input("Stock Inicial *", min_value=0, step=1)
@@ -310,7 +303,15 @@ if opcion == "Stock":
     if items:
         cols = st.columns(4)
         for i, p in enumerate(items):
-            if (categoria == "Todos" or p['categoria'] == categoria) and (busqueda.lower() in p['nombre'].lower()):
+            # --- FILTRO MEJORADO: BUSCA EN NOMBRE O MARCA ---
+            busqueda_lower = busqueda.lower()
+            nombre_prod = p['nombre'].lower()
+            marca_prod = (p.get('marca') or '').lower()
+            
+            # Si la búsqueda está en el nombre O en la marca
+            match_busqueda = (busqueda_lower in nombre_prod) or (busqueda_lower in marca_prod)
+            
+            if (categoria == "Todos" or p['categoria'] == categoria) and match_busqueda:
                 with cols[i % 4]:
                     with st.container(border=True):
                         # Imagen
@@ -361,12 +362,11 @@ elif opcion == "Carga":
             with st.form("form_update_stock"):
                 col_u1, col_u2 = st.columns(2)
                 
-                # --- AQUÍ ESTÁ EL CAMBIO SOLICITADO ---
                 with col_u1:
-                    # Categoría (BLOQUEADA / DISABLED)
+                    # Categoría (BLOQUEADA)
                     st.text_input("Categoría", value=prod_data['categoria'], disabled=True)
                     
-                    # Marca (BLOQUEADA / DISABLED - SI EXISTE)
+                    # Marca (BLOQUEADA)
                     marca_val = prod_data.get('marca') or ""
                     st.text_input("Marca", value=marca_val, disabled=True)
                     
@@ -395,7 +395,6 @@ elif opcion == "Carga":
                         "imagen_url": new_img
                     }
                     
-                    # Solo actualizamos código de batería si es una batería
                     if prod_data['categoria'] == "Baterías":
                         datos_update["codigo_bateria"] = cod_bat_new
 
