@@ -36,7 +36,7 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- CSS MAESTRO (SOLUCIÓN DE VISIBILIDAD TOTAL) ---
+# --- CSS MAESTRO (TODO EL DISEÑO ANTERIOR) ---
 st.markdown("""
     <style>
     /* 1. FONDO BLANCO GLOBAL */
@@ -66,47 +66,43 @@ st.markdown("""
     }
 
     /* 3. TEXTOS NEGROS OBLIGATORIOS */
-    /* Esto arregla los títulos que no se veían */
-    div[data-testid="stWidgetLabel"] p, 
-    label, 
-    .stMarkdown p, 
-    h1, h2, h3, 
-    .stDialog p, 
-    .stDialog label,
-    div[role="dialog"] p {
+    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p {
         color: #000000 !important;
         -webkit-text-fill-color: #000000 !important;
         font-weight: 700 !important;
     }
 
-    /* 4. CAJAS DE TEXTO (INPUTS) - VISIBILIDAD CRÍTICA */
+    /* 4. CAJAS DE TEXTO (INPUTS) */
     input, textarea, .stNumberInput input {
         background-color: #ffffff !important;
         color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important; /* Fuerza negro en Chrome */
+        -webkit-text-fill-color: #000000 !important;
         border: 1px solid #888888 !important;
-        caret-color: #000000 !important; /* El palito para escribir negro */
+        caret-color: #000000 !important;
+    }
+    /* Input deshabilitado (Disabled) */
+    input:disabled {
+        background-color: #e9ecef !important;
+        color: #555555 !important;
+        -webkit-text-fill-color: #555555 !important;
     }
     
-    /* Arreglo para el texto gris de "Seleccionar" (Placeholder) */
     ::placeholder {
         color: #666666 !important;
         -webkit-text-fill-color: #666666 !important;
         opacity: 1 !important;
     }
 
-    /* 5. MENÚS DESPLEGABLES (SELECTBOX) */
+    /* 5. MENÚS DESPLEGABLES */
     div[data-baseweb="select"] > div {
         background-color: #ffffff !important;
         color: #000000 !important;
         border: 1px solid #888888 !important;
     }
-    /* Texto seleccionado */
     div[data-baseweb="select"] span { 
         color: #000000 !important; 
         -webkit-text-fill-color: #000000 !important;
     }
-    /* Opciones de la lista */
     ul[data-testid="stSelectboxVirtualDropdown"] {
         background-color: #ffffff !important;
     }
@@ -118,12 +114,8 @@ st.markdown("""
         background-color: #f0f2f6 !important;
     }
 
-    /* 6. VENTANAS FLOTANTES (MODALES) */
+    /* 6. VENTANAS FLOTANTES */
     div[role="dialog"] {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-    }
-    div[role="dialog"] input {
         background-color: #ffffff !important;
         color: #000000 !important;
     }
@@ -223,7 +215,18 @@ def modal_nuevo_producto():
     with st.form("form_nuevo_prod"):
         n = st.text_input("Nombre / Modelo *")
         c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
-        m = st.text_input("Marca (Opcional)")
+        
+        # Opciones condicionales
+        m = ""
+        cb = ""
+        
+        # Marca siempre visible pero opcional
+        m = st.text_input("Marca (Solo si aplica)")
+        
+        # Código de Batería solo como texto informativo aqui (streamlit forms son estáticos)
+        # Nota: En el modal de creación ponemos el campo general, o lo dejamos para edición posterior
+        cb = st.text_input("Código de Batería (Solo para Baterías)")
+
         s = st.number_input("Stock Inicial *", min_value=0, step=1)
         p = st.number_input("Precio Venta (S/) *", min_value=0.0, step=0.5)
         img = st.text_input("URL Imagen (Opcional)")
@@ -237,8 +240,15 @@ def modal_nuevo_producto():
                     st.error("⚠️ Ya existe.")
                 else:
                     supabase.table("productos").insert({
-                        "nombre": n, "categoria": c, "marca": m, "stock": s, "precio_venta": p, "imagen_url": img
+                        "nombre": n, 
+                        "categoria": c, 
+                        "marca": m, 
+                        "codigo_bateria": cb,
+                        "stock": s, 
+                        "precio_venta": p, 
+                        "imagen_url": img
                     }).execute()
+                    
                     supabase.table("historial").insert({
                         "producto_nombre": n, "cantidad": s, "usuario": st.session_state.user,
                         "tecnico": "Ingreso Inicial", "local": "Almacén"
@@ -312,7 +322,8 @@ if opcion == "Stock":
                         """, unsafe_allow_html=True)
                         
                         # Texto alineado
-                        marca_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase;'>{p.get('marca', '')}</div>" if p.get('marca') else "<div style='height:16px;'></div>"
+                        marca_val = p.get('marca', '')
+                        marca_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase;'>{marca_val}</div>" if marca_val else "<div style='height:16px;'></div>"
                         
                         st.markdown(f"""
                             <div style="text-align:center; height:70px; display:flex; flex-direction:column; justify-content:flex-start; align-items:center;">
@@ -349,13 +360,21 @@ elif opcion == "Carga":
         if prod_data:
             with st.form("form_update_stock"):
                 col_u1, col_u2 = st.columns(2)
+                
+                # --- AQUÍ ESTÁ EL CAMBIO SOLICITADO ---
                 with col_u1:
-                    cat_opts = ["Pantallas", "Baterías", "Flex", "Glases", "Otros"]
-                    idx_cat = cat_opts.index(prod_data['categoria']) if prod_data['categoria'] in cat_opts else 0
-                    new_cat = st.selectbox("Categoría", cat_opts, index=idx_cat)
+                    # Categoría (BLOQUEADA / DISABLED)
+                    st.text_input("Categoría", value=prod_data['categoria'], disabled=True)
                     
+                    # Marca (BLOQUEADA / DISABLED - SI EXISTE)
                     marca_val = prod_data.get('marca') or ""
-                    new_marca = st.text_input("Marca", value=marca_val) if new_cat in ["Pantallas", "Baterías", "Otros"] else marca_val
+                    st.text_input("Marca", value=marca_val, disabled=True)
+                    
+                    # Código de Batería (SOLO SI ES BATERÍA)
+                    cod_bat_new = ""
+                    if prod_data['categoria'] == "Baterías":
+                        current_code = prod_data.get('codigo_bateria') or ""
+                        cod_bat_new = st.text_input("Código de Batería", value=current_code)
 
                 with col_u2:
                     new_price = st.number_input("Precio Venta (S/)", value=float(prod_data['precio_venta']), min_value=0.0, step=0.5)
@@ -368,10 +387,19 @@ elif opcion == "Carga":
                 
                 if st.form_submit_button("CONSOLIDAR INGRESO"):
                     total_stock = prod_data['stock'] + stock_add
-                    supabase.table("productos").update({
-                        "stock": total_stock, "precio_venta": new_price, "categoria": new_cat,
-                        "marca": new_marca, "imagen_url": new_img
-                    }).eq("id", prod_data['id']).execute()
+                    
+                    # Preparamos los datos a actualizar
+                    datos_update = {
+                        "stock": total_stock, 
+                        "precio_venta": new_price, 
+                        "imagen_url": new_img
+                    }
+                    
+                    # Solo actualizamos código de batería si es una batería
+                    if prod_data['categoria'] == "Baterías":
+                        datos_update["codigo_bateria"] = cod_bat_new
+
+                    supabase.table("productos").update(datos_update).eq("id", prod_data['id']).execute()
                     
                     supabase.table("historial").insert({
                         "producto_nombre": prod_data['nombre'], "cantidad": stock_add,
