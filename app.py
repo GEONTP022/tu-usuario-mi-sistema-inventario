@@ -66,10 +66,16 @@ st.markdown("""
     }
 
     /* 3. TEXTOS NEGROS OBLIGATORIOS */
-    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p {
+    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetriclabel {
         color: #000000 !important;
         -webkit-text-fill-color: #000000 !important;
         font-weight: 700 !important;
+    }
+    
+    /* Metrics (KPIs) */
+    div[data-testid="stMetricValue"] {
+        color: #2488bc !important;
+        -webkit-text-fill-color: #2488bc !important;
     }
 
     /* 4. CAJAS DE TEXTO (INPUTS) */
@@ -291,7 +297,7 @@ opcion = st.session_state.menu
 if opcion == "Stock":
     st.markdown("<h2>Inventario General</h2>", unsafe_allow_html=True)
     col_a, col_b = st.columns([3, 1])
-    with col_a: busqueda = st.text_input("Buscar por modelo, marca o código...", placeholder="Ej: Pantalla iPhone, Oppo, COD-123...")
+    with col_a: busqueda = st.text_input("Buscar por modelo", placeholder="Ej: Pantalla iPhone...")
     with col_b: categoria = st.selectbox("Apartado", ["Todos", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
 
     items = supabase.table("productos").select("*").order("nombre").execute().data
@@ -300,7 +306,6 @@ if opcion == "Stock":
         filtered_items = []
         busqueda_lower = busqueda.lower()
         for p in items:
-            # --- BUSQUEDA EXTENDIDA: NOMBRE, MARCA O CÓDIGO ---
             nombre_prod = p['nombre'].lower()
             marca_prod = (p.get('marca') or '').lower()
             codigo_prod = (p.get('codigo_bateria') or '').lower()
@@ -321,6 +326,7 @@ if opcion == "Stock":
         for i, p in enumerate(filtered_items):
             with cols[i % 4]:
                 with st.container(border=True):
+                    # Imagen
                     img_url = p.get('imagen_url') or "https://via.placeholder.com/150"
                     st.markdown(f"""
                         <div style="display: flex; justify-content: center; align-items: center; height: 160px; width: 100%; margin-bottom: 10px;">
@@ -328,6 +334,7 @@ if opcion == "Stock":
                         </div>
                     """, unsafe_allow_html=True)
                     
+                    # Info
                     marca_val = p.get('marca', '')
                     marca_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase;'>{marca_val}</div>" if marca_val else "<div style='height:16px;'></div>"
                     
@@ -360,20 +367,13 @@ elif opcion == "Carga":
     
     all_products = supabase.table("productos").select("*").order("nombre").execute().data
     
-    # --- BUSQUEDA MEJORADA EN CARGA (Nombre, Marca, Código) ---
     opciones_map = {}
     for p in all_products:
         marca = p.get('marca') or ""
         codigo = p.get('codigo_bateria')
-        
-        # Construimos el texto del buscador
         base_text = f"{marca} - {p['nombre']}" if marca else p['nombre']
-        
-        if codigo:
-            display_text = f"{base_text} ({codigo})"
-        else:
-            display_text = base_text
-            
+        if codigo: display_text = f"{base_text} ({codigo})"
+        else: display_text = base_text
         opciones_map[display_text] = p
 
     lista_opciones = sorted(list(opciones_map.keys()))
@@ -383,7 +383,6 @@ elif opcion == "Carga":
     
     if seleccion_str != "Seleccionar":
         prod_data = opciones_map[seleccion_str]
-        
         if prod_data:
             with st.form("form_update_stock"):
                 col_u1, col_u2 = st.columns(2)
@@ -408,12 +407,8 @@ elif opcion == "Carga":
                 
                 if st.form_submit_button("CONSOLIDAR INGRESO"):
                     total_stock = prod_data['stock'] + stock_add
-                    
-                    datos_update = {
-                        "stock": total_stock, "precio_venta": new_price, "imagen_url": new_img
-                    }
-                    if prod_data['categoria'] == "Baterías":
-                        datos_update["codigo_bateria"] = cod_bat_new
+                    datos_update = { "stock": total_stock, "precio_venta": new_price, "imagen_url": new_img }
+                    if prod_data['categoria'] == "Baterías": datos_update["codigo_bateria"] = cod_bat_new
 
                     supabase.table("productos").update(datos_update).eq("id", prod_data['id']).execute()
                     
@@ -422,7 +417,6 @@ elif opcion == "Carga":
                             "producto_nombre": prod_data['nombre'], "cantidad": stock_add,
                             "usuario": st.session_state.user, "tecnico": "Ingreso Stock", "local": "Almacén"
                         }).execute()
-                    
                     st.success("Actualizado.")
                     st.rerun()
 
@@ -437,13 +431,83 @@ elif opcion == "Log":
         if 'local' in df.columns: cols.append('local')
         st.dataframe(df[cols], use_container_width=True, hide_index=True)
 
+# --- SECCIÓN ESTADÍSTICAS MEJORADA ---
 elif opcion == "Stats":
-    st.markdown("<h2>📊 Estadísticas</h2>", unsafe_allow_html=True)
-    p_data = supabase.table("productos").select("*").execute().data
-    if p_data:
-        df_p = pd.DataFrame(p_data)
-        fig = px.pie(df_p, names='categoria', values='stock', hole=0.4, title="Stock por Categoría")
-        st.plotly_chart(fig, use_container_width=True)
+    st.markdown("<h2>📊 Control y Estadísticas</h2>", unsafe_allow_html=True)
+    
+    # 1. Recuperar Datos
+    productos_db = supabase.table("productos").select("*").execute().data
+    historial_db = supabase.table("historial").select("*").execute().data
+    
+    if productos_db:
+        df_prod = pd.DataFrame(productos_db)
+        
+        # --- KPIS PRINCIPALES ---
+        kpi1, kpi2, kpi3 = st.columns(3)
+        with kpi1:
+            total_unidades = df_prod['stock'].sum()
+            st.metric("Total Unidades en Stock", f"{total_unidades}")
+        with kpi2:
+            valor_inventario = (df_prod['stock'] * df_prod['precio_venta']).sum()
+            st.metric("Valor del Inventario", f"S/ {valor_inventario:,.2f}")
+        with kpi3:
+            st.metric("Total Referencias", f"{len(df_prod)}")
+        
+        st.divider()
+
+        # 2. PROCESAMIENTO DE SALIDAS (HISTORIAL)
+        if historial_db:
+            df_hist = pd.DataFrame(historial_db)
+            # Filtramos solo salidas (cantidad negativa)
+            df_salidas = df_hist[df_hist['cantidad'] < 0].copy()
+            df_salidas['cantidad'] = df_salidas['cantidad'].abs() # Convertir a positivo para graficar
+            
+            # Unimos historial con productos para saber la categoría de lo que se vendió
+            # (Usamos el nombre como llave, ya que historial guarda nombre)
+            df_merged = df_salidas.merge(df_prod, left_on='producto_nombre', right_on='nombre', how='left')
+            
+            # --- FILA 1: GENERAL ---
+            c1, c2 = st.columns([1, 1])
+            
+            with c1:
+                st.subheader("Stock Actual por Categoría")
+                fig_stock = px.pie(df_prod, names='categoria', values='stock', hole=0.4)
+                st.plotly_chart(fig_stock, use_container_width=True)
+            
+            with c2:
+                st.subheader("Top 10 Productos Más Usados (General)")
+                if not df_salidas.empty:
+                    top_gen = df_salidas.groupby('producto_nombre')['cantidad'].sum().reset_index().sort_values('cantidad', ascending=False).head(10)
+                    fig_top = px.bar(top_gen, x='cantidad', y='producto_nombre', orientation='h', text='cantidad')
+                    st.plotly_chart(fig_top, use_container_width=True)
+                else:
+                    st.info("No hay datos de salidas aún.")
+
+            st.divider()
+            
+            # --- FILA 2: DETALLE POR CATEGORÍA (TU PEDIDO) ---
+            st.markdown("### 🔎 Análisis Detallado: ¿Qué modelos se mueven más?")
+            
+            # Selector de Categoría
+            cats_disponibles = ["Pantallas", "Baterías", "Flex", "Glases", "Otros"]
+            cat_filter = st.selectbox("Selecciona una Categoría para ver sus movimientos:", cats_disponibles)
+            
+            if not df_merged.empty:
+                # Filtrar por la categoría seleccionada
+                df_cat_specific = df_merged[df_merged['categoria'] == cat_filter]
+                
+                if not df_cat_specific.empty:
+                    # Agrupar por nombre de producto y sumar cantidad
+                    top_cat = df_cat_specific.groupby('producto_nombre')['cantidad'].sum().reset_index().sort_values('cantidad', ascending=False)
+                    
+                    st.write(f"Ranking de modelos usados en **{cat_filter}**:")
+                    fig_cat = px.bar(top_cat, x='producto_nombre', y='cantidad', text='cantidad', 
+                                     color='cantidad', color_continuous_scale='Blues')
+                    st.plotly_chart(fig_cat, use_container_width=True)
+                else:
+                    st.warning(f"No se han registrado salidas en la categoría {cat_filter} todavía.")
+            else:
+                st.info("Registra salidas para ver estadísticas detalladas.")
 
 elif opcion == "Users":
     st.markdown("<h2>👥 Gestión</h2>", unsafe_allow_html=True)
