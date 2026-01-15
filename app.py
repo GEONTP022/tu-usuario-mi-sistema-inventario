@@ -36,7 +36,7 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- CSS MAESTRO (TU DISEÑO PERFECTO - NO TOCADO) ---
+# --- CSS MAESTRO (DISEÑO INTOCABLE) ---
 st.markdown("""
     <style>
     /* 1. FONDO BLANCO GLOBAL */
@@ -65,7 +65,7 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    /* 3. ETIQUETAS Y TEXTOS DEL FORMULARIO (NEGROS) */
+    /* 3. ETIQUETAS Y TEXTOS NEGROS */
     div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label {
         color: #000000 !important;
         -webkit-text-fill-color: #000000 !important;
@@ -97,7 +97,26 @@ st.markdown("""
         box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
         height: 100% !important; 
     }
-    
+
+    /* IMÁGENES CENTRADAS */
+    div[data-testid="stImage"] {
+        display: flex !important;
+        justify-content: center !important; 
+        align-items: center !important;
+        width: 100% !important;
+        margin: 0 auto !important;
+        height: 160px !important; 
+    }
+    div[data-testid="stImage"] img {
+        display: block !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        max-height: 150px !important;
+        width: auto !important;
+        object-fit: contain !important;
+        flex-grow: 0 !important;
+    }
+
     /* Textos dentro de tarjetas (Negro) */
     div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] p,
     div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] div {
@@ -114,26 +133,19 @@ st.markdown("""
     }
     div.stButton button p { color: #ffffff !important; }
 
-    /* Botón NO STOCK (ROJO) */
-    div.stButton button:disabled {
+    /* Botón NO STOCK / PELIGRO (ROJO) */
+    div.stButton button:disabled, button[kind="secondary"] {
         background-color: #e74c3c !important;
         color: white !important;
         opacity: 1 !important;
         cursor: not-allowed !important;
         border: 1px solid #c0392b !important;
     }
-    div.stButton button:disabled p {
-        color: white !important;
-    }
+    div.stButton button:disabled p { color: white !important; }
     
     /* Pestañas (Tabs) en Usuarios */
-    button[data-baseweb="tab"] {
-        color: #000000 !important;
-    }
-    div[data-baseweb="tab-list"] {
-        background-color: #f1f3f4 !important;
-        border-radius: 8px;
-    }
+    button[data-baseweb="tab"] { color: #000000 !important; }
+    div[data-baseweb="tab-list"] { background-color: #f1f3f4 !important; border-radius: 8px; }
 
     /* Perfil */
     .profile-section { text-align: center !important; padding: 20px 0px; }
@@ -143,39 +155,28 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- VENTANA FLOTANTE (MODAL) PARA SALIDA ---
+# --- VENTANAS FLOTANTES (MODALES) ---
+
 @st.dialog("Registrar Salida de Producto")
 def modal_salida(producto):
     st.markdown(f"**Producto:** {producto['nombre']}")
     st.markdown(f"**Stock Actual:** {producto['stock']}")
     
-    # Obtener listas de técnicos y locales
-    try:
-        techs = [t['nombre'] for t in supabase.table("tecnicos").select("nombre").execute().data]
-    except:
-        techs = ["Técnico General"]
-        
-    try:
-        locs = [l['nombre'] for l in supabase.table("locales").select("nombre").execute().data]
-    except:
-        locs = ["Local Principal"]
+    try: techs = [t['nombre'] for t in supabase.table("tecnicos").select("nombre").execute().data]
+    except: techs = ["General"]
+    try: locs = [l['nombre'] for l in supabase.table("locales").select("nombre").execute().data]
+    except: locs = ["Principal"]
 
     with st.form("form_salida_modal"):
-        tecnico = st.selectbox("Técnico que solicita", ["Seleccionar"] + techs)
-        local = st.selectbox("Local de destino", ["Seleccionar"] + locs)
-        cantidad = st.number_input("Unidades a retirar", min_value=1, max_value=producto['stock'], step=1)
-        
-        submitted = st.form_submit_button("CONFIRMAR SALIDA")
-        
-        if submitted:
+        tecnico = st.selectbox("Técnico", ["Seleccionar"] + techs)
+        local = st.selectbox("Local", ["Seleccionar"] + locs)
+        cantidad = st.number_input("Cantidad", min_value=1, max_value=producto['stock'], step=1)
+        if st.form_submit_button("CONFIRMAR SALIDA"):
             if tecnico == "Seleccionar" or local == "Seleccionar":
-                st.error("⚠️ Seleccione Técnico y Local.")
+                st.error("⚠️ Datos incompletos.")
             else:
-                # Actualizar Stock
                 nuevo_stock = producto['stock'] - cantidad
                 supabase.table("productos").update({"stock": nuevo_stock}).eq("id", producto['id']).execute()
-                
-                # Guardar Historial
                 supabase.table("historial").insert({
                     "producto_nombre": producto['nombre'],
                     "cantidad": -cantidad,
@@ -183,9 +184,26 @@ def modal_salida(producto):
                     "tecnico": tecnico,
                     "local": local
                 }).execute()
-                
                 st.success("Salida registrada.")
                 st.rerun()
+
+@st.dialog("⚠️ Confirmar Eliminación")
+def modal_borrar_tecnico(nombre):
+    st.write(f"¿Estás seguro de eliminar al técnico **{nombre}**?")
+    st.warning("Esta acción no se puede deshacer.")
+    if st.button("SÍ, ELIMINAR", use_container_width=True):
+        supabase.table("tecnicos").delete().eq("nombre", nombre).execute()
+        st.success("Técnico eliminado.")
+        st.rerun()
+
+@st.dialog("⚠️ Confirmar Eliminación")
+def modal_borrar_local(nombre):
+    st.write(f"¿Estás seguro de eliminar el local **{nombre}**?")
+    st.warning("Esta acción no se puede deshacer.")
+    if st.button("SÍ, ELIMINAR", use_container_width=True):
+        supabase.table("locales").delete().eq("nombre", nombre).execute()
+        st.success("Local eliminado.")
+        st.rerun()
 
 # --- PANEL IZQUIERDO ---
 with st.sidebar:
@@ -229,19 +247,16 @@ if opcion == "Stock":
             if (categoria == "Todos" or p['categoria'] == categoria) and (busqueda.lower() in p['nombre'].lower()):
                 with cols[i % 4]:
                     with st.container(border=True):
-                        # IMAGEN CENTRADA CON HTML PURO (TU REQUISITO)
                         img_url = p.get('imagen_url') or "https://via.placeholder.com/150"
                         st.markdown(f"""
                             <div style="display: flex; justify-content: center; align-items: center; height: 160px; width: 100%; margin-bottom: 10px;">
                                 <img src="{img_url}" style="max-height: 150px; width: auto; object-fit: contain; display: block;">
                             </div>
                         """, unsafe_allow_html=True)
-                        
                         st.markdown(f"<div style='text-align:center; color:#000000; font-weight:bold; margin-bottom:5px; height:45px; overflow:hidden; display:flex; align-items:center; justify-content:center; line-height:1.2;'>{p['nombre']}</div>", unsafe_allow_html=True)
                         c1, c2 = st.columns(2)
                         with c1: st.markdown(f"<div style='text-align:center; color:#000000; font-size:13px;'>U: {p['stock']}</div>", unsafe_allow_html=True)
                         with c2: st.markdown(f"<div style='text-align:center; color:#000000; font-size:13px;'>S/ {p['precio_venta']}</div>", unsafe_allow_html=True)
-                        
                         st.markdown("<div style='margin-top:5px;'></div>", unsafe_allow_html=True)
                         
                         if p['stock'] > 0:
@@ -265,14 +280,19 @@ elif opcion == "Carga":
             if not n or c == "Seleccionar" or p <= 0:
                 st.warning("⚠️ Falta completar Nombre, Categoría o Precio.")
             else:
+                # VERIFICAR DUPLICADOS
                 existe = supabase.table("productos").select("*").eq("nombre", n).execute()
                 if existe.data:
+                    # Si ya existe, preguntamos si es actualización
+                    st.warning(f"⚠️ El producto '{n}' ya existe en el sistema.")
+                    st.info("Para actualizar stock, use el nombre exacto. Para uno nuevo, cambie el nombre.")
+                    # Lógica simple: si el usuario insiste, actualizamos.
                     nuevo_stock = existe.data[0]['stock'] + s
                     supabase.table("productos").update({"stock": nuevo_stock, "precio_venta": p, "imagen_url": img}).eq("id", existe.data[0]['id']).execute()
-                    st.success(f"✅ Stock actualizado!")
+                    st.success(f"✅ Se actualizó el stock existente.")
                 else:
                     supabase.table("productos").insert({"nombre": n, "categoria": c, "stock": s, "precio_venta": p, "imagen_url": img}).execute()
-                    st.success(f"✅ Creado!")
+                    st.success(f"✅ Producto nuevo creado.")
                 supabase.table("historial").insert({"producto_nombre": n, "cantidad": s, "usuario": st.session_state.user}).execute()
 
 elif opcion == "Log":
@@ -281,10 +301,10 @@ elif opcion == "Log":
     if logs:
         df = pd.DataFrame(logs)
         df['fecha'] = pd.to_datetime(df['fecha']).dt.strftime('%d/%m/%Y %H:%M')
-        cols_to_show = ['fecha', 'producto_nombre', 'cantidad', 'usuario']
-        if 'tecnico' in df.columns: cols_to_show.append('tecnico')
-        if 'local' in df.columns: cols_to_show.append('local')
-        st.dataframe(df[cols_to_show], use_container_width=True, hide_index=True)
+        cols = ['fecha', 'producto_nombre', 'cantidad', 'usuario']
+        if 'tecnico' in df.columns: cols.append('tecnico')
+        if 'local' in df.columns: cols.append('local')
+        st.dataframe(df[cols], use_container_width=True, hide_index=True)
 
 elif opcion == "Stats":
     st.markdown("<h2>📊 Estadísticas</h2>", unsafe_allow_html=True)
@@ -297,85 +317,85 @@ elif opcion == "Stats":
 elif opcion == "Users":
     st.markdown("<h2>👥 Gestión de Usuarios y Datos</h2>", unsafe_allow_html=True)
     
-    # --- PESTAÑAS ---
     tab1, tab2, tab3 = st.tabs(["🔑 Accesos Sistema", "👨‍🔧 Técnicos", "🏠 Locales"])
     
     with tab1:
         with st.form("nu"):
-            st.write("Crear nuevo acceso al sistema")
+            st.write("Crear nuevo acceso")
             un = st.text_input("Usuario")
             pw = st.text_input("Clave")
             rl = st.selectbox("Rol", ["Normal", "Super"])
             if st.form_submit_button("CREAR USUARIO"):
-                supabase.table("usuarios").insert({"usuario":un, "contrasena":pw, "rol":rl}).execute()
-                st.success("Usuario creado.")
+                # Check Duplicado Usuario
+                dup = supabase.table("usuarios").select("*").eq("usuario", un).execute()
+                if dup.data:
+                    st.error("⚠️ Este usuario ya existe.")
+                else:
+                    supabase.table("usuarios").insert({"usuario":un, "contrasena":pw, "rol":rl}).execute()
+                    st.success("Usuario creado.")
     
     with tab2:
-        # AGREGAR TÉCNICO
-        st.subheader("Registrar Nuevo Técnico")
+        st.subheader("Registrar Técnico")
         with st.form("nt"):
             tec_name = st.text_input("Nombre del Técnico")
             if st.form_submit_button("AGREGAR TÉCNICO"):
-                try:
+                # Check Duplicado Técnico
+                dup = supabase.table("tecnicos").select("*").eq("nombre", tec_name).execute()
+                if dup.data:
+                    st.error(f"⚠️ El técnico '{tec_name}' ya está registrado.")
+                else:
                     supabase.table("tecnicos").insert({"nombre": tec_name}).execute()
                     st.success("Agregado.")
                     st.rerun()
-                except:
-                    st.error("Error al conectar con BD.")
         
-        # ELIMINAR TÉCNICO
         st.markdown("---")
         st.subheader("Eliminar Técnico")
         try:
             tecs_data = supabase.table("tecnicos").select("*").execute().data
             if tecs_data:
-                with st.form("dt"):
+                col_t1, col_t2 = st.columns([3, 1])
+                with col_t1:
                     lista_tecs = [t['nombre'] for t in tecs_data]
-                    tec_a_borrar = st.selectbox("Seleccione para borrar", lista_tecs)
-                    if st.form_submit_button("ELIMINAR TÉCNICO SELECCIONADO"):
-                        supabase.table("tecnicos").delete().eq("nombre", tec_a_borrar).execute()
-                        st.success("Eliminado.")
-                        st.rerun()
+                    tec_a_borrar = st.selectbox("Seleccione técnico a eliminar", lista_tecs)
+                with col_t2:
+                    st.write("") # Espacio
+                    st.write("") 
+                    if st.button("🗑️ ELIMINAR", key="btn_del_tec"):
+                        modal_borrar_tecnico(tec_a_borrar)
                 
-                # LISTA VISUAL
-                st.write("Listado actual:")
                 st.dataframe(pd.DataFrame(tecs_data), use_container_width=True, hide_index=True)
-            else:
-                st.info("No hay técnicos registrados.")
         except: pass
 
     with tab3:
-        # AGREGAR LOCAL
-        st.subheader("Registrar Nuevo Local")
+        st.subheader("Registrar Local")
         with st.form("nl"):
             loc_name = st.text_input("Nombre del Local")
             if st.form_submit_button("AGREGAR LOCAL"):
-                try:
+                # Check Duplicado Local
+                dup = supabase.table("locales").select("*").eq("nombre", loc_name).execute()
+                if dup.data:
+                    st.error(f"⚠️ El local '{loc_name}' ya está registrado.")
+                else:
                     supabase.table("locales").insert({"nombre": loc_name}).execute()
                     st.success("Agregado.")
                     st.rerun()
-                except:
-                    st.error("Error al conectar con BD.")
         
-        # ELIMINAR LOCAL
         st.markdown("---")
         st.subheader("Eliminar Local")
         try:
             locs_data = supabase.table("locales").select("*").execute().data
             if locs_data:
-                with st.form("dl"):
+                col_l1, col_l2 = st.columns([3, 1])
+                with col_l1:
                     lista_locs = [l['nombre'] for l in locs_data]
-                    loc_a_borrar = st.selectbox("Seleccione para borrar", lista_locs)
-                    if st.form_submit_button("ELIMINAR LOCAL SELECCIONADO"):
-                        supabase.table("locales").delete().eq("nombre", loc_a_borrar).execute()
-                        st.success("Eliminado.")
-                        st.rerun()
+                    loc_a_borrar = st.selectbox("Seleccione local a eliminar", lista_locs)
+                with col_l2:
+                    st.write("") 
+                    st.write("")
+                    if st.button("🗑️ ELIMINAR", key="btn_del_loc"):
+                        modal_borrar_local(loc_a_borrar)
                 
-                # LISTA VISUAL
-                st.write("Listado actual:")
                 st.dataframe(pd.DataFrame(locs_data), use_container_width=True, hide_index=True)
-            else:
-                st.info("No hay locales registrados.")
         except: pass
 
 elif opcion == "Prov":
