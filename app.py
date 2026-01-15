@@ -34,39 +34,36 @@ if not st.session_state.autenticado:
                 else:
                     st.error("Credenciales incorrectas")
             except Exception as e:
-                st.error("Error de conexión. Verifique su base de datos.")
+                st.error("Error de conexión.")
     st.stop()
 
-# --- DISEÑO UI REFINADO (ALTA LEGIBILIDAD Y PERFIL CENTRADO) ---
+# --- DISEÑO UI PROFESIONAL (ALTO CONTRASTE Y PERFIL CENTRADO) ---
 st.markdown("""
     <style>
-    /* Fondo principal y textos centrales */
-    .stApp { background-color: #fcfcfc; color: #1a1a1a !important; }
+    /* 1. ÁREA CENTRAL: Fondo blanco y texto negro para lectura perfecta */
+    .stApp { 
+        background-color: #ffffff !important; 
+    }
     
-    /* Legibilidad total de etiquetas y textos */
-    label, p, span, .stMarkdown, .stSubheader {
-        color: #1a1a1a !important;
-        font-weight: 600 !important;
+    /* Forzar visibilidad de textos en toda la app central */
+    [data-testid="stHeader"], .main .block-container, label, p, span, .stMarkdown {
+        color: #000000 !important;
+        font-weight: 500 !important;
     }
 
-    /* Botones de formulario siempre visibles y legibles */
-    .stButton>button {
-        background-color: #1a222b !important;
-        color: white !important;
-        opacity: 1 !important;
-        border: none !important;
-        font-weight: bold !important;
+    h1, h2, h3, h4 {
+        color: #1a222b !important;
     }
 
-    /* BARRA LATERAL OSCURA */
+    /* 2. BARRA LATERAL: Estilo Oscuro Premium */
     [data-testid="stSidebar"] {
         background-color: #1a222b !important;
-        color: white !important;
+        color: #ffffff !important;
     }
 
-    /* PERFIL CENTRADO CORRECTAMENTE */
+    /* PERFIL CENTRADO */
     .profile-section {
-        text-align: center; /* Centrado solicitado */
+        text-align: center !important; 
         padding: 30px 10px;
         background: #1a222b;
     }
@@ -74,34 +71,50 @@ st.markdown("""
         width: 100px; height: 100px; border-radius: 50%;
         border: 4px solid #f39c12; margin-bottom: 10px; object-fit: cover;
     }
-    .profile-name { font-size: 18px; font-weight: bold; color: white !important; margin: 0; }
+    .profile-name { font-size: 18px; font-weight: bold; color: #ffffff !important; margin: 0; }
     .profile-status { font-size: 12px; color: #f39c12 !important; margin-bottom: 5px; }
 
     .sidebar-divider {
         height: 1px; background-color: #3498db; margin: 10px 0 20px 0; width: 100%; opacity: 0.5;
     }
 
-    /* Botones del menú lateral */
+    /* BOTONES DEL MENÚ LATERAL */
     .stSidebar .stButton>button {
-        background-color: transparent !important; color: #bdc3c7 !important; 
-        text-align: left !important; padding-left: 20px !important;
+        background-color: transparent !important; 
+        color: #bdc3c7 !important; 
+        text-align: left !important; 
+        padding-left: 20px !important;
+        border: none !important;
     }
     .stSidebar .stButton>button:hover {
-        background-color: #2c3e50 !important; color: white !important;
+        background-color: #2c3e50 !important; 
+        color: #ffffff !important;
         border-left: 5px solid #3498db !important;
     }
 
-    /* Inputs visibles con fondo oscuro y texto claro (Estilo formulario) */
+    /* 3. FORMULARIOS: Campos claros con bordes definidos */
     input, select, .stNumberInput div {
-        background-color: #262730 !important;
-        color: white !important;
+        background-color: #f8f9fa !important;
+        color: #000000 !important;
+        border: 1px solid #ced4da !important;
     }
+
+    /* BOTÓN DE ACCIÓN (Añadir/Consolidar) SIEMPRE VISIBLE */
+    div.stForm button {
+        background-color: #2488bc !important;
+        color: #ffffff !important;
+        border: none !important;
+        font-weight: bold !important;
+        height: 45px !important;
+        opacity: 1 !important;
+    }
+    
+    [data-testid="stSidebarNav"] {display: none;}
     </style>
     """, unsafe_allow_html=True)
 
 # --- PANEL IZQUIERDO (SIDEBAR) ---
 with st.sidebar:
-    # Perfil centrado
     st.markdown(f"""
         <div class="profile-section">
             <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="profile-pic">
@@ -132,7 +145,7 @@ if opcion == "Stock":
     st.markdown("<h2>Inventario General</h2>", unsafe_allow_html=True)
     col_a, col_b = st.columns([3, 1])
     with col_a: busqueda = st.text_input("Buscar por modelo", placeholder="Escriba aquí...")
-    with col_b: categoria = st.selectbox("Categoría", ["Todos", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
+    with col_b: categoria = st.selectbox("Apartado", ["Todos", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
 
     items = supabase.table("productos").select("*").order("nombre").execute().data
     if items:
@@ -142,7 +155,7 @@ if opcion == "Stock":
                 with cols[i % 4]:
                     with st.container(border=True):
                         st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=True)
-                        st.markdown(f"<p style='margin-bottom:0px;'><b>{p['nombre']}</b></p>", unsafe_allow_html=True)
+                        st.markdown(f"<p style='margin-bottom:0px; font-weight:bold;'>{p['nombre']}</p>", unsafe_allow_html=True)
                         cs, cp = st.columns(2)
                         cs.write(f"U: {p['stock']}")
                         cp.write(f"S/ {p['precio_venta']}")
@@ -159,7 +172,7 @@ elif opcion == "Carga":
         n = st.text_input("Modelo / Repuesto *")
         c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
         s = st.number_input("Cantidad a añadir", min_value=1, step=1)
-        p = st.number_input("Precio Venta (S/) *", min_value=0.0, step=1.0)
+        p = st.number_input("Precio Venta (S/) *", min_value=0.0, step=0.5)
         img = st.text_input("URL Imagen (Opcional)")
         
         if st.form_submit_button("CONSOLIDAR INGRESO", use_container_width=True):
@@ -198,6 +211,6 @@ elif opcion == "Users":
         un = st.text_input("Usuario")
         pw = st.text_input("Clave")
         rl = st.selectbox("Rol", ["Normal", "Super"])
-        if st.form_submit_button("CREAR USUARIO"):
+        if st.form_submit_button("CREAR"):
             supabase.table("usuarios").insert({"usuario":un, "contrasena":pw, "rol":rl}).execute()
             st.success("Usuario creado.")
