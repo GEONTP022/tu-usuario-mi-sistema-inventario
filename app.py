@@ -36,7 +36,7 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- CSS MAESTRO (SOLO MODIFICACIÓN DE IMÁGENES) ---
+# --- CSS MAESTRO (IMÁGENES CENTRADAS + BOTONES STOCK) ---
 st.markdown("""
     <style>
     /* 1. FONDO BLANCO GLOBAL */
@@ -44,44 +44,40 @@ st.markdown("""
         background-color: #ffffff !important;
     }
 
-    /* 2. BARRA LATERAL (Oscura y sin cuadros) */
+    /* 2. BARRA LATERAL (OSCURA Y LIMPIA) */
     [data-testid="stSidebar"] {
         background-color: #1a222b !important;
     }
-    /* Texto blanco en sidebar */
     [data-testid="stSidebar"] * {
         color: #ffffff !important;
         -webkit-text-fill-color: #ffffff !important;
     }
-    /* Botones transparentes (SIN CAJAS) */
     [data-testid="stSidebar"] button {
         background-color: transparent !important;
         border: none !important;
         color: #bdc3c7 !important;
         text-align: left !important;
         padding-left: 15px !important;
-        box-shadow: none !important;
     }
     [data-testid="stSidebar"] button:hover {
         background-color: rgba(255,255,255,0.05) !important;
         border-left: 4px solid #3498db !important;
         color: #ffffff !important;
     }
-    
-    /* 3. ETIQUETAS DEL FORMULARIO (NEGRAS) */
+
+    /* 3. ETIQUETAS Y TEXTOS DEL FORMULARIO (NEGROS) */
     div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3 {
         color: #000000 !important;
         -webkit-text-fill-color: #000000 !important;
         font-weight: 700 !important;
     }
 
-    /* 4. INPUTS (Cajas de texto limpias) */
+    /* 4. INPUTS (CAJAS DE TEXTO) */
     input, textarea, .stNumberInput input {
         background-color: #f8f9fa !important;
         color: #000000 !important;
         border: 1px solid #aaa !important;
     }
-    /* Selectbox */
     div[data-baseweb="select"] > div {
         background-color: #f8f9fa !important;
         color: #000000 !important;
@@ -93,50 +89,56 @@ st.markdown("""
         color: #000000 !important;
     }
 
-    /* 5. TARJETAS DE STOCK (Arreglo de visualización) */
+    /* 5. TARJETAS DE STOCK */
     div[data-testid="stVerticalBlockBorderWrapper"] {
         background-color: #ffffff !important;
         border: 1px solid #ddd !important;
         padding: 10px !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
     }
-    
-    /* --- MODIFICACIÓN SOLICITADA: IMÁGENES MÁS GRANDES Y CENTRADAS --- */
-    /* Asegurar que el contenedor de la imagen centre el contenido */
+
+    /* --- CORRECCIÓN DE IMÁGENES: CENTRADAS Y GRANDES --- */
     div[data-testid="stImage"] {
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
-        height: 200px !important; /* Altura fija para el contenedor */
+        width: 100% !important;
+        margin-bottom: 10px !important;
     }
-
-    /* Hacemos la imagen más grande (max-height aumentado) */
+    
     div[data-testid="stImage"] img {
-        max-height: 190px !important; /* Antes era 120px, ahora es más grande */
+        max-height: 160px !important; /* Más grandes */
         width: auto !important;
         max-width: 100% !important;
         object-fit: contain !important;
-        margin: 0 auto !important;
     }
-    /* --------------------------------------------------------- */
+    /* -------------------------------------------------- */
 
-    /* TEXTOS DENTRO DE TARJETAS (Negros) */
+    /* Textos dentro de tarjetas (Negro) */
     div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] p,
     div[data-testid="column"] div[data-testid="stVerticalBlockBorderWrapper"] div {
         color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
     }
 
-    /* BOTONES DE ACCIÓN (AZULES SIEMPRE) */
-    div.stForm button, div[data-testid="column"] button {
+    /* 6. BOTONES */
+    /* Botón Estándar (Azul - Salida / Consolidar) */
+    div.stButton button {
         background-color: #2488bc !important;
-        border: none !important;
-        height: auto !important;
-    }
-    /* Texto blanco dentro del botón azul */
-    div.stForm button p, div[data-testid="column"] button p {
         color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
+        border: none !important;
+        font-weight: bold !important;
+    }
+    div.stButton button p { color: #ffffff !important; }
+
+    /* Botón DESHABILITADO (Para NO STOCK - ROJO) */
+    button:disabled {
+        background-color: #e74c3c !important; /* Rojo Intenso */
+        color: white !important;
+        opacity: 1 !important; /* Quitar transparencia */
+        cursor: not-allowed !important;
+    }
+    button:disabled p {
+        color: white !important;
     }
 
     /* Perfil */
@@ -166,7 +168,6 @@ with st.sidebar:
         if st.button("📈 Estadísticas", use_container_width=True): st.session_state.menu = "Stats"
         if st.button("👥 Usuarios", use_container_width=True): st.session_state.menu = "Users"
         if st.button("📞 Proveedores", use_container_width=True): st.session_state.menu = "Prov"
-        # Opción de borrado
         if st.button("⚙️ Reset Sistema", use_container_width=True): st.session_state.menu = "Reset"
 
     st.markdown("<br><br>", unsafe_allow_html=True)
@@ -190,21 +191,25 @@ if opcion == "Stock":
             if (categoria == "Todos" or p['categoria'] == categoria) and (busqueda.lower() in p['nombre'].lower()):
                 with cols[i % 4]:
                     with st.container(border=True):
-                        # Imagen controlada por CSS para ser más grande y centrada
-                        st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=True)
+                        # Imagen renderizada (CSS se encarga de centrarla y agrandarla)
+                        st.image(p.get('imagen_url') or "https://via.placeholder.com/150", use_column_width=False) # False para respetar CSS
                         
-                        # Datos en negro forzado inline
                         st.markdown(f"<div style='text-align:center; color:#000000; font-weight:bold; margin-bottom:5px; height:40px; overflow:hidden;'>{p['nombre']}</div>", unsafe_allow_html=True)
                         c1, c2 = st.columns(2)
                         with c1: st.markdown(f"<div style='text-align:center; color:#000000; font-size:13px;'>U: {p['stock']}</div>", unsafe_allow_html=True)
                         with c2: st.markdown(f"<div style='text-align:center; color:#000000; font-size:13px;'>S/ {p['precio_venta']}</div>", unsafe_allow_html=True)
                         
                         st.markdown("<div style='margin-top:5px;'></div>", unsafe_allow_html=True)
-                        if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True):
-                            if p['stock'] > 0:
+                        
+                        # LOGICA DE BOTONES (STOCK vs NO STOCK)
+                        if p['stock'] > 0:
+                            if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True):
                                 supabase.table("productos").update({"stock": p['stock']-1}).eq("id", p['id']).execute()
                                 supabase.table("historial").insert({"producto_nombre":p['nombre'], "cantidad":-1, "usuario":st.session_state.user}).execute()
                                 st.rerun()
+                        else:
+                            # Botón deshabilitado (el CSS lo pone rojo)
+                            st.button("🚫 NO STOCK", key=f"ns_{p['id']}", disabled=True, use_container_width=True)
 
 elif opcion == "Carga":
     st.markdown("<h2>📥 Añadir Producto</h2>", unsafe_allow_html=True)
@@ -217,7 +222,7 @@ elif opcion == "Carga":
         p = st.number_input("Precio Venta (S/) *", min_value=0.0, step=0.5)
         img = st.text_input("URL Imagen (Opcional)")
         
-        if st.form_submit_button("CONSOLIDAR INGRESO"):
+        if st.form_submit_button("CONSOLIDAR INGRESO", use_container_width=True):
             if not n or c == "Seleccionar" or p <= 0:
                 st.warning("⚠️ Falta completar Nombre, Categoría o Precio.")
             else:
@@ -266,30 +271,22 @@ elif opcion == "Prov":
                 st.markdown(f"**{pr['nombre_contacto']}**")
                 st.link_button("WhatsApp", f"https://wa.me/{pr['whatsapp']}")
 
-# --- ZONA DE RESET (SOLO PARA SUPER USUARIO) ---
+# --- RESET OCULTO (Solo visible si entran al menú) ---
 elif opcion == "Reset":
     st.markdown("<h2>⚙️ Zona de Peligro</h2>", unsafe_allow_html=True)
-    st.warning("⚠️ ADVERTENCIA: Estas acciones no se pueden deshacer.")
+    st.warning("⚠️ Estas acciones no se pueden deshacer.")
     
     col_r1, col_r2 = st.columns(2)
     with col_r1:
-        st.error("Borrar TODO el Stock")
-        if st.button("CONFIRMAR BORRADO DE STOCK", use_container_width=True):
-            try:
-                data = supabase.table("productos").select("id").execute().data
-                for item in data:
-                    supabase.table("productos").delete().eq("id", item['id']).execute()
-                st.success("Inventario eliminado.")
-            except Exception as e:
-                st.error(f"Error: {e}")
+        st.error("Eliminar Inventario")
+        if st.button("BORRAR STOCK TOTAL", use_container_width=True):
+            data = supabase.table("productos").select("id").execute().data
+            for item in data: supabase.table("productos").delete().eq("id", item['id']).execute()
+            st.success("Hecho.")
 
     with col_r2:
-        st.error("Borrar TODO el Historial")
-        if st.button("CONFIRMAR BORRADO DE HISTORIAL", use_container_width=True):
-            try:
-                data = supabase.table("historial").select("id").execute().data
-                for item in data:
-                    supabase.table("historial").delete().eq("id", item['id']).execute()
-                st.success("Historial eliminado.")
-            except Exception as e:
-                st.error(f"Error: {e}")
+        st.error("Eliminar Historial")
+        if st.button("BORRAR HISTORIAL TOTAL", use_container_width=True):
+            data = supabase.table("historial").select("id").execute().data
+            for item in data: supabase.table("historial").delete().eq("id", item['id']).execute()
+            st.success("Hecho.")
