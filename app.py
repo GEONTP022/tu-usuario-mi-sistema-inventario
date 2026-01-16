@@ -59,49 +59,45 @@ def es_coincidencia(busqueda, texto_db):
     if b_nospace in t_nospace: return True
     return False
 
-# --- CSS MAESTRO (CORREGIDO PARA EVITAR BUG VISUAL) ---
+# --- CSS MAESTRO (LIMPIO Y ESTABLE) ---
 st.markdown("""
     <style>
+    /* Ajustes generales básicos */
     .stApp, .main, .block-container { background-color: #ffffff !important; }
     [data-testid="stSidebar"] { background-color: #1a222b !important; }
     [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+    
+    /* Botones Sidebar */
     [data-testid="stSidebar"] button { background-color: transparent !important; border: none !important; color: #bdc3c7 !important; text-align: left !important; padding-left: 15px !important; }
     [data-testid="stSidebar"] button:hover { background-color: rgba(255,255,255,0.05) !important; border-left: 4px solid #3498db !important; color: #ffffff !important; }
+    
+    /* Textos generales */
     div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetriclabel { color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-weight: 700 !important; }
     div[data-testid="stMetricValue"] { color: #2488bc !important; -webkit-text-fill-color: #2488bc !important; }
+    
+    /* Inputs */
     input, textarea, .stNumberInput input { background-color: #ffffff !important; color: #000000 !important; -webkit-text-fill-color: #000000 !important; border: 1px solid #888888 !important; caret-color: #000000 !important; }
     input:disabled { background-color: #e9ecef !important; color: #555555 !important; -webkit-text-fill-color: #555555 !important; }
-    ::placeholder { color: #666666 !important; -webkit-text-fill-color: #666666 !important; opacity: 1 !important; }
+    
+    /* Dropdowns */
     div[data-baseweb="select"] > div { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #888888 !important; }
-    div[data-baseweb="select"] span { color: #000000 !important; -webkit-text-fill-color: #000000 !important; }
     ul[data-testid="stSelectboxVirtualDropdown"] { background-color: #ffffff !important; }
-    ul[data-testid="stSelectboxVirtualDropdown"] li { background-color: #ffffff !important; color: #000000 !important; }
     ul[data-testid="stSelectboxVirtualDropdown"] li:hover { background-color: #f0f2f6 !important; }
-    div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
     
-    /* FIX: Usar min-height en vez de height para evitar solapamiento */
-    div[data-testid="stVerticalBlockBorderWrapper"] { 
-        background-color: #ffffff !important; 
-        border: 1px solid #ddd !important; 
-        padding: 10px !important; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; 
-        min-height: 320px !important; /* Altura mínima para uniformidad */
-        display: flex; 
-        flex-direction: column; 
-        justify-content: space-between; 
-    }
+    /* Imágenes de productos: Tamaño fijo para que no bailen */
+    div[data-testid="stImage"] { display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; margin: 0 auto !important; height: 150px !important; }
+    div[data-testid="stImage"] img { display: block !important; margin-left: auto !important; margin-right: auto !important; max-height: 140px !important; width: auto !important; object-fit: contain !important; }
     
-    div[data-testid="stImage"] { display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; margin: 0 auto !important; height: 160px !important; }
-    div[data-testid="stImage"] img { display: block !important; margin-left: auto !important; margin-right: auto !important; max-height: 150px !important; width: auto !important; object-fit: contain !important; }
+    /* Botones de acción */
     div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
-    div.stButton button p { color: #ffffff !important; }
-    div.stButton button:disabled, button[kind="secondary"] { background-color: #e74c3c !important; color: white !important; opacity: 1 !important; border: 1px solid #c0392b !important; }
-    div.stButton button:disabled p { color: white !important; }
-    button[data-baseweb="tab"] { color: #000000 !important; }
-    div[data-baseweb="tab-list"] { background-color: #f1f3f4 !important; border-radius: 8px; }
+    div.stButton button:disabled { background-color: #e74c3c !important; color: white !important; opacity: 1 !important; }
+    
+    /* Ocultar nav default */
+    [data-testid="stSidebarNav"] {display: none;}
+    
+    /* Perfil */
     .profile-section { text-align: center !important; padding: 20px 0px; }
     .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
-    [data-testid="stSidebarNav"] {display: none;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -187,16 +183,17 @@ def modal_nuevo_producto():
             if not n or c == "Seleccionar" or p_gen <= 0:
                 st.error("⚠️ Datos incompletos.")
             else:
-                # --- VALIDACIÓN: SOLO BLOQUEA SI NOMBRE + MARCA + CATEGORÍA SON IGUALES ---
-                # Ya no bloqueamos por código de batería repetido
+                # --- VALIDACIÓN: SOLO BLOQUEA SI NOMBRE + MARCA + CATEGORÍA + CÓDIGO SON IGUALES ---
+                # Esto permite variantes con el mismo nombre pero diferente código, o mismo código diferente modelo.
                 existe_dupla = supabase.table("productos").select("id")\
                     .eq("nombre", n)\
                     .eq("marca", m)\
                     .eq("categoria", c)\
+                    .eq("codigo_bateria", cb)\
                     .execute()
 
                 if existe_dupla.data:
-                    st.error(f"⚠️ Ya existe: '{n}' ({m}) en la categoría '{c}'.")
+                    st.error(f"⚠️ Ya existe EXACTAMENTE este producto (Mismo Nombre, Marca y Código).")
                 else:
                     with st.spinner('Creando producto...'):
                         supabase.table("productos").insert({
@@ -304,8 +301,7 @@ if opcion == "Stock":
             b_clean = busqueda.lower().strip()
             filtered_items.sort(key=lambda x: 0 if x['nombre'].lower().startswith(b_clean) else 1)
 
-        # --- ARREGLO DE LAYOUT: USAR FILAS INDEPENDIENTES (FIX VISUAL) ---
-        # Dividimos la lista en grupos de 4 para que cada fila sea un bloque nuevo
+        # --- DIBUJAR FILA POR FILA (ESTO ARREGLA EL DISEÑO) ---
         for i in range(0, len(filtered_items), 4):
             batch = filtered_items[i:i+4]
             cols = st.columns(4)
