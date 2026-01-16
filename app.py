@@ -253,7 +253,7 @@ with st.sidebar:
     
     if st.button("📊 Dashboard / Stock", use_container_width=True): st.session_state.menu = "Stock"
     if st.session_state.rol == "Super":
-        if st.button("📥 Añadir Producto", use_container_width=True): st.session_state.menu = "Carga"
+        if st.button(" Añadir Producto", use_container_width=True): st.session_state.menu = "Carga"
         if st.button("📋 Historial", use_container_width=True): st.session_state.menu = "Log"
         if st.button("📈 Estadísticas", use_container_width=True): st.session_state.menu = "Stats"
         if st.button("👥 Usuarios / Config", use_container_width=True): st.session_state.menu = "Users"
