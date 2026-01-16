@@ -328,7 +328,7 @@ elif opcion == "Carga":
     
     all_products = supabase.table("productos").select("*").order("nombre").execute().data
     
-    # --- RESTAURADO: LISTA SIMPLE (SIN FILTRO EXTERNO) ---
+    # --- LISTA CLÁSICA ---
     opciones_map = {}
     for p in all_products:
         marca = p.get('marca') or ""
@@ -350,8 +350,11 @@ elif opcion == "Carga":
                 col_u1, col_u2 = st.columns(2)
                 with col_u1:
                     st.text_input("Categoría", value=prod_data['categoria'], disabled=True)
+                    
+                    # --- MARCA EDITABLE (CAMBIO SOLICITADO) ---
                     marca_val = prod_data.get('marca') or ""
-                    st.text_input("Marca", value=marca_val, disabled=True)
+                    new_marca = st.text_input("Marca", value=marca_val)
+                    # ----------------------------------------
                     
                     cod_bat_new = ""
                     if prod_data['categoria'] == "Baterías":
@@ -370,7 +373,13 @@ elif opcion == "Carga":
                 if st.form_submit_button("CONSOLIDAR INGRESO"):
                     with st.spinner('Guardando cambios...'):
                         total_stock = prod_data['stock'] + stock_add
-                        datos_update = { "stock": total_stock, "precio_venta": new_price, "imagen_url": new_img }
+                        # Agregamos 'marca' al diccionario de actualización
+                        datos_update = { 
+                            "stock": total_stock, 
+                            "precio_venta": new_price, 
+                            "imagen_url": new_img,
+                            "marca": new_marca 
+                        }
                         if prod_data['categoria'] == "Baterías": datos_update["codigo_bateria"] = cod_bat_new
 
                         supabase.table("productos").update(datos_update).eq("id", prod_data['id']).execute()
