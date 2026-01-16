@@ -45,6 +45,7 @@ def es_coincidencia(busqueda, texto_db):
     
     b = str(busqueda).lower().strip()
     
+    # Alias inteligentes
     if b.startswith("ip") and len(b) > 2 and b[2].isdigit(): 
         b = b.replace("ip", "iphone", 1)
     elif b == "ip":
@@ -58,7 +59,7 @@ def es_coincidencia(busqueda, texto_db):
     if b_nospace in t_nospace: return True
     return False
 
-# --- CSS LIMPIO (SIN EL CÓDIGO QUE ROMPÍA LA PANTALLA) ---
+# --- CSS LIMPIO Y SEGURO (FIX VISUAL) ---
 st.markdown("""
     <style>
     /* Configuración básica */
@@ -193,13 +194,12 @@ def modal_nuevo_producto():
             if not n or c == "Seleccionar" or p_gen <= 0:
                 st.error("⚠️ Datos incompletos.")
             else:
-                # --- VALIDACIÓN EXACTA (Nombre + Marca + Categoria + Codigo) ---
+                # VALIDACIÓN ESTRICTA: SOLO SI TODO ES IGUAL
                 query = supabase.table("productos").select("id")\
                     .eq("nombre", n).eq("marca", m).eq("categoria", c)
                 
-                # Manejar código vacío o lleno
                 if cb: query = query.eq("codigo_bateria", cb)
-                else: query = query.eq("codigo_bateria", "") # Ojo: Asegúrate de guardar cadenas vacías si no hay código
+                else: query = query.eq("codigo_bateria", "") 
 
                 existe = query.execute()
 
@@ -298,7 +298,6 @@ if opcion == "Stock":
 
         # --- GRID SYSTEM NATIVO (NO SE ROMPE) ---
         N_COLS = 4
-        # Dividir en filas de 4 para que Streamlit renderice bloques limpios
         rows = [filtered_items[i:i + N_COLS] for i in range(0, len(filtered_items), N_COLS)]
         
         for row in rows:
@@ -306,9 +305,13 @@ if opcion == "Stock":
             for i, p in enumerate(row):
                 with cols[i]:
                     with st.container(border=True):
-                        # Imagen
-                        img = p.get('imagen_url') or "https://via.placeholder.com/150"
-                        st.image(img, use_column_width=True)
+                        # Imagen (Con protección contra errores)
+                        img = p.get('imagen_url')
+                        try:
+                            if img: st.image(img, use_container_width=True)
+                            else: st.image("https://via.placeholder.com/150", use_container_width=True)
+                        except:
+                            st.image("https://via.placeholder.com/150", use_container_width=True)
                         
                         # Datos
                         st.markdown(f"**{p['nombre']}**")
@@ -356,7 +359,7 @@ elif opcion == "Carga":
                     new_cod = st.text_input("Código Batería", value=prod.get('codigo_bateria', ''))
                 with col_u2:
                     new_p_gen = st.number_input("Precio Gral", value=float(prod['precio_venta']), step=0.5)
-                    # Handle possible missing column gracefully just in case
+                    # Protección por si la columna no existe o es null
                     current_punto = float(prod.get('precio_punto') or 0.0)
                     new_p_punto = st.number_input("Precio Punto", value=current_punto, step=0.5)
                     new_img = st.text_input("Imagen URL", value=prod.get('imagen_url', ''))
@@ -393,7 +396,7 @@ elif opcion == "Log":
     logs = supabase.table("historial").select("*").order("fecha", desc=True).execute().data
     if logs:
         df = pd.DataFrame(logs)
-        # FIX DE FECHAS: Normalizar a solo fecha (sin hora) para comparar
+        # FIX DE FECHAS: Convertir a date object para comparar
         df['dt'] = pd.to_datetime(df['fecha']).dt.date
         if len(d_range) == 2:
             df = df[(df['dt'] >= d_range[0]) & (df['dt'] <= d_range[1])]
