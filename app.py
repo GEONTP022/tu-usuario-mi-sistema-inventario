@@ -45,6 +45,7 @@ def es_coincidencia(busqueda, texto_db):
     
     b = str(busqueda).lower().strip()
     
+    # Alias inteligentes
     if b.startswith("ip") and len(b) > 2 and b[2].isdigit(): 
         b = b.replace("ip", "iphone", 1)
     elif b == "ip":
@@ -174,25 +175,16 @@ def modal_nuevo_producto():
             if not n or c == "Seleccionar" or p_gen <= 0:
                 st.error("⚠️ Datos incompletos.")
             else:
-                # --- VALIDACIÓN CORREGIDA: NOMBRE + MARCA + CATEGORÍA ---
-                # Ahora solo bloquea si TODO es igual (incluyendo categoría)
+                # --- VALIDACIÓN: SOLO BLOQUEA SI NOMBRE + MARCA + CATEGORÍA SON IGUALES ---
+                # Ya no bloqueamos por código de batería repetido
                 existe_dupla = supabase.table("productos").select("id")\
                     .eq("nombre", n)\
                     .eq("marca", m)\
                     .eq("categoria", c)\
                     .execute()
-                
-                # --- VALIDACIÓN 2: CÓDIGO BATERÍA REPETIDO (Esto sigue igual) ---
-                existe_codigo = False
-                if cb: 
-                    res_c = supabase.table("productos").select("id").eq("codigo_bateria", cb).execute()
-                    if res_c.data:
-                        existe_codigo = True
 
                 if existe_dupla.data:
                     st.error(f"⚠️ Ya existe: '{n}' ({m}) en la categoría '{c}'.")
-                elif existe_codigo:
-                    st.error(f"⚠️ El código '{cb}' ya está registrado en otro producto.")
                 else:
                     with st.spinner('Creando producto...'):
                         supabase.table("productos").insert({
