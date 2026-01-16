@@ -59,7 +59,7 @@ def es_coincidencia(busqueda, texto_db):
     if b_nospace in t_nospace: return True
     return False
 
-# --- CSS MAESTRO ---
+# --- CSS MAESTRO (CORREGIDO PARA EVITAR BUG VISUAL) ---
 st.markdown("""
     <style>
     .stApp, .main, .block-container { background-color: #ffffff !important; }
@@ -78,7 +78,19 @@ st.markdown("""
     ul[data-testid="stSelectboxVirtualDropdown"] li { background-color: #ffffff !important; color: #000000 !important; }
     ul[data-testid="stSelectboxVirtualDropdown"] li:hover { background-color: #f0f2f6 !important; }
     div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
-    div[data-testid="stVerticalBlockBorderWrapper"] { background-color: #ffffff !important; border: 1px solid #ddd !important; padding: 10px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; height: 100% !important; display: flex; flex-direction: column; justify-content: space-between; }
+    
+    /* FIX: Usar min-height en vez de height para evitar solapamiento */
+    div[data-testid="stVerticalBlockBorderWrapper"] { 
+        background-color: #ffffff !important; 
+        border: 1px solid #ddd !important; 
+        padding: 10px !important; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; 
+        min-height: 320px !important; /* Altura mínima para uniformidad */
+        display: flex; 
+        flex-direction: column; 
+        justify-content: space-between; 
+    }
+    
     div[data-testid="stImage"] { display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; margin: 0 auto !important; height: 160px !important; }
     div[data-testid="stImage"] img { display: block !important; margin-left: auto !important; margin-right: auto !important; max-height: 150px !important; width: auto !important; object-fit: contain !important; }
     div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
@@ -175,18 +187,16 @@ def modal_nuevo_producto():
             if not n or c == "Seleccionar" or p_gen <= 0:
                 st.error("⚠️ Datos incompletos.")
             else:
-                # --- LÓGICA DE VALIDACIÓN MEJORADA v3.1 ---
-                # Ahora validamos si existe exactamente la combinación: Nombre + Marca + Categoría + Código
-                # Esto permite que coexistan "Iphone 13 Nassan (CELDA)" y "Iphone 13 Nassan (DIAGNOSTICO)"
+                # --- VALIDACIÓN CORREGIDA: NOMBRE + MARCA + CATEGORÍA ---
+                # Ya no bloqueamos por código de batería repetido
                 existe_dupla = supabase.table("productos").select("id")\
                     .eq("nombre", n)\
                     .eq("marca", m)\
                     .eq("categoria", c)\
-                    .eq("codigo_bateria", cb)\
                     .execute()
 
                 if existe_dupla.data:
-                    st.error(f"⚠️ Ya existe EXACTAMENTE este producto (Nombre, Marca y Código iguales).")
+                    st.error(f"⚠️ Ya existe: '{n}' ({m}) en la categoría '{c}'.")
                 else:
                     with st.spinner('Creando producto...'):
                         supabase.table("productos").insert({
@@ -294,48 +304,54 @@ if opcion == "Stock":
             b_clean = busqueda.lower().strip()
             filtered_items.sort(key=lambda x: 0 if x['nombre'].lower().startswith(b_clean) else 1)
 
-        cols = st.columns(4)
-        for i, p in enumerate(filtered_items):
-            with cols[i % 4]:
-                with st.container(border=True):
-                    img_url = p.get('imagen_url') or "https://via.placeholder.com/150"
-                    st.markdown(f"""
-                        <div style="display: flex; justify-content: center; align-items: center; height: 160px; width: 100%; margin-bottom: 10px;">
-                            <img src="{img_url}" style="max-height: 150px; width: auto; object-fit: contain; display: block;">
-                        </div>
-                    """, unsafe_allow_html=True)
-                    
-                    marca_val = p.get('marca', '')
-                    marca_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase;'>{marca_val}</div>" if marca_val else "<div style='height:16px;'></div>"
-                    cod_bat = p.get('codigo_bateria')
-                    cod_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase; margin-top:2px;'>{cod_bat}</div>" if cod_bat else ""
-                    
-                    st.markdown(f"""
-                        <div style="text-align:center; height:90px; display:flex; flex-direction:column; justify-content:flex-start; align-items:center;">
-                            {marca_html}
-                            <div style="color:black; font-weight:bold; font-size:15px; line-height:1.2; margin-top:2px;">{p['nombre']}</div>
-                            {cod_html}
-                        </div>
-                    """, unsafe_allow_html=True)
+        # --- ARREGLO DE LAYOUT (GRID ROBUSTO) ---
+        # Dividimos los items en grupos de 4 para asegurar que cada fila sea independiente
+        # Esto soluciona el error visual de superposición.
+        rows = [filtered_items[i:i + 4] for i in range(0, len(filtered_items), 4)]
+        
+        for row in rows:
+            cols = st.columns(4) # Nueva fila de columnas
+            for i, p in enumerate(row):
+                with cols[i]:
+                    with st.container(border=True):
+                        img_url = p.get('imagen_url') or "https://via.placeholder.com/150"
+                        st.markdown(f"""
+                            <div style="display: flex; justify-content: center; align-items: center; height: 160px; width: 100%; margin-bottom: 10px;">
+                                <img src="{img_url}" style="max-height: 150px; width: auto; object-fit: contain; display: block;">
+                            </div>
+                        """, unsafe_allow_html=True)
+                        
+                        marca_val = p.get('marca', '')
+                        marca_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase;'>{marca_val}</div>" if marca_val else "<div style='height:16px;'></div>"
+                        cod_bat = p.get('codigo_bateria')
+                        cod_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase; margin-top:2px;'>{cod_bat}</div>" if cod_bat else ""
+                        
+                        st.markdown(f"""
+                            <div style="text-align:center; height:90px; display:flex; flex-direction:column; justify-content:flex-start; align-items:center;">
+                                {marca_html}
+                                <div style="color:black; font-weight:bold; font-size:15px; line-height:1.2; margin-top:2px;">{p['nombre']}</div>
+                                {cod_html}
+                            </div>
+                        """, unsafe_allow_html=True)
 
-                    c1, c2, c3 = st.columns([1, 1.2, 1.2])
-                    with c1: 
-                        st.markdown(f"<div style='text-align:center; color:black; font-size:12px; font-weight:bold;'>Stock<br><span style='font-size:14px;'>{p['stock']}</span></div>", unsafe_allow_html=True)
-                    with c2: 
-                        st.markdown(f"<div style='text-align:center; color:#2c3e50; font-size:12px;'>Gral.<br><span style='font-weight:bold;'>S/ {p['precio_venta']}</span></div>", unsafe_allow_html=True)
-                    with c3:
-                        p_punto = p.get('precio_punto', 0)
-                        if p_punto and p_punto > 0:
-                            st.markdown(f"<div style='text-align:center; color:#27ae60; font-size:12px;'>Punto<br><span style='font-weight:bold;'>S/ {p_punto}</span></div>", unsafe_allow_html=True)
+                        c1, c2, c3 = st.columns([1, 1.2, 1.2])
+                        with c1: 
+                            st.markdown(f"<div style='text-align:center; color:black; font-size:12px; font-weight:bold;'>Stock<br><span style='font-size:14px;'>{p['stock']}</span></div>", unsafe_allow_html=True)
+                        with c2: 
+                            st.markdown(f"<div style='text-align:center; color:#2c3e50; font-size:12px;'>Gral.<br><span style='font-weight:bold;'>S/ {p['precio_venta']}</span></div>", unsafe_allow_html=True)
+                        with c3:
+                            p_punto = p.get('precio_punto', 0)
+                            if p_punto and p_punto > 0:
+                                st.markdown(f"<div style='text-align:center; color:#27ae60; font-size:12px;'>Punto<br><span style='font-weight:bold;'>S/ {p_punto}</span></div>", unsafe_allow_html=True)
+                            else:
+                                st.markdown(f"<div style='text-align:center; color:#bdc3c7; font-size:12px;'>Punto<br>--</div>", unsafe_allow_html=True)
+                        
+                        st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
+                        
+                        if p['stock'] > 0:
+                            if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True): modal_gestion(p)
                         else:
-                            st.markdown(f"<div style='text-align:center; color:#bdc3c7; font-size:12px;'>Punto<br>--</div>", unsafe_allow_html=True)
-                    
-                    st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
-                    
-                    if p['stock'] > 0:
-                        if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True): modal_gestion(p)
-                    else:
-                        st.button("🚫 NO STOCK", key=f"ns_{p['id']}", disabled=True, use_container_width=True)
+                            st.button("🚫 NO STOCK", key=f"ns_{p['id']}", disabled=True, use_container_width=True)
 
 elif opcion == "Carga":
     c_title, c_btn = st.columns([3, 1])
