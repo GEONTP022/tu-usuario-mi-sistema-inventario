@@ -3,7 +3,7 @@ from supabase import create_client
 import pandas as pd
 import plotly.express as px
 from datetime import datetime, timedelta
-import time # Importamos libreria para efectos de tiempo
+import time
 
 # --- CONEXIÓN ---
 url = st.secrets["SUPABASE_URL"]
@@ -38,160 +38,74 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- CSS MAESTRO (VISIBILIDAD, MODALES Y DISEÑO) ---
+# --- FUNCIÓN DE BÚSQUEDA INTELIGENTE (CEREBRO NUEVO) ---
+def es_coincidencia(busqueda, texto_db):
+    if not busqueda: return True # Si no hay búsqueda, coincide todo
+    if not texto_db: return False
+    
+    # 1. Normalizar búsqueda (Minúsculas y quitar espacios extra)
+    b = str(busqueda).lower().strip()
+    
+    # 2. ALIAS INTELIGENTES (La magia para "ip" -> "iphone")
+    if b.startswith("ip") and len(b) > 2 and b[2].isdigit(): 
+        # Si empieza con "ip" y sigue un número (ej: ip11), lo tratamos como iphone11
+        b = b.replace("ip", "iphone", 1)
+    elif b == "ip": # Si solo escribe "ip"
+        b = "iphone"
+
+    # 3. Crear versión "comprimida" (sin espacios) para ignorar errores de escritura
+    b_nospace = b.replace(" ", "").replace("-", "")
+    
+    # 4. Normalizar texto de la base de datos
+    t = str(texto_db).lower()
+    t_nospace = t.replace(" ", "").replace("-", "")
+    
+    # 5. Comparar
+    # ¿Está la búsqueda exacta? O ¿Está la búsqueda comprimida en el texto comprimido?
+    if b in t: return True
+    if b_nospace in t_nospace: return True
+    
+    return False
+
+# --- CSS MAESTRO ---
 st.markdown("""
     <style>
-    /* 1. FONDO BLANCO GLOBAL */
-    .stApp, .main, .block-container {
-        background-color: #ffffff !important;
-    }
-
-    /* 2. BARRA LATERAL (OSCURA) */
-    [data-testid="stSidebar"] {
-        background-color: #1a222b !important;
-    }
-    [data-testid="stSidebar"] * {
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
-    }
-    [data-testid="stSidebar"] button {
-        background-color: transparent !important;
-        border: none !important;
-        color: #bdc3c7 !important;
-        text-align: left !important;
-        padding-left: 15px !important;
-    }
-    [data-testid="stSidebar"] button:hover {
-        background-color: rgba(255,255,255,0.05) !important;
-        border-left: 4px solid #3498db !important;
-        color: #ffffff !important;
-    }
-
-    /* 3. TEXTOS NEGROS OBLIGATORIOS */
-    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetriclabel {
-        color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
-        font-weight: 700 !important;
-    }
-    
-    /* Metrics (KPIs) */
-    div[data-testid="stMetricValue"] {
-        color: #2488bc !important;
-        -webkit-text-fill-color: #2488bc !important;
-    }
-
-    /* 4. CAJAS DE TEXTO (INPUTS) */
-    input, textarea, .stNumberInput input {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
-        border: 1px solid #888888 !important;
-        caret-color: #000000 !important;
-    }
-    input:disabled {
-        background-color: #e9ecef !important;
-        color: #555555 !important;
-        -webkit-text-fill-color: #555555 !important;
-    }
-    ::placeholder {
-        color: #666666 !important;
-        -webkit-text-fill-color: #666666 !important;
-        opacity: 1 !important;
-    }
-
-    /* 5. MENÚS DESPLEGABLES */
-    div[data-baseweb="select"] > div {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-        border: 1px solid #888888 !important;
-    }
-    div[data-baseweb="select"] span { 
-        color: #000000 !important; 
-        -webkit-text-fill-color: #000000 !important;
-    }
-    ul[data-testid="stSelectboxVirtualDropdown"] {
-        background-color: #ffffff !important;
-    }
-    ul[data-testid="stSelectboxVirtualDropdown"] li {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-    }
-    ul[data-testid="stSelectboxVirtualDropdown"] li:hover {
-        background-color: #f0f2f6 !important;
-    }
-
-    /* 6. VENTANAS FLOTANTES */
-    div[role="dialog"] {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-    }
-
-    /* 7. TARJETAS DE STOCK (ALINEACIÓN) */
-    div[data-testid="stVerticalBlockBorderWrapper"] {
-        background-color: #ffffff !important;
-        border: 1px solid #ddd !important;
-        padding: 10px !important;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
-        height: 100% !important; 
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }
-    div[data-testid="stImage"] {
-        display: flex !important;
-        justify-content: center !important; 
-        align-items: center !important;
-        width: 100% !important;
-        margin: 0 auto !important;
-        height: 160px !important; 
-    }
-    div[data-testid="stImage"] img {
-        display: block !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-        max-height: 150px !important;
-        width: auto !important;
-        object-fit: contain !important;
-    }
-
-    /* 8. BOTONES */
-    div.stButton button {
-        background-color: #2488bc !important;
-        color: #ffffff !important;
-        border: none !important;
-        font-weight: bold !important;
-        width: 100% !important;
-        margin-top: auto !important;
-    }
+    .stApp, .main, .block-container { background-color: #ffffff !important; }
+    [data-testid="stSidebar"] { background-color: #1a222b !important; }
+    [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+    [data-testid="stSidebar"] button { background-color: transparent !important; border: none !important; color: #bdc3c7 !important; text-align: left !important; padding-left: 15px !important; }
+    [data-testid="stSidebar"] button:hover { background-color: rgba(255,255,255,0.05) !important; border-left: 4px solid #3498db !important; color: #ffffff !important; }
+    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetriclabel { color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-weight: 700 !important; }
+    div[data-testid="stMetricValue"] { color: #2488bc !important; -webkit-text-fill-color: #2488bc !important; }
+    input, textarea, .stNumberInput input { background-color: #ffffff !important; color: #000000 !important; -webkit-text-fill-color: #000000 !important; border: 1px solid #888888 !important; caret-color: #000000 !important; }
+    input:disabled { background-color: #e9ecef !important; color: #555555 !important; -webkit-text-fill-color: #555555 !important; }
+    ::placeholder { color: #666666 !important; -webkit-text-fill-color: #666666 !important; opacity: 1 !important; }
+    div[data-baseweb="select"] > div { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #888888 !important; }
+    div[data-baseweb="select"] span { color: #000000 !important; -webkit-text-fill-color: #000000 !important; }
+    ul[data-testid="stSelectboxVirtualDropdown"] { background-color: #ffffff !important; }
+    ul[data-testid="stSelectboxVirtualDropdown"] li { background-color: #ffffff !important; color: #000000 !important; }
+    ul[data-testid="stSelectboxVirtualDropdown"] li:hover { background-color: #f0f2f6 !important; }
+    div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
+    div[data-testid="stVerticalBlockBorderWrapper"] { background-color: #ffffff !important; border: 1px solid #ddd !important; padding: 10px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; height: 100% !important; display: flex; flex-direction: column; justify-content: space-between; }
+    div[data-testid="stImage"] { display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; margin: 0 auto !important; height: 160px !important; }
+    div[data-testid="stImage"] img { display: block !important; margin-left: auto !important; margin-right: auto !important; max-height: 150px !important; width: auto !important; object-fit: contain !important; }
+    div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
     div.stButton button p { color: #ffffff !important; }
-
-    /* Botón NO STOCK (ROJO) */
-    div.stButton button:disabled, button[kind="secondary"] {
-        background-color: #e74c3c !important;
-        color: white !important;
-        opacity: 1 !important;
-        border: 1px solid #c0392b !important;
-    }
+    div.stButton button:disabled, button[kind="secondary"] { background-color: #e74c3c !important; color: white !important; opacity: 1 !important; border: 1px solid #c0392b !important; }
     div.stButton button:disabled p { color: white !important; }
-    
-    /* Pestañas */
     button[data-baseweb="tab"] { color: #000000 !important; }
     div[data-baseweb="tab-list"] { background-color: #f1f3f4 !important; border-radius: 8px; }
-
-    /* Perfil */
     .profile-section { text-align: center !important; padding: 20px 0px; }
     .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
-
     [data-testid="stSidebarNav"] {display: none;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- VENTANAS FLOTANTES (CON EFECTOS DE CARGA) ---
+# --- VENTANAS FLOTANTES ---
 
 @st.dialog("Gestionar Inventario")
 def modal_gestion(producto):
     st.markdown(f"<h3 style='color:black;'>{producto['nombre']}</h3>", unsafe_allow_html=True)
-    
     tab_salida, tab_devolucion = st.tabs(["📉 REGISTRAR SALIDA", "↩️ DEVOLUCIÓN / INGRESO"])
     
     with tab_salida:
@@ -220,8 +134,7 @@ def modal_gestion(producto):
                             "producto_nombre": producto['nombre'], "cantidad": -cantidad,
                             "usuario": st.session_state.user, "tecnico": tecnico, "local": local
                         }).execute()
-                        time.sleep(1) # Efecto visual
-                    
+                        time.sleep(1)
                     st.success("✅ ¡Listo!")
                     time.sleep(0.5)
                     st.rerun()
@@ -244,7 +157,6 @@ def modal_gestion(producto):
                         "local": "Almacén"
                     }).execute()
                     time.sleep(1)
-                
                 st.success("✅ ¡Listo!")
                 time.sleep(0.5)
                 st.rerun()
@@ -274,23 +186,19 @@ def modal_nuevo_producto():
                             "nombre": n, "categoria": c, "marca": m, "codigo_bateria": cb,
                             "stock": s, "precio_venta": p, "imagen_url": img
                         }).execute()
-                        
                         supabase.table("historial").insert({
                             "producto_nombre": n, "cantidad": s, "usuario": st.session_state.user,
                             "tecnico": "Ingreso Inicial", "local": "Almacén"
                         }).execute()
                         time.sleep(1)
-                    
                     st.success("✅ ¡Listo!")
                     time.sleep(0.5)
                     st.rerun()
 
-# --- DIÁLOGO DE ELIMINACIÓN DE PRODUCTO (NUEVO) ---
 @st.dialog("⚠️ Confirmar Eliminación")
 def modal_borrar_producto(producto):
     st.write(f"¿Estás seguro de eliminar **{producto['nombre']}**?")
     st.warning("Esta acción borrará el producto del inventario permanentemente.")
-    
     if st.button("SÍ, ELIMINAR DEFINITIVAMENTE", use_container_width=True):
         with st.spinner('Eliminando...'):
             supabase.table("productos").delete().eq("id", producto['id']).execute()
@@ -339,7 +247,6 @@ with st.sidebar:
         if st.button("📈 Estadísticas", use_container_width=True): st.session_state.menu = "Stats"
         if st.button("👥 Usuarios / Config", use_container_width=True): st.session_state.menu = "Users"
         if st.button("📞 Proveedores", use_container_width=True): st.session_state.menu = "Prov"
-        # ELIMINADO EL RESET SYSTEM COMO PEDISTE
 
     st.markdown("<br><br>", unsafe_allow_html=True)
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
@@ -352,22 +259,25 @@ opcion = st.session_state.menu
 if opcion == "Stock":
     st.markdown("<h2>Inventario General</h2>", unsafe_allow_html=True)
     col_a, col_b = st.columns([3, 1])
-    with col_a: busqueda = st.text_input("Buscar por modelo, marca o código...", placeholder="Ej: Pantalla iPhone, Oppo, COD-123...")
-    with col_b: categoria = st.selectbox("Apartado", ["Todos", "⚠️ Solo Bajo Stock", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
+    with col_a: 
+        # Buscador con placeholder explicativo
+        busqueda = st.text_input("Buscar...", placeholder="Ej: ip11 (para iPhone), Samsung, COD-123...")
+    with col_b: 
+        categoria = st.selectbox("Apartado", ["Todos", "⚠️ Solo Bajo Stock", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
 
     items = supabase.table("productos").select("*").order("nombre").execute().data
     if items:
-        # Filtrado
+        # Filtrado Inteligente
         filtered_items = []
-        busqueda_lower = busqueda.lower()
         for p in items:
-            # Buscador Texto
-            nombre_prod = p['nombre'].lower()
-            marca_prod = (p.get('marca') or '').lower()
-            codigo_prod = (p.get('codigo_bateria') or '').lower()
-            match_busqueda = (busqueda_lower in nombre_prod) or (busqueda_lower in marca_prod) or (busqueda_lower in codigo_prod)
+            # 1. Búsqueda Flexible usando la nueva función
+            coincide_nombre = es_coincidencia(busqueda, p['nombre'])
+            coincide_marca = es_coincidencia(busqueda, p.get('marca'))
+            coincide_codigo = es_coincidencia(busqueda, p.get('codigo_bateria'))
             
-            # Filtro Categoría / Stock Bajo
+            match_busqueda = coincide_nombre or coincide_marca or coincide_codigo
+            
+            # 2. Filtro Categoría / Stock Bajo
             if categoria == "⚠️ Solo Bajo Stock":
                 match_categoria = (p['stock'] <= 2)
             elif categoria == "Todos":
@@ -378,15 +288,15 @@ if opcion == "Stock":
             if match_busqueda and match_categoria:
                 filtered_items.append(p)
         
-        # Ordenamiento
-        if busqueda_lower:
-            filtered_items.sort(key=lambda x: 0 if x['nombre'].lower().startswith(busqueda_lower) else 1)
+        # Ordenamiento (Si hay búsqueda, priorizar inicio)
+        if busqueda:
+            b_clean = busqueda.lower().strip()
+            filtered_items.sort(key=lambda x: 0 if x['nombre'].lower().startswith(b_clean) else 1)
 
         cols = st.columns(4)
         for i, p in enumerate(filtered_items):
             with cols[i % 4]:
                 with st.container(border=True):
-                    # Imagen
                     img_url = p.get('imagen_url') or "https://via.placeholder.com/150"
                     st.markdown(f"""
                         <div style="display: flex; justify-content: center; align-items: center; height: 160px; width: 100%; margin-bottom: 10px;">
@@ -394,10 +304,8 @@ if opcion == "Stock":
                         </div>
                     """, unsafe_allow_html=True)
                     
-                    # Info
                     marca_val = p.get('marca', '')
                     marca_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase;'>{marca_val}</div>" if marca_val else "<div style='height:16px;'></div>"
-                    
                     cod_bat = p.get('codigo_bateria')
                     cod_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase; margin-top:2px;'>{cod_bat}</div>" if cod_bat else ""
                     
@@ -414,14 +322,10 @@ if opcion == "Stock":
                     with c2: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>S/ {p['precio_venta']}</div>", unsafe_allow_html=True)
                     st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
                     
-                    # --- BOTONES RESTAURADOS ---
                     if p['stock'] > 0:
-                        # Botón azul SALIDA (abre modal con pestañas)
                         if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True): modal_gestion(p)
                     else:
-                         # Botón rojo NO STOCK (bloqueado)
                         st.button("🚫 NO STOCK", key=f"ns_{p['id']}", disabled=True, use_container_width=True)
-                    # ---------------------------
 
 elif opcion == "Carga":
     c_title, c_btn = st.columns([3, 1])
@@ -431,19 +335,35 @@ elif opcion == "Carga":
     
     all_products = supabase.table("productos").select("*").order("nombre").execute().data
     
+    # --- FILTRO PREVIO PARA CARGA (LO QUE PEDISTE) ---
+    st.write("Seleccione un producto existente para añadir stock o editarlo.")
+    
+    # 1. Caja de texto para filtrar la lista antes de abrirla
+    filtro_rapido = st.text_input("🔍 Filtrar lista por nombre, marca o código (Ej: ip11):")
+    
+    # 2. Filtrar opciones basado en lo que escribas
     opciones_map = {}
     for p in all_products:
-        marca = p.get('marca') or ""
-        codigo = p.get('codigo_bateria')
-        base_text = f"{marca} - {p['nombre']}" if marca else p['nombre']
-        if codigo: display_text = f"{base_text} ({codigo})"
-        else: display_text = base_text
-        opciones_map[display_text] = p
+        # Aplicamos la misma lógica inteligente
+        coincide = True
+        if filtro_rapido:
+            c_nom = es_coincidencia(filtro_rapido, p['nombre'])
+            c_mar = es_coincidencia(filtro_rapido, p.get('marca'))
+            c_cod = es_coincidencia(filtro_rapido, p.get('codigo_bateria'))
+            coincide = c_nom or c_mar or c_cod
+        
+        if coincide:
+            marca = p.get('marca') or ""
+            codigo = p.get('codigo_bateria')
+            base_text = f"{marca} - {p['nombre']}" if marca else p['nombre']
+            if codigo: display_text = f"{base_text} ({codigo})"
+            else: display_text = base_text
+            opciones_map[display_text] = p
 
     lista_opciones = sorted(list(opciones_map.keys()))
     
-    st.write("Seleccione un producto existente para añadir stock o editarlo.")
-    seleccion_str = st.selectbox("Modelo / Repuesto (Busca por Marca, Modelo o Código)", ["Seleccionar"] + lista_opciones)
+    # 3. Mostrar solo las opciones filtradas
+    seleccion_str = st.selectbox("Seleccionar Producto:", ["Seleccionar"] + lista_opciones)
     
     if seleccion_str != "Seleccionar":
         prod_data = opciones_map[seleccion_str]
@@ -483,19 +403,16 @@ elif opcion == "Carga":
                                 "usuario": st.session_state.user, "tecnico": "Ingreso Stock", "local": "Almacén"
                             }).execute()
                         time.sleep(1)
-                    
                     st.success("✅ ¡Listo!")
                     time.sleep(0.5)
                     st.rerun()
             
-            # --- ZONA DE ELIMINACIÓN DE PRODUCTO (NUEVO) ---
             st.markdown("---")
             if st.button("🗑️ ELIMINAR ESTE PRODUCTO DEL SISTEMA", type="primary"):
                 modal_borrar_producto(prod_data)
 
 elif opcion == "Log":
     st.markdown("<h2>📜 Historial General</h2>", unsafe_allow_html=True)
-    
     col_d1, col_d2 = st.columns([1, 3])
     with col_d1:
         today = datetime.now()
@@ -521,7 +438,6 @@ elif opcion == "Log":
 
 elif opcion == "Stats":
     st.markdown("<h2>📊 Control y Estadísticas</h2>", unsafe_allow_html=True)
-    
     date_range_stats = st.date_input("Rango de Análisis", (datetime.now() - timedelta(days=30), datetime.now()))
 
     productos_db = supabase.table("productos").select("*").execute().data
@@ -529,7 +445,6 @@ elif opcion == "Stats":
     
     if productos_db:
         df_prod = pd.DataFrame(productos_db)
-        
         kpi1, kpi2, kpi3 = st.columns(3)
         with kpi1:
             total_unidades = df_prod['stock'].sum()
