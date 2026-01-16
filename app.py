@@ -166,11 +166,18 @@ def modal_nuevo_producto():
         m = st.text_input("Marca (Solo si aplica)")
         cb = st.text_input("Código de Batería (Solo para Baterías)")
         s = st.number_input("Stock Inicial *", min_value=0, step=1)
-        p = st.number_input("Precio Venta (S/) *", min_value=0.0, step=0.5)
+        
+        # --- AHORA DOS PRECIOS ---
+        col_p1, col_p2 = st.columns(2)
+        with col_p1:
+            p_gen = st.number_input("Precio General (S/) *", min_value=0.0, step=0.5)
+        with col_p2:
+            p_punto = st.number_input("Precio Punto (S/)", min_value=0.0, step=0.5)
+        
         img = st.text_input("URL Imagen (Opcional)")
 
         if st.form_submit_button("GUARDAR"):
-            if not n or c == "Seleccionar" or p <= 0:
+            if not n or c == "Seleccionar" or p_gen <= 0:
                 st.error("⚠️ Datos incompletos.")
             else:
                 existe = supabase.table("productos").select("*").eq("nombre", n).execute()
@@ -180,7 +187,10 @@ def modal_nuevo_producto():
                     with st.spinner('Creando producto...'):
                         supabase.table("productos").insert({
                             "nombre": n, "categoria": c, "marca": m, "codigo_bateria": cb,
-                            "stock": s, "precio_venta": p, "imagen_url": img
+                            "stock": s, 
+                            "precio_venta": p_gen,   # Precio General
+                            "precio_punto": p_punto, # Precio Punto (NUEVO)
+                            "imagen_url": img
                         }).execute()
                         supabase.table("historial").insert({
                             "producto_nombre": n, "cantidad": s, "usuario": st.session_state.user,
@@ -264,11 +274,9 @@ if opcion == "Stock":
     if items:
         filtered_items = []
         for p in items:
-            # BÚSQUEDA INTELIGENTE
             coincide_nombre = es_coincidencia(busqueda, p['nombre'])
             coincide_marca = es_coincidencia(busqueda, p.get('marca'))
             coincide_codigo = es_coincidencia(busqueda, p.get('codigo_bateria'))
-            
             match_busqueda = coincide_nombre or coincide_marca or coincide_codigo
             
             if categoria == "⚠️ Solo Bajo Stock":
@@ -281,7 +289,6 @@ if opcion == "Stock":
             if match_busqueda and match_categoria:
                 filtered_items.append(p)
         
-        # Ordenamiento
         if busqueda:
             b_clean = busqueda.lower().strip()
             filtered_items.sort(key=lambda x: 0 if x['nombre'].lower().startswith(b_clean) else 1)
@@ -310,9 +317,25 @@ if opcion == "Stock":
                         </div>
                     """, unsafe_allow_html=True)
 
-                    c1, c2 = st.columns(2)
-                    with c1: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>U: {p['stock']}</div>", unsafe_allow_html=True)
-                    with c2: st.markdown(f"<div style='text-align:center; color:black; font-size:13px;'>S/ {p['precio_venta']}</div>", unsafe_allow_html=True)
+                    # --- DISEÑO DE 3 COLUMNAS PARA LOS PRECIOS ---
+                    c1, c2, c3 = st.columns([1, 1.2, 1.2])
+                    
+                    # 1. Stock
+                    with c1: 
+                        st.markdown(f"<div style='text-align:center; color:black; font-size:12px; font-weight:bold;'>Stock<br><span style='font-size:14px;'>{p['stock']}</span></div>", unsafe_allow_html=True)
+                    
+                    # 2. Precio General
+                    with c2: 
+                        st.markdown(f"<div style='text-align:center; color:#2c3e50; font-size:12px;'>Gral.<br><span style='font-weight:bold;'>S/ {p['precio_venta']}</span></div>", unsafe_allow_html=True)
+                    
+                    # 3. Precio Punto
+                    with c3:
+                        p_punto = p.get('precio_punto', 0)
+                        if p_punto and p_punto > 0:
+                            st.markdown(f"<div style='text-align:center; color:#27ae60; font-size:12px;'>Punto<br><span style='font-weight:bold;'>S/ {p_punto}</span></div>", unsafe_allow_html=True)
+                        else:
+                            st.markdown(f"<div style='text-align:center; color:#bdc3c7; font-size:12px;'>Punto<br>--</div>", unsafe_allow_html=True)
+                    
                     st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
                     
                     if p['stock'] > 0:
@@ -328,7 +351,6 @@ elif opcion == "Carga":
     
     all_products = supabase.table("productos").select("*").order("nombre").execute().data
     
-    # --- LISTA CLÁSICA ---
     opciones_map = {}
     for p in all_products:
         marca = p.get('marca') or ""
@@ -351,10 +373,8 @@ elif opcion == "Carga":
                 with col_u1:
                     st.text_input("Categoría", value=prod_data['categoria'], disabled=True)
                     
-                    # --- MARCA EDITABLE (CAMBIO SOLICITADO) ---
                     marca_val = prod_data.get('marca') or ""
                     new_marca = st.text_input("Marca", value=marca_val)
-                    # ----------------------------------------
                     
                     cod_bat_new = ""
                     if prod_data['categoria'] == "Baterías":
@@ -362,7 +382,13 @@ elif opcion == "Carga":
                         cod_bat_new = st.text_input("Código de Batería", value=current_code)
 
                 with col_u2:
-                    new_price = st.number_input("Precio Venta (S/)", value=float(prod_data['precio_venta']), min_value=0.0, step=0.5)
+                    # --- EDICIÓN DE DOS PRECIOS ---
+                    new_price_gen = st.number_input("Precio General (S/)", value=float(prod_data['precio_venta']), min_value=0.0, step=0.5)
+                    
+                    # Recuperamos precio punto (si no existe, ponemos 0)
+                    val_punto = float(prod_data.get('precio_punto') or 0.0)
+                    new_price_punto = st.number_input("Precio Punto (S/)", value=val_punto, min_value=0.0, step=0.5)
+                    
                     img_val = prod_data.get('imagen_url') or ""
                     new_img = st.text_input("URL Imagen", value=img_val)
 
@@ -373,10 +399,10 @@ elif opcion == "Carga":
                 if st.form_submit_button("CONSOLIDAR INGRESO"):
                     with st.spinner('Guardando cambios...'):
                         total_stock = prod_data['stock'] + stock_add
-                        # Agregamos 'marca' al diccionario de actualización
                         datos_update = { 
                             "stock": total_stock, 
-                            "precio_venta": new_price, 
+                            "precio_venta": new_price_gen, 
+                            "precio_punto": new_price_punto, # Actualizar Punto
                             "imagen_url": new_img,
                             "marca": new_marca 
                         }
