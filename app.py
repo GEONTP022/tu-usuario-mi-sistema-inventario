@@ -38,30 +38,26 @@ if not st.session_state.autenticado:
                 st.error("Error de conexión.")
     st.stop()
 
-# --- FUNCIÓN DE BÚSQUEDA INTELIGENTE (CEREBRO NUEVO) ---
+# --- FUNCIÓN DE BÚSQUEDA INTELIGENTE ---
 def es_coincidencia(busqueda, texto_db):
-    if not busqueda: return True # Si no hay búsqueda, coincide todo
+    if not busqueda: return True 
     if not texto_db: return False
     
-    # 1. Normalizar búsqueda (Minúsculas y quitar espacios extra)
+    # 1. Normalizar
     b = str(busqueda).lower().strip()
     
-    # 2. ALIAS INTELIGENTES (La magia para "ip" -> "iphone")
+    # 2. Alias Inteligentes (ip -> iphone)
     if b.startswith("ip") and len(b) > 2 and b[2].isdigit(): 
-        # Si empieza con "ip" y sigue un número (ej: ip11), lo tratamos como iphone11
         b = b.replace("ip", "iphone", 1)
-    elif b == "ip": # Si solo escribe "ip"
+    elif b == "ip":
         b = "iphone"
 
-    # 3. Crear versión "comprimida" (sin espacios) para ignorar errores de escritura
+    # 3. Comprimir espacios
     b_nospace = b.replace(" ", "").replace("-", "")
-    
-    # 4. Normalizar texto de la base de datos
     t = str(texto_db).lower()
     t_nospace = t.replace(" ", "").replace("-", "")
     
-    # 5. Comparar
-    # ¿Está la búsqueda exacta? O ¿Está la búsqueda comprimida en el texto comprimido?
+    # 4. Comparar
     if b in t: return True
     if b_nospace in t_nospace: return True
     
@@ -260,24 +256,21 @@ if opcion == "Stock":
     st.markdown("<h2>Inventario General</h2>", unsafe_allow_html=True)
     col_a, col_b = st.columns([3, 1])
     with col_a: 
-        # Buscador con placeholder explicativo
-        busqueda = st.text_input("Buscar...", placeholder="Ej: ip11 (para iPhone), Samsung, COD-123...")
+        busqueda = st.text_input("Buscar por modelo, marca o código...", placeholder="Ej: ip11 (para iPhone), Samsung, COD-123...")
     with col_b: 
         categoria = st.selectbox("Apartado", ["Todos", "⚠️ Solo Bajo Stock", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
 
     items = supabase.table("productos").select("*").order("nombre").execute().data
     if items:
-        # Filtrado Inteligente
         filtered_items = []
         for p in items:
-            # 1. Búsqueda Flexible usando la nueva función
+            # BÚSQUEDA INTELIGENTE
             coincide_nombre = es_coincidencia(busqueda, p['nombre'])
             coincide_marca = es_coincidencia(busqueda, p.get('marca'))
             coincide_codigo = es_coincidencia(busqueda, p.get('codigo_bateria'))
             
             match_busqueda = coincide_nombre or coincide_marca or coincide_codigo
             
-            # 2. Filtro Categoría / Stock Bajo
             if categoria == "⚠️ Solo Bajo Stock":
                 match_categoria = (p['stock'] <= 2)
             elif categoria == "Todos":
@@ -288,7 +281,7 @@ if opcion == "Stock":
             if match_busqueda and match_categoria:
                 filtered_items.append(p)
         
-        # Ordenamiento (Si hay búsqueda, priorizar inicio)
+        # Ordenamiento
         if busqueda:
             b_clean = busqueda.lower().strip()
             filtered_items.sort(key=lambda x: 0 if x['nombre'].lower().startswith(b_clean) else 1)
@@ -335,35 +328,20 @@ elif opcion == "Carga":
     
     all_products = supabase.table("productos").select("*").order("nombre").execute().data
     
-    # --- FILTRO PREVIO PARA CARGA (LO QUE PEDISTE) ---
-    st.write("Seleccione un producto existente para añadir stock o editarlo.")
-    
-    # 1. Caja de texto para filtrar la lista antes de abrirla
-    filtro_rapido = st.text_input("🔍 Filtrar lista por nombre, marca o código (Ej: ip11):")
-    
-    # 2. Filtrar opciones basado en lo que escribas
+    # --- RESTAURADO: LISTA SIMPLE (SIN FILTRO EXTERNO) ---
     opciones_map = {}
     for p in all_products:
-        # Aplicamos la misma lógica inteligente
-        coincide = True
-        if filtro_rapido:
-            c_nom = es_coincidencia(filtro_rapido, p['nombre'])
-            c_mar = es_coincidencia(filtro_rapido, p.get('marca'))
-            c_cod = es_coincidencia(filtro_rapido, p.get('codigo_bateria'))
-            coincide = c_nom or c_mar or c_cod
-        
-        if coincide:
-            marca = p.get('marca') or ""
-            codigo = p.get('codigo_bateria')
-            base_text = f"{marca} - {p['nombre']}" if marca else p['nombre']
-            if codigo: display_text = f"{base_text} ({codigo})"
-            else: display_text = base_text
-            opciones_map[display_text] = p
+        marca = p.get('marca') or ""
+        codigo = p.get('codigo_bateria')
+        base_text = f"{marca} - {p['nombre']}" if marca else p['nombre']
+        if codigo: display_text = f"{base_text} ({codigo})"
+        else: display_text = base_text
+        opciones_map[display_text] = p
 
     lista_opciones = sorted(list(opciones_map.keys()))
     
-    # 3. Mostrar solo las opciones filtradas
-    seleccion_str = st.selectbox("Seleccionar Producto:", ["Seleccionar"] + lista_opciones)
+    st.write("Seleccione un producto existente para añadir stock o editarlo.")
+    seleccion_str = st.selectbox("Modelo / Repuesto", ["Seleccionar"] + lista_opciones)
     
     if seleccion_str != "Seleccionar":
         prod_data = opciones_map[seleccion_str]
