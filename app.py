@@ -174,9 +174,23 @@ def modal_nuevo_producto():
             if not n or c == "Seleccionar" or p_gen <= 0:
                 st.error("⚠️ Datos incompletos.")
             else:
-                existe = supabase.table("productos").select("*").eq("nombre", n).execute()
-                if existe.data:
-                    st.error("⚠️ Ya existe.")
+                # --- VALIDACIÓN 1: DUPLICADO EXACTO (NOMBRE + MARCA) ---
+                existe_dupla = supabase.table("productos").select("id")\
+                    .eq("nombre", n)\
+                    .eq("marca", m)\
+                    .execute()
+                
+                # --- VALIDACIÓN 2: CÓDIGO BATERÍA REPETIDO ---
+                existe_codigo = False
+                if cb: # Solo si escribió un código
+                    res_c = supabase.table("productos").select("id").eq("codigo_bateria", cb).execute()
+                    if res_c.data:
+                        existe_codigo = True
+
+                if existe_dupla.data:
+                    st.error(f"⚠️ Ya existe el modelo '{n}' con la marca '{m}'.")
+                elif existe_codigo:
+                    st.error(f"⚠️ El código '{cb}' ya está registrado en otro producto.")
                 else:
                     with st.spinner('Creando producto...'):
                         supabase.table("productos").insert({
@@ -416,21 +430,17 @@ elif opcion == "Log":
     
     if logs:
         df = pd.DataFrame(logs)
-        # --- FIX ROBUSTO DE FECHAS (ADIÓS TYPE ERROR) ---
-        df['fecha_obj'] = pd.to_datetime(df['fecha']) # Objeto datetime completo
-        df['fecha_only'] = df['fecha_obj'].dt.date # Solo la fecha (YYYY-MM-DD)
+        df['fecha_dt'] = pd.to_datetime(df['fecha']).dt.date
         
         if len(date_range) == 2:
             start_date = date_range[0]
             end_date = date_range[1]
-            # Comparamos DATE con DATE (sin horas, sin zonas horarias)
-            df = df[(df['fecha_only'] >= start_date) & (df['fecha_only'] <= end_date)]
+            df = df[(df['fecha_dt'] >= start_date) & (df['fecha_dt'] <= end_date)]
             
-        df['fecha'] = df['fecha_obj'].dt.strftime('%d/%m/%Y %H:%M')
-        cols = ['fecha', 'producto_nombre', 'cantidad', 'usuario']
-        if 'tecnico' in df.columns: cols.append('tecnico')
-        if 'local' in df.columns: cols.append('local')
-        st.dataframe(df[cols], use_container_width=True, hide_index=True)
+        df['fecha_str'] = pd.to_datetime(df['fecha']).dt.strftime('%d/%m/%Y %H:%M')
+        df_show = df[['fecha_str', 'producto_nombre', 'cantidad', 'usuario', 'tecnico', 'local']].copy()
+        df_show.columns = ['Fecha', 'Producto', 'Cant', 'Usuario', 'Técnico/Nota', 'Local']
+        st.dataframe(df_show, use_container_width=True, hide_index=True)
 
 elif opcion == "Stats":
     st.markdown("<h2>📊 Control y Estadísticas</h2>", unsafe_allow_html=True)
@@ -455,14 +465,12 @@ elif opcion == "Stats":
 
         if historial_db:
             df_hist = pd.DataFrame(historial_db)
-            # --- FIX ROBUSTO DE FECHAS EN STATS ---
-            df_hist['fecha_obj'] = pd.to_datetime(df_hist['fecha'])
-            df_hist['fecha_only'] = df_hist['fecha_obj'].dt.date
+            df_hist['fecha_date'] = pd.to_datetime(df_hist['fecha']).dt.date
             
             if len(date_range_stats) == 2:
                 s_date = date_range_stats[0]
                 e_date = date_range_stats[1]
-                df_hist = df_hist[(df_hist['fecha_only'] >= s_date) & (df_hist['fecha_only'] <= e_date)]
+                df_hist = df_hist[(df_hist['fecha_date'] >= s_date) & (df_hist['fecha_date'] <= e_date)]
             
             df_salidas = df_hist[df_hist['cantidad'] < 0].copy()
             df_salidas['cantidad'] = df_salidas['cantidad'].abs()
