@@ -187,7 +187,7 @@ def modal_nuevo_producto():
             if not n or c == "Seleccionar" or p_gen <= 0:
                 st.error("⚠️ Datos incompletos.")
             else:
-                # --- VALIDACIÓN CORREGIDA: NOMBRE + MARCA + CATEGORÍA ---
+                # --- VALIDACIÓN: SOLO BLOQUEA SI NOMBRE + MARCA + CATEGORÍA SON IGUALES ---
                 # Ya no bloqueamos por código de batería repetido
                 existe_dupla = supabase.table("productos").select("id")\
                     .eq("nombre", n)\
@@ -304,15 +304,13 @@ if opcion == "Stock":
             b_clean = busqueda.lower().strip()
             filtered_items.sort(key=lambda x: 0 if x['nombre'].lower().startswith(b_clean) else 1)
 
-        # --- ARREGLO DE LAYOUT (GRID ROBUSTO) ---
-        # Dividimos los items en grupos de 4 para asegurar que cada fila sea independiente
-        # Esto soluciona el error visual de superposición.
-        rows = [filtered_items[i:i + 4] for i in range(0, len(filtered_items), 4)]
-        
-        for row in rows:
-            cols = st.columns(4) # Nueva fila de columnas
-            for i, p in enumerate(row):
-                with cols[i]:
+        # --- ARREGLO DE LAYOUT: USAR FILAS INDEPENDIENTES (FIX VISUAL) ---
+        # Dividimos la lista en grupos de 4 para que cada fila sea un bloque nuevo
+        for i in range(0, len(filtered_items), 4):
+            batch = filtered_items[i:i+4]
+            cols = st.columns(4)
+            for j, p in enumerate(batch):
+                with cols[j]:
                     with st.container(border=True):
                         img_url = p.get('imagen_url') or "https://via.placeholder.com/150"
                         st.markdown(f"""
