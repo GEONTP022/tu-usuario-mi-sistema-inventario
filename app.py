@@ -45,7 +45,6 @@ def es_coincidencia(busqueda, texto_db):
     
     b = str(busqueda).lower().strip()
     
-    # Alias inteligentes
     if b.startswith("ip") and len(b) > 2 and b[2].isdigit(): 
         b = b.replace("ip", "iphone", 1)
     elif b == "ip":
@@ -59,149 +58,56 @@ def es_coincidencia(busqueda, texto_db):
     if b_nospace in t_nospace: return True
     return False
 
-# --- CSS MAESTRO (RESTAURADO Y CORREGIDO) ---
+# --- CSS LIMPIO (SIN EL CÓDIGO QUE ROMPÍA LA PANTALLA) ---
 st.markdown("""
     <style>
-    /* 1. FONDO BLANCO GLOBAL */
-    .stApp, .main, .block-container {
-        background-color: #ffffff !important;
+    /* Configuración básica */
+    .stApp { background-color: #ffffff; }
+    
+    /* Sidebar */
+    [data-testid="stSidebar"] { background-color: #1a222b; }
+    [data-testid="stSidebar"] * { color: #ffffff !important; }
+    [data-testid="stSidebar"] button { 
+        background-color: transparent !important; 
+        border: none !important; 
+        color: #bdc3c7 !important; 
+        text-align: left !important; 
+        padding-left: 15px !important; 
     }
-
-    /* 2. BARRA LATERAL (OSCURA) */
-    [data-testid="stSidebar"] {
-        background-color: #1a222b !important;
-    }
-    [data-testid="stSidebar"] * {
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
-    }
-    [data-testid="stSidebar"] button {
-        background-color: transparent !important;
-        border: none !important;
-        color: #bdc3c7 !important;
-        text-align: left !important;
-        padding-left: 15px !important;
-    }
-    [data-testid="stSidebar"] button:hover {
-        background-color: rgba(255,255,255,0.05) !important;
-        border-left: 4px solid #3498db !important;
-        color: #ffffff !important;
-    }
-
-    /* 3. TEXTOS NEGROS OBLIGATORIOS */
-    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetriclabel {
-        color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
-        font-weight: 700 !important;
+    [data-testid="stSidebar"] button:hover { 
+        background-color: rgba(255,255,255,0.05) !important; 
+        border-left: 4px solid #3498db !important; 
+        color: #ffffff !important; 
     }
     
-    /* Metrics (KPIs) */
-    div[data-testid="stMetricValue"] {
-        color: #2488bc !important;
-        -webkit-text-fill-color: #2488bc !important;
+    /* Textos generales en negro */
+    h1, h2, h3, p, label, .stMetricValue, .stMarkdown { color: #000000 !important; }
+    
+    /* Botones Azules */
+    div.stButton button { 
+        background-color: #2488bc !important; 
+        color: #ffffff !important; 
+        font-weight: bold; 
+        border: none;
     }
-
-    /* 4. CAJAS DE TEXTO (INPUTS) */
-    input, textarea, .stNumberInput input {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
-        border: 1px solid #888888 !important;
-        caret-color: #000000 !important;
+    /* Botones Rojos (Disabled) */
+    div.stButton button:disabled { 
+        background-color: #e74c3c !important; 
+        color: white !important; 
+        opacity: 1 !important; 
     }
-    input:disabled {
-        background-color: #e9ecef !important;
-        color: #555555 !important;
-        -webkit-text-fill-color: #555555 !important;
-    }
-    ::placeholder {
-        color: #666666 !important;
-        -webkit-text-fill-color: #666666 !important;
-        opacity: 1 !important;
-    }
-
-    /* 5. MENÚS DESPLEGABLES */
-    div[data-baseweb="select"] > div {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-        border: 1px solid #888888 !important;
-    }
-    div[data-baseweb="select"] span { 
-        color: #000000 !important; 
-        -webkit-text-fill-color: #000000 !important;
-    }
-    ul[data-testid="stSelectboxVirtualDropdown"] {
-        background-color: #ffffff !important;
-    }
-    ul[data-testid="stSelectboxVirtualDropdown"] li {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-    }
-    ul[data-testid="stSelectboxVirtualDropdown"] li:hover {
-        background-color: #f0f2f6 !important;
-    }
-
-    /* 6. VENTANAS FLOTANTES */
-    div[role="dialog"] {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-    }
-
-    /* 7. TARJETAS DE STOCK (DISEÑO SEGURO) */
-    div[data-testid="stVerticalBlockBorderWrapper"] {
-        background-color: #ffffff !important;
-        border: 1px solid #ddd !important;
-        padding: 10px !important;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
-        min-height: 350px !important; /* Altura mínima para alineación */
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }
+    
+    /* Imágenes controladas */
     div[data-testid="stImage"] {
-        display: flex !important;
-        justify-content: center !important; 
-        align-items: center !important;
-        width: 100% !important;
-        margin: 0 auto !important;
-        height: 160px !important; 
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 10px;
     }
     div[data-testid="stImage"] img {
-        display: block !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-        max-height: 150px !important;
-        width: auto !important;
-        object-fit: contain !important;
+        object-fit: contain;
+        max-height: 150px;
     }
-
-    /* 8. BOTONES */
-    div.stButton button {
-        background-color: #2488bc !important;
-        color: #ffffff !important;
-        border: none !important;
-        font-weight: bold !important;
-        width: 100% !important;
-        margin-top: auto !important;
-    }
-    div.stButton button p { color: #ffffff !important; }
-
-    /* Botón NO STOCK (ROJO) */
-    div.stButton button:disabled, button[kind="secondary"] {
-        background-color: #e74c3c !important;
-        color: white !important;
-        opacity: 1 !important;
-        border: 1px solid #c0392b !important;
-    }
-    div.stButton button:disabled p { color: white !important; }
-    
-    /* Pestañas */
-    button[data-baseweb="tab"] { color: #000000 !important; }
-    div[data-baseweb="tab-list"] { background-color: #f1f3f4 !important; border-radius: 8px; }
-
-    /* Perfil */
-    .profile-section { text-align: center !important; padding: 20px 0px; }
-    .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
 
     [data-testid="stSidebarNav"] {display: none;}
     </style>
@@ -211,13 +117,11 @@ st.markdown("""
 
 @st.dialog("Gestionar Inventario")
 def modal_gestion(producto):
-    st.markdown(f"<h3 style='color:black;'>{producto['nombre']}</h3>", unsafe_allow_html=True)
-    
+    st.markdown(f"### {producto['nombre']}")
     tab_salida, tab_devolucion = st.tabs(["📉 REGISTRAR SALIDA", "↩️ DEVOLUCIÓN / INGRESO"])
     
-    # --- PESTAÑA 1: SALIDA ---
     with tab_salida:
-        st.markdown(f"**Stock Actual:** {producto['stock']}")
+        st.write(f"**Stock Actual:** {producto['stock']}")
         try: techs = [t['nombre'] for t in supabase.table("tecnicos").select("nombre").execute().data]
         except: techs = ["General"]
         try: locs = [l['nombre'] for l in supabase.table("locales").select("nombre").execute().data]
@@ -226,7 +130,6 @@ def modal_gestion(producto):
         with st.form("form_salida_modal"):
             tecnico = st.selectbox("Técnico", ["Seleccionar"] + techs, key="tec_sal")
             local = st.selectbox("Local", ["Seleccionar"] + locs, key="loc_sal")
-            # Validación para que no de error si stock es 0
             max_val = producto['stock'] if producto['stock'] > 0 else 1
             cantidad = st.number_input("Cantidad a RETIRAR", min_value=1, max_value=max_val, step=1, key="cant_sal")
             
@@ -236,27 +139,26 @@ def modal_gestion(producto):
                 elif tecnico == "Seleccionar" or local == "Seleccionar":
                     st.error("⚠️ Faltan datos.")
                 else:
-                    with st.spinner('Procesando salida...'):
+                    with st.spinner('Procesando...'):
                         nuevo_stock = producto['stock'] - cantidad
                         supabase.table("productos").update({"stock": nuevo_stock}).eq("id", producto['id']).execute()
                         supabase.table("historial").insert({
                             "producto_nombre": producto['nombre'], "cantidad": -cantidad,
                             "usuario": st.session_state.user, "tecnico": tecnico, "local": local
                         }).execute()
-                        time.sleep(1)
-                    st.success("✅ ¡Listo!")
+                        time.sleep(0.5)
+                    st.success("✅ Listo")
                     time.sleep(0.5)
                     st.rerun()
 
-    # --- PESTAÑA 2: DEVOLUCIÓN ---
     with tab_devolucion:
-        st.info("Use esto para devoluciones de técnicos o ingresos rápidos.")
+        st.info("Ingreso rápido o devolución.")
         with st.form("form_devolucion_modal"):
-            razon = st.text_input("Motivo (Ej: Devolución Técnico, Error)", value="Devolución")
-            cant_dev = st.number_input("Cantidad a INGRESAR/DEVOLVER", min_value=1, step=1, key="cant_dev")
+            razon = st.text_input("Motivo", value="Devolución")
+            cant_dev = st.number_input("Cantidad a INGRESAR", min_value=1, step=1, key="cant_dev")
             
             if st.form_submit_button("CONFIRMAR DEVOLUCIÓN"):
-                with st.spinner('Procesando devolución...'):
+                with st.spinner('Procesando...'):
                     nuevo_stock_dev = producto['stock'] + cant_dev
                     supabase.table("productos").update({"stock": nuevo_stock_dev}).eq("id", producto['id']).execute()
                     supabase.table("historial").insert({
@@ -266,25 +168,24 @@ def modal_gestion(producto):
                         "tecnico": razon,
                         "local": "Almacén"
                     }).execute()
-                    time.sleep(1)
-                st.success("Devolución Registrada (Stock Aumentado).")
+                    time.sleep(0.5)
+                st.success("✅ Listo")
+                time.sleep(0.5)
                 st.rerun()
 
 @st.dialog("✨ Nuevo Producto")
 def modal_nuevo_producto():
-    st.markdown("<h3 style='color:black;'>Crear Producto</h3>", unsafe_allow_html=True)
+    st.markdown("### Crear Producto")
     with st.form("form_nuevo_prod"):
         n = st.text_input("Nombre / Modelo *")
         c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
-        m = st.text_input("Marca (Solo si aplica)")
-        cb = st.text_input("Código de Batería (Solo para Baterías)")
+        m = st.text_input("Marca")
+        cb = st.text_input("Código de Batería (Si aplica)")
         s = st.number_input("Stock Inicial *", min_value=0, step=1)
         
         col_p1, col_p2 = st.columns(2)
-        with col_p1:
-            p_gen = st.number_input("Precio General (S/) *", min_value=0.0, step=0.5)
-        with col_p2:
-            p_punto = st.number_input("Precio Punto (S/)", min_value=0.0, step=0.5)
+        with col_p1: p_gen = st.number_input("Precio General (S/) *", min_value=0.0, step=0.5)
+        with col_p2: p_punto = st.number_input("Precio Punto (S/)", min_value=0.0, step=0.5)
         
         img = st.text_input("URL Imagen (Opcional)")
 
@@ -292,58 +193,54 @@ def modal_nuevo_producto():
             if not n or c == "Seleccionar" or p_gen <= 0:
                 st.error("⚠️ Datos incompletos.")
             else:
-                # --- VALIDACIÓN CORREGIDA v3.5: NOMBRE + MARCA + CATEGORÍA + CÓDIGO ---
-                # Solo bloquea si los 4 campos son idénticos.
-                existe_dupla = supabase.table("productos").select("id")\
-                    .eq("nombre", n)\
-                    .eq("marca", m)\
-                    .eq("categoria", c)\
-                    .eq("codigo_bateria", cb)\
-                    .execute()
+                # --- VALIDACIÓN EXACTA (Nombre + Marca + Categoria + Codigo) ---
+                query = supabase.table("productos").select("id")\
+                    .eq("nombre", n).eq("marca", m).eq("categoria", c)
+                
+                # Manejar código vacío o lleno
+                if cb: query = query.eq("codigo_bateria", cb)
+                else: query = query.eq("codigo_bateria", "") # Ojo: Asegúrate de guardar cadenas vacías si no hay código
 
-                if existe_dupla.data:
-                    st.error(f"⚠️ Ya existe EXACTAMENTE este producto (Mismo Nombre, Marca y Código).")
+                existe = query.execute()
+
+                if existe.data:
+                    st.error("⚠️ Ya existe este producto EXACTO (Mismo nombre, marca, categoría y código).")
                 else:
-                    with st.spinner('Creando producto...'):
+                    with st.spinner('Guardando...'):
                         supabase.table("productos").insert({
                             "nombre": n, "categoria": c, "marca": m, "codigo_bateria": cb,
                             "stock": s, "precio_venta": p_gen, "precio_punto": p_punto, "imagen_url": img
                         }).execute()
-                        
                         supabase.table("historial").insert({
                             "producto_nombre": n, "cantidad": s, "usuario": st.session_state.user,
                             "tecnico": "Ingreso Inicial", "local": "Almacén"
                         }).execute()
-                        time.sleep(1)
-                    st.success("Creado.")
+                    st.success("✅ Creado")
+                    time.sleep(0.5)
                     st.rerun()
 
-@st.dialog("⚠️ Confirmar")
+@st.dialog("⚠️ Eliminar")
 def modal_borrar_producto(producto):
-    st.write(f"¿Estás seguro de eliminar **{producto['nombre']}**?")
-    st.warning("Esta acción borrará el producto del inventario permanentemente.")
-    if st.button("SÍ, ELIMINAR DEFINITIVAMENTE", use_container_width=True):
+    st.write(f"¿Eliminar **{producto['nombre']}** permanentemente?")
+    if st.button("SÍ, ELIMINAR", type="primary"):
         with st.spinner('Eliminando...'):
             supabase.table("productos").delete().eq("id", producto['id']).execute()
-            time.sleep(1)
-        st.success("✅ Eliminado correctamente.")
+        st.success("✅ Eliminado")
         time.sleep(0.5)
         st.rerun()
 
-@st.dialog("⚠️ Confirmar")
+@st.dialog("⚠️ Eliminar")
 def modal_borrar_tecnico(nombre):
     st.write(f"¿Eliminar {nombre}?")
-    if st.button("SÍ, ELIMINAR", use_container_width=True):
+    if st.button("SÍ, ELIMINAR"):
         supabase.table("tecnicos").delete().eq("nombre", nombre).execute()
-        st.success("Hecho.")
         st.rerun()
 
-@st.dialog("⚠️ Confirmar")
+@st.dialog("⚠️ Eliminar")
 def modal_borrar_local(nombre):
     st.write(f"¿Eliminar {nombre}?")
-    if st.button("SÍ, ELIMINAR", use_container_width=True):
+    if st.button("SÍ, ELIMINAR"):
         supabase.table("locales").delete().eq("nombre", nombre).execute()
-        st.success("Hecho.")
         st.rerun()
 
 # --- PANEL IZQUIERDO ---
@@ -351,8 +248,8 @@ with st.sidebar:
     st.markdown(f"""
         <div class="profile-section">
             <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="profile-pic">
-            <p style="font-size:18px; font-weight:bold; margin:0; color:white !important;">{st.session_state.user.upper()}</p>
-            <p style="font-size:12px; color:#f39c12 !important; margin:0;">{st.session_state.rol.upper()} USER</p>
+            <p style="font-size:18px; font-weight:bold; margin:0; color:white;">{st.session_state.user.upper()}</p>
+            <p style="font-size:12px; color:#f39c12; margin:0;">{st.session_state.rol.upper()} USER</p>
         </div>
         <div style="height:1px; background-color:#3498db; opacity:0.3; margin-bottom:20px;"></div>
     """, unsafe_allow_html=True)
@@ -374,320 +271,214 @@ with st.sidebar:
 opcion = st.session_state.menu
 
 if opcion == "Stock":
-    st.markdown("<h2>Inventario General</h2>", unsafe_allow_html=True)
+    st.markdown("## Inventario General")
     col_a, col_b = st.columns([3, 1])
-    with col_a: busqueda = st.text_input("Buscar por modelo, marca o código...", placeholder="Ej: ip11 (para iPhone), Samsung, COD-123...")
-    with col_b: categoria = st.selectbox("Apartado", ["Todos", "⚠️ Solo Bajo Stock", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
+    with col_a: 
+        busqueda = st.text_input("Buscar...", placeholder="Ej: ip11, Samsung, celda...")
+    with col_b: 
+        categoria = st.selectbox("Categoría", ["Todos", "⚠️ Solo Bajo Stock", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
 
     items = supabase.table("productos").select("*").order("nombre").execute().data
     if items:
-        # Filtrado
         filtered_items = []
         for p in items:
-            # Buscador Texto
-            coincide_nombre = es_coincidencia(busqueda, p['nombre'])
-            coincide_marca = es_coincidencia(busqueda, p.get('marca'))
-            coincide_codigo = es_coincidencia(busqueda, p.get('codigo_bateria'))
-            match_busqueda = coincide_nombre or coincide_marca or coincide_codigo
+            coincide = es_coincidencia(busqueda, p['nombre']) or \
+                       es_coincidencia(busqueda, p.get('marca')) or \
+                       es_coincidencia(busqueda, p.get('codigo_bateria'))
             
-            # Filtro Categoría / Stock Bajo
-            if categoria == "⚠️ Solo Bajo Stock":
-                match_categoria = (p['stock'] <= 2)
-            elif categoria == "Todos":
-                match_categoria = True
-            else:
-                match_categoria = (p['categoria'] == categoria)
+            match_cat = True
+            if categoria == "⚠️ Solo Bajo Stock": match_cat = (p['stock'] <= 2)
+            elif categoria != "Todos": match_cat = (p['categoria'] == categoria)
                 
-            if match_busqueda and match_categoria:
-                filtered_items.append(p)
+            if coincide and match_cat: filtered_items.append(p)
         
-        # Ordenamiento
         if busqueda:
             b_clean = busqueda.lower().strip()
             filtered_items.sort(key=lambda x: 0 if x['nombre'].lower().startswith(b_clean) else 1)
 
-        # --- ARREGLO VISUAL v3.5: DIBUJAR POR FILAS ---
-        # Dividimos en bloques de 4 para asegurar que el layout no se rompa
-        for i in range(0, len(filtered_items), 4):
-            batch = filtered_items[i:i+4]
-            cols = st.columns(4)
-            for j, p in enumerate(batch):
-                with cols[j]:
+        # --- GRID SYSTEM NATIVO (NO SE ROMPE) ---
+        N_COLS = 4
+        # Dividir en filas de 4 para que Streamlit renderice bloques limpios
+        rows = [filtered_items[i:i + N_COLS] for i in range(0, len(filtered_items), N_COLS)]
+        
+        for row in rows:
+            cols = st.columns(N_COLS)
+            for i, p in enumerate(row):
+                with cols[i]:
                     with st.container(border=True):
                         # Imagen
-                        img_url = p.get('imagen_url') or "https://via.placeholder.com/150"
-                        st.markdown(f"""
-                            <div style="display: flex; justify-content: center; align-items: center; height: 160px; width: 100%; margin-bottom: 10px;">
-                                <img src="{img_url}" style="max-height: 150px; width: auto; object-fit: contain; display: block;">
-                            </div>
-                        """, unsafe_allow_html=True)
+                        img = p.get('imagen_url') or "https://via.placeholder.com/150"
+                        st.image(img, use_column_width=True)
                         
-                        # Info
-                        marca_val = p.get('marca', '')
-                        marca_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase;'>{marca_val}</div>" if marca_val else "<div style='height:16px;'></div>"
+                        # Datos
+                        st.markdown(f"**{p['nombre']}**")
+                        if p.get('marca'): st.caption(f"{p['marca']}")
+                        if p.get('codigo_bateria'): st.caption(f"Cod: {p['codigo_bateria']}")
                         
-                        cod_bat = p.get('codigo_bateria')
-                        cod_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase; margin-top:2px;'>{cod_bat}</div>" if cod_bat else ""
-                        
-                        st.markdown(f"""
-                            <div style="text-align:center; height:90px; display:flex; flex-direction:column; justify-content:flex-start; align-items:center;">
-                                {marca_html}
-                                <div style="color:black; font-weight:bold; font-size:15px; line-height:1.2; margin-top:2px;">{p['nombre']}</div>
-                                {cod_html}
-                            </div>
-                        """, unsafe_allow_html=True)
-
-                        # --- DISEÑO RESTAURADO: 3 COLUMNAS ---
+                        # Precios y Stock (Diseño de 3 columnas)
                         c1, c2, c3 = st.columns([1, 1.2, 1.2])
-                        
-                        # 1. Stock
-                        with c1: 
-                            st.markdown(f"<div style='text-align:center; color:black; font-size:12px; font-weight:bold;'>Stock<br><span style='font-size:14px;'>{p['stock']}</span></div>", unsafe_allow_html=True)
-                        
-                        # 2. Precio General
-                        with c2: 
-                            st.markdown(f"<div style='text-align:center; color:#2c3e50; font-size:12px;'>Gral.<br><span style='font-weight:bold;'>S/ {p['precio_venta']}</span></div>", unsafe_allow_html=True)
-                        
-                        # 3. Precio Punto
+                        with c1: st.markdown(f"**Stock**<br>{p['stock']}", unsafe_allow_html=True)
+                        with c2: st.markdown(f"**Gral**<br>S/{p['precio_venta']}", unsafe_allow_html=True)
                         with c3:
-                            p_punto = p.get('precio_punto', 0)
-                            if p_punto and p_punto > 0:
-                                st.markdown(f"<div style='text-align:center; color:#27ae60; font-size:12px;'>Punto<br><span style='font-weight:bold;'>S/ {p_punto}</span></div>", unsafe_allow_html=True)
-                            else:
-                                st.markdown(f"<div style='text-align:center; color:#bdc3c7; font-size:12px;'>Punto<br>--</div>", unsafe_allow_html=True)
+                            val_punto = p.get('precio_punto', 0)
+                            color_punto = "#27ae60" if val_punto else "#bdc3c7"
+                            val_str = f"S/{val_punto}" if val_punto else "--"
+                            st.markdown(f"<span style='color:{color_punto}'>**Punto**<br>{val_str}</span>", unsafe_allow_html=True)
                         
-                        st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
-                        
+                        st.markdown("")
+                        # Botón
                         if p['stock'] > 0:
-                            # Botón azul SALIDA
-                            if st.button("SALIDA", key=f"s_{p['id']}", use_container_width=True): modal_gestion(p)
+                            if st.button("SALIDA", key=f"btn_{p['id']}", use_container_width=True):
+                                modal_gestion(p)
                         else:
-                             # Botón rojo NO STOCK
-                            st.button("🚫 NO STOCK", key=f"ns_{p['id']}", disabled=True, use_container_width=True)
+                            st.button("🚫 NO STOCK", key=f"btn_no_{p['id']}", disabled=True, use_container_width=True)
 
 elif opcion == "Carga":
-    c_title, c_btn = st.columns([3, 1])
-    with c_title: st.markdown("<h2>📥 Añadir / Reponer Stock</h2>", unsafe_allow_html=True)
-    with c_btn:
+    st.markdown("## 📥 Gestión de Stock")
+    c1, c2 = st.columns([3, 1])
+    with c2:
         if st.button("➕ NUEVO PRODUCTO", use_container_width=True): modal_nuevo_producto()
     
     all_products = supabase.table("productos").select("*").order("nombre").execute().data
+    opciones = {f"{p['nombre']} ({p.get('marca','')})": p for p in all_products}
     
-    opciones_map = {}
-    for p in all_products:
-        marca = p.get('marca') or ""
-        codigo = p.get('codigo_bateria')
-        base_text = f"{marca} - {p['nombre']}" if marca else p['nombre']
-        if codigo: display_text = f"{base_text} ({codigo})"
-        else: display_text = base_text
-        opciones_map[display_text] = p
-
-    lista_opciones = sorted(list(opciones_map.keys()))
+    seleccion = st.selectbox("Buscar para editar/reponer:", ["Seleccionar"] + list(opciones.keys()))
     
-    st.write("Seleccione un producto existente para añadir stock o editarlo.")
-    seleccion_str = st.selectbox("Modelo / Repuesto", ["Seleccionar"] + lista_opciones)
-    
-    if seleccion_str != "Seleccionar":
-        prod_data = opciones_map[seleccion_str]
-        if prod_data:
-            with st.form("form_update_stock"):
+    if seleccion != "Seleccionar":
+        prod = opciones[seleccion]
+        with st.container(border=True):
+            st.subheader(f"Editando: {prod['nombre']}")
+            with st.form("edit_form"):
                 col_u1, col_u2 = st.columns(2)
                 with col_u1:
-                    st.text_input("Categoría", value=prod_data['categoria'], disabled=True)
-                    
-                    marca_val = prod_data.get('marca') or ""
-                    new_marca = st.text_input("Marca", value=marca_val)
-                    
-                    cod_bat_new = ""
-                    if prod_data['categoria'] == "Baterías":
-                        current_code = prod_data.get('codigo_bateria') or ""
-                        cod_bat_new = st.text_input("Código de Batería", value=current_code)
-
+                    new_cat = st.selectbox("Categoría", ["Pantallas", "Baterías", "Flex", "Glases", "Otros"], index=["Pantallas", "Baterías", "Flex", "Glases", "Otros"].index(prod['categoria']))
+                    new_marca = st.text_input("Marca", value=prod.get('marca', ''))
+                    new_cod = st.text_input("Código Batería", value=prod.get('codigo_bateria', ''))
                 with col_u2:
-                    new_price_gen = st.number_input("Precio General (S/)", value=float(prod_data['precio_venta']), min_value=0.0, step=0.5)
-                    val_punto = float(prod_data.get('precio_punto') or 0.0)
-                    new_price_punto = st.number_input("Precio Punto (S/)", value=val_punto, min_value=0.0, step=0.5)
-                    img_val = prod_data.get('imagen_url') or ""
-                    new_img = st.text_input("URL Imagen", value=img_val)
-
-                st.divider()
-                st.markdown(f"**Stock Actual:** {prod_data['stock']}")
-                stock_add = st.number_input("Cantidad a AÑADIR (+)", min_value=0, value=0, step=1)
+                    new_p_gen = st.number_input("Precio Gral", value=float(prod['precio_venta']), step=0.5)
+                    # Handle possible missing column gracefully just in case
+                    current_punto = float(prod.get('precio_punto') or 0.0)
+                    new_p_punto = st.number_input("Precio Punto", value=current_punto, step=0.5)
+                    new_img = st.text_input("Imagen URL", value=prod.get('imagen_url', ''))
                 
-                if st.form_submit_button("CONSOLIDAR INGRESO"):
-                    with st.spinner('Guardando cambios...'):
-                        total_stock = prod_data['stock'] + stock_add
-                        datos_update = { 
-                            "stock": total_stock, 
-                            "precio_venta": new_price_gen, 
-                            "precio_punto": new_price_punto,
-                            "imagen_url": new_img,
-                            "marca": new_marca 
-                        }
-                        if prod_data['categoria'] == "Baterías": datos_update["codigo_bateria"] = cod_bat_new
-
-                        supabase.table("productos").update(datos_update).eq("id", prod_data['id']).execute()
+                st.divider()
+                add_stock = st.number_input("AÑADIR STOCK (+)", value=0, step=1)
+                
+                if st.form_submit_button("GUARDAR CAMBIOS"):
+                    with st.spinner("Actualizando..."):
+                        new_total = prod['stock'] + add_stock
+                        supabase.table("productos").update({
+                            "categoria": new_cat, "marca": new_marca, "codigo_bateria": new_cod,
+                            "precio_venta": new_p_gen, "precio_punto": new_p_punto, 
+                            "imagen_url": new_img, "stock": new_total
+                        }).eq("id", prod['id']).execute()
                         
-                        if stock_add > 0:
+                        if add_stock > 0:
                             supabase.table("historial").insert({
-                                "producto_nombre": prod_data['nombre'], "cantidad": stock_add,
+                                "producto_nombre": prod['nombre'], "cantidad": add_stock,
                                 "usuario": st.session_state.user, "tecnico": "Ingreso Stock", "local": "Almacén"
                             }).execute()
-                        time.sleep(1)
-                    st.success("✅ ¡Listo!")
+                    st.success("Actualizado")
                     time.sleep(0.5)
                     st.rerun()
             
-            st.markdown("---")
-            if st.button("🗑️ ELIMINAR ESTE PRODUCTO DEL SISTEMA", type="primary"):
-                modal_borrar_producto(prod_data)
+            if st.button("🗑️ Borrar Producto"):
+                modal_borrar_producto(prod)
 
 elif opcion == "Log":
-    st.markdown("<h2>📜 Historial General</h2>", unsafe_allow_html=True)
-    col_d1, col_d2 = st.columns([1, 3])
-    with col_d1:
-        today = datetime.now()
-        last_month = today - timedelta(days=30)
-        date_range = st.date_input("Filtrar por Fecha", (last_month, today))
+    st.markdown("## 📜 Historial")
+    today = datetime.now()
+    d_range = st.date_input("Filtrar fecha:", (today - timedelta(days=30), today))
     
     logs = supabase.table("historial").select("*").order("fecha", desc=True).execute().data
-    
     if logs:
         df = pd.DataFrame(logs)
-        df['fecha_dt'] = pd.to_datetime(df['fecha']).dt.date
+        # FIX DE FECHAS: Normalizar a solo fecha (sin hora) para comparar
+        df['dt'] = pd.to_datetime(df['fecha']).dt.date
+        if len(d_range) == 2:
+            df = df[(df['dt'] >= d_range[0]) & (df['dt'] <= d_range[1])]
         
-        if len(date_range) == 2:
-            start_date = date_range[0]
-            end_date = date_range[1]
-            df = df[(df['fecha_dt'] >= start_date) & (df['fecha_dt'] <= end_date)]
-            
-        df['fecha_str'] = pd.to_datetime(df['fecha']).dt.strftime('%d/%m/%Y %H:%M')
-        df_show = df[['fecha_str', 'producto_nombre', 'cantidad', 'usuario', 'tecnico', 'local']].copy()
-        df_show.columns = ['Fecha', 'Producto', 'Cant', 'Usuario', 'Técnico/Nota', 'Local']
-        st.dataframe(df_show, use_container_width=True, hide_index=True)
+        # Formato legible
+        df['fecha'] = pd.to_datetime(df['fecha']).dt.strftime('%d/%m/%Y %H:%M')
+        st.dataframe(
+            df[['fecha', 'producto_nombre', 'cantidad', 'usuario', 'tecnico', 'local']], 
+            use_container_width=True, 
+            hide_index=True
+        )
 
 elif opcion == "Stats":
-    st.markdown("<h2>📊 Control y Estadísticas</h2>", unsafe_allow_html=True)
-    date_range_stats = st.date_input("Rango de Análisis", (datetime.now() - timedelta(days=30), datetime.now()))
-
-    productos_db = supabase.table("productos").select("*").execute().data
-    historial_db = supabase.table("historial").select("*").execute().data
+    st.markdown("## 📊 Estadísticas")
+    dr = st.date_input("Periodo:", (datetime.now()-timedelta(days=30), datetime.now()))
     
-    if productos_db:
-        df_prod = pd.DataFrame(productos_db)
-        kpi1, kpi2, kpi3 = st.columns(3)
-        with kpi1:
-            total_unidades = df_prod['stock'].sum()
-            st.metric("Total Unidades en Stock", f"{total_unidades}")
-        with kpi2:
-            valor_inventario = (df_prod['stock'] * df_prod['precio_venta']).sum()
-            st.metric("Valor del Inventario", f"S/ {valor_inventario:,.2f}")
-        with kpi3:
-            st.metric("Total Referencias", f"{len(df_prod)}")
+    prods = supabase.table("productos").select("*").execute().data
+    hists = supabase.table("historial").select("*").execute().data
+    
+    if prods:
+        df_p = pd.DataFrame(prods)
+        k1, k2, k3 = st.columns(3)
+        k1.metric("Unidades Totales", df_p['stock'].sum())
+        k2.metric("Valor Inventario (Gral)", f"S/ {(df_p['stock'] * df_p['precio_venta']).sum():,.2f}")
+        k3.metric("Referencias", len(df_p))
         
-        st.divider()
-
-        if historial_db:
-            df_hist = pd.DataFrame(historial_db)
-            df_hist['fecha_date'] = pd.to_datetime(df_hist['fecha']).dt.date
+        if hists:
+            df_h = pd.DataFrame(hists)
+            # FIX DE FECHAS EN STATS
+            df_h['dt'] = pd.to_datetime(df_h['fecha']).dt.date
+            if len(dr) == 2:
+                df_h = df_h[(df_h['dt'] >= dr[0]) & (df_h['dt'] <= dr[1])]
             
-            if len(date_range_stats) == 2:
-                s_date = date_range_stats[0]
-                e_date = date_range_stats[1]
-                df_hist = df_hist[(df_hist['fecha_date'] >= s_date) & (df_hist['fecha_date'] <= e_date)]
+            salidas = df_h[df_h['cantidad'] < 0].copy()
+            salidas['cantidad'] = salidas['cantidad'].abs()
             
-            df_salidas = df_hist[df_hist['cantidad'] < 0].copy()
-            df_salidas['cantidad'] = df_salidas['cantidad'].abs()
-            
-            df_merged = df_salidas.merge(df_prod, left_on='producto_nombre', right_on='nombre', how='left')
-            
-            c1, c2 = st.columns([1, 1])
-            with c1:
-                st.subheader("Top 10 Productos Más Usados")
-                if not df_salidas.empty:
-                    top_gen = df_salidas.groupby('producto_nombre')['cantidad'].sum().reset_index().sort_values('cantidad', ascending=False).head(10)
-                    fig_top = px.bar(top_gen, x='cantidad', y='producto_nombre', orientation='h', text='cantidad')
-                    st.plotly_chart(fig_top, use_container_width=True)
-                else:
-                    st.info("No hay movimientos en este rango de fechas.")
-            
-            with c2:
-                st.subheader("Análisis por Categoría")
-                cats_disponibles = ["Pantallas", "Baterías", "Flex", "Glases", "Otros"]
-                cat_filter = st.selectbox("Selecciona Categoría:", cats_disponibles)
-                
-                if not df_merged.empty:
-                    df_cat_specific = df_merged[df_merged['categoria'] == cat_filter]
-                    if not df_cat_specific.empty:
-                        top_cat = df_cat_specific.groupby('producto_nombre')['cantidad'].sum().reset_index().sort_values('cantidad', ascending=False)
-                        fig_cat = px.bar(top_cat, x='producto_nombre', y='cantidad', text='cantidad', 
-                                         color='cantidad', color_continuous_scale='Blues')
-                        st.plotly_chart(fig_cat, use_container_width=True)
-                    else:
-                        st.info(f"Sin movimientos de {cat_filter} en estas fechas.")
+            if not salidas.empty:
+                g1 = salidas.groupby('producto_nombre')['cantidad'].sum().nlargest(10).reset_index()
+                st.plotly_chart(px.bar(g1, x='cantidad', y='producto_nombre', orientation='h', title="Top 10 Salidas"), use_container_width=True)
 
 elif opcion == "Users":
-    st.markdown("<h2>👥 Gestión</h2>", unsafe_allow_html=True)
-    tab1, tab2, tab3 = st.tabs(["🔑 Accesos", "👨‍🔧 Técnicos", "🏠 Locales"])
-    with tab1:
-        with st.form("nu"):
-            un = st.text_input("Usuario")
-            pw = st.text_input("Clave")
-            rl = st.selectbox("Rol", ["Normal", "Super"])
-            if st.form_submit_button("CREAR"):
-                if supabase.table("usuarios").select("*").eq("usuario", un).execute().data: st.error("Existe.")
-                else:
-                    with st.spinner('Creando usuario...'):
-                        supabase.table("usuarios").insert({"usuario":un, "contrasena":pw, "rol":rl}).execute()
-                        time.sleep(1)
-                    st.success("✅ ¡Listo!")
-                    time.sleep(0.5)
-    with tab2:
-        with st.form("nt"):
-            tn = st.text_input("Nombre")
-            if st.form_submit_button("AGREGAR"):
-                with st.spinner('Guardando...'):
-                    supabase.table("tecnicos").insert({"nombre": tn}).execute()
-                    time.sleep(1)
-                st.success("✅ ¡Listo!")
-                time.sleep(0.5)
+    st.markdown("## 👥 Configuración")
+    t1, t2, t3 = st.tabs(["Usuarios", "Técnicos", "Locales"])
+    
+    with t1:
+        with st.form("u"):
+            u = st.text_input("Usuario")
+            p = st.text_input("Clave")
+            r = st.selectbox("Rol", ["Normal", "Super"])
+            if st.form_submit_button("Crear Usuario"):
+                supabase.table("usuarios").insert({"usuario":u, "contrasena":p, "rol":r}).execute()
+                st.success("Creado")
+    
+    with t2:
+        with st.form("t"):
+            tn = st.text_input("Nombre Técnico")
+            if st.form_submit_button("Agregar"):
+                supabase.table("tecnicos").insert({"nombre":tn}).execute()
                 st.rerun()
-        st.write("---")
-        tecs = supabase.table("tecnicos").select("*").execute().data
-        if tecs:
-            col_a, col_b = st.columns([3,1])
-            with col_a: t_del = st.selectbox("Borrar Técnico", [t['nombre'] for t in tecs])
-            with col_b: 
-                st.write("")
-                st.write("")
-                if st.button("🗑️", key="bt"): modal_borrar_tecnico(t_del)
-            st.dataframe(pd.DataFrame(tecs), use_container_width=True)
-    with tab3:
-        with st.form("nl"):
-            ln = st.text_input("Nombre")
-            if st.form_submit_button("AGREGAR"):
-                with st.spinner('Guardando...'):
-                    supabase.table("locales").insert({"nombre": ln}).execute()
-                    time.sleep(1)
-                st.success("✅ ¡Listo!")
-                time.sleep(0.5)
+        
+        ts = supabase.table("tecnicos").select("*").execute().data
+        for t in ts:
+            c1, c2 = st.columns([4,1])
+            c1.write(t['nombre'])
+            if c2.button("🗑️", key=f"dt_{t['id']}"): modal_borrar_tecnico(t['nombre'])
+
+    with t3:
+        with st.form("l"):
+            ln = st.text_input("Nombre Local")
+            if st.form_submit_button("Agregar"):
+                supabase.table("locales").insert({"nombre":ln}).execute()
                 st.rerun()
-        st.write("---")
-        locs = supabase.table("locales").select("*").execute().data
-        if locs:
-            col_a, col_b = st.columns([3,1])
-            with col_a: l_del = st.selectbox("Borrar Local", [l['nombre'] for l in locs])
-            with col_b:
-                st.write("")
-                st.write("") 
-                if st.button("🗑️", key="bl"): modal_borrar_local(l_del)
-            st.dataframe(pd.DataFrame(locs), use_container_width=True)
+        
+        ls = supabase.table("locales").select("*").execute().data
+        for l in ls:
+            c1, c2 = st.columns([4,1])
+            c1.write(l['nombre'])
+            if c2.button("🗑️", key=f"dl_{l['id']}"): modal_borrar_local(l['nombre'])
 
 elif opcion == "Prov":
-    st.markdown("<h2>📞 Proveedores</h2>", unsafe_allow_html=True)
+    st.markdown("## 📞 Proveedores")
     provs = supabase.table("proveedores").select("*").execute().data
     if provs:
-        for pr in provs:
+        for p in provs:
             with st.container(border=True):
-                st.markdown(f"**{pr['nombre_contacto']}**")
+                st.write(f"**{p['nombre_contacto']}**")
+                st.caption(f"Empresa: {p.get('empresa','')}")
                 st.link_button("WhatsApp", f"https://wa.me/{pr['whatsapp']}")
