@@ -174,21 +174,23 @@ def modal_nuevo_producto():
             if not n or c == "Seleccionar" or p_gen <= 0:
                 st.error("⚠️ Datos incompletos.")
             else:
-                # --- VALIDACIÓN 1: DUPLICADO EXACTO (NOMBRE + MARCA) ---
+                # --- VALIDACIÓN CORREGIDA: NOMBRE + MARCA + CATEGORÍA ---
+                # Ahora solo bloquea si TODO es igual (incluyendo categoría)
                 existe_dupla = supabase.table("productos").select("id")\
                     .eq("nombre", n)\
                     .eq("marca", m)\
+                    .eq("categoria", c)\
                     .execute()
                 
-                # --- VALIDACIÓN 2: CÓDIGO BATERÍA REPETIDO ---
+                # --- VALIDACIÓN 2: CÓDIGO BATERÍA REPETIDO (Esto sigue igual) ---
                 existe_codigo = False
-                if cb: # Solo si escribió un código
+                if cb: 
                     res_c = supabase.table("productos").select("id").eq("codigo_bateria", cb).execute()
                     if res_c.data:
                         existe_codigo = True
 
                 if existe_dupla.data:
-                    st.error(f"⚠️ Ya existe el modelo '{n}' con la marca '{m}'.")
+                    st.error(f"⚠️ Ya existe: '{n}' ({m}) en la categoría '{c}'.")
                 elif existe_codigo:
                     st.error(f"⚠️ El código '{cb}' ya está registrado en otro producto.")
                 else:
@@ -253,7 +255,7 @@ with st.sidebar:
     
     if st.button("📊 Dashboard / Stock", use_container_width=True): st.session_state.menu = "Stock"
     if st.session_state.rol == "Super":
-        if st.button(" Añadir Producto", use_container_width=True): st.session_state.menu = "Carga"
+        if st.button("📥 Añadir Producto", use_container_width=True): st.session_state.menu = "Carga"
         if st.button("📋 Historial", use_container_width=True): st.session_state.menu = "Log"
         if st.button("📈 Estadísticas", use_container_width=True): st.session_state.menu = "Stats"
         if st.button("👥 Usuarios / Config", use_container_width=True): st.session_state.menu = "Users"
