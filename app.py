@@ -175,16 +175,18 @@ def modal_nuevo_producto():
             if not n or c == "Seleccionar" or p_gen <= 0:
                 st.error("⚠️ Datos incompletos.")
             else:
-                # --- VALIDACIÓN: SOLO BLOQUEA SI NOMBRE + MARCA + CATEGORÍA SON IGUALES ---
-                # Ya no bloqueamos por código de batería repetido
+                # --- LÓGICA DE VALIDACIÓN MEJORADA v3.1 ---
+                # Ahora validamos si existe exactamente la combinación: Nombre + Marca + Categoría + Código
+                # Esto permite que coexistan "Iphone 13 Nassan (CELDA)" y "Iphone 13 Nassan (DIAGNOSTICO)"
                 existe_dupla = supabase.table("productos").select("id")\
                     .eq("nombre", n)\
                     .eq("marca", m)\
                     .eq("categoria", c)\
+                    .eq("codigo_bateria", cb)\
                     .execute()
 
                 if existe_dupla.data:
-                    st.error(f"⚠️ Ya existe: '{n}' ({m}) en la categoría '{c}'.")
+                    st.error(f"⚠️ Ya existe EXACTAMENTE este producto (Nombre, Marca y Código iguales).")
                 else:
                     with st.spinner('Creando producto...'):
                         supabase.table("productos").insert({
