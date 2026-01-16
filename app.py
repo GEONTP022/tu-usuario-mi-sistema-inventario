@@ -2,7 +2,7 @@ import streamlit as st
 from supabase import create_client
 import pandas as pd
 import plotly.express as px
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import time
 
 # --- CONEXIÓN ---
@@ -43,24 +43,19 @@ def es_coincidencia(busqueda, texto_db):
     if not busqueda: return True 
     if not texto_db: return False
     
-    # 1. Normalizar
     b = str(busqueda).lower().strip()
     
-    # 2. Alias Inteligentes (ip -> iphone)
     if b.startswith("ip") and len(b) > 2 and b[2].isdigit(): 
         b = b.replace("ip", "iphone", 1)
     elif b == "ip":
         b = "iphone"
 
-    # 3. Comprimir espacios
     b_nospace = b.replace(" ", "").replace("-", "")
     t = str(texto_db).lower()
     t_nospace = t.replace(" ", "").replace("-", "")
     
-    # 4. Comparar
     if b in t: return True
     if b_nospace in t_nospace: return True
-    
     return False
 
 # --- CSS MAESTRO ---
@@ -167,7 +162,6 @@ def modal_nuevo_producto():
         cb = st.text_input("Código de Batería (Solo para Baterías)")
         s = st.number_input("Stock Inicial *", min_value=0, step=1)
         
-        # --- AHORA DOS PRECIOS ---
         col_p1, col_p2 = st.columns(2)
         with col_p1:
             p_gen = st.number_input("Precio General (S/) *", min_value=0.0, step=0.5)
@@ -187,10 +181,7 @@ def modal_nuevo_producto():
                     with st.spinner('Creando producto...'):
                         supabase.table("productos").insert({
                             "nombre": n, "categoria": c, "marca": m, "codigo_bateria": cb,
-                            "stock": s, 
-                            "precio_venta": p_gen,   # Precio General
-                            "precio_punto": p_punto, # Precio Punto (NUEVO)
-                            "imagen_url": img
+                            "stock": s, "precio_venta": p_gen, "precio_punto": p_punto, "imagen_url": img
                         }).execute()
                         supabase.table("historial").insert({
                             "producto_nombre": n, "cantidad": s, "usuario": st.session_state.user,
@@ -317,18 +308,11 @@ if opcion == "Stock":
                         </div>
                     """, unsafe_allow_html=True)
 
-                    # --- DISEÑO DE 3 COLUMNAS PARA LOS PRECIOS ---
                     c1, c2, c3 = st.columns([1, 1.2, 1.2])
-                    
-                    # 1. Stock
                     with c1: 
                         st.markdown(f"<div style='text-align:center; color:black; font-size:12px; font-weight:bold;'>Stock<br><span style='font-size:14px;'>{p['stock']}</span></div>", unsafe_allow_html=True)
-                    
-                    # 2. Precio General
                     with c2: 
                         st.markdown(f"<div style='text-align:center; color:#2c3e50; font-size:12px;'>Gral.<br><span style='font-weight:bold;'>S/ {p['precio_venta']}</span></div>", unsafe_allow_html=True)
-                    
-                    # 3. Precio Punto
                     with c3:
                         p_punto = p.get('precio_punto', 0)
                         if p_punto and p_punto > 0:
@@ -382,13 +366,9 @@ elif opcion == "Carga":
                         cod_bat_new = st.text_input("Código de Batería", value=current_code)
 
                 with col_u2:
-                    # --- EDICIÓN DE DOS PRECIOS ---
                     new_price_gen = st.number_input("Precio General (S/)", value=float(prod_data['precio_venta']), min_value=0.0, step=0.5)
-                    
-                    # Recuperamos precio punto (si no existe, ponemos 0)
                     val_punto = float(prod_data.get('precio_punto') or 0.0)
                     new_price_punto = st.number_input("Precio Punto (S/)", value=val_punto, min_value=0.0, step=0.5)
-                    
                     img_val = prod_data.get('imagen_url') or ""
                     new_img = st.text_input("URL Imagen", value=img_val)
 
@@ -402,7 +382,7 @@ elif opcion == "Carga":
                         datos_update = { 
                             "stock": total_stock, 
                             "precio_venta": new_price_gen, 
-                            "precio_punto": new_price_punto, # Actualizar Punto
+                            "precio_punto": new_price_punto,
                             "imagen_url": new_img,
                             "marca": new_marca 
                         }
@@ -436,14 +416,17 @@ elif opcion == "Log":
     
     if logs:
         df = pd.DataFrame(logs)
-        df['fecha_dt'] = pd.to_datetime(df['fecha']).dt.tz_localize(None)
+        # --- FIX ROBUSTO DE FECHAS (ADIÓS TYPE ERROR) ---
+        df['fecha_obj'] = pd.to_datetime(df['fecha']) # Objeto datetime completo
+        df['fecha_only'] = df['fecha_obj'].dt.date # Solo la fecha (YYYY-MM-DD)
         
         if len(date_range) == 2:
-            start_date = pd.to_datetime(date_range[0])
-            end_date = pd.to_datetime(date_range[1]) + timedelta(days=1)
-            df = df[(df['fecha_dt'] >= start_date) & (df['fecha_dt'] < end_date)]
+            start_date = date_range[0]
+            end_date = date_range[1]
+            # Comparamos DATE con DATE (sin horas, sin zonas horarias)
+            df = df[(df['fecha_only'] >= start_date) & (df['fecha_only'] <= end_date)]
             
-        df['fecha'] = df['fecha_dt'].dt.strftime('%d/%m/%Y %H:%M')
+        df['fecha'] = df['fecha_obj'].dt.strftime('%d/%m/%Y %H:%M')
         cols = ['fecha', 'producto_nombre', 'cantidad', 'usuario']
         if 'tecnico' in df.columns: cols.append('tecnico')
         if 'local' in df.columns: cols.append('local')
@@ -472,12 +455,14 @@ elif opcion == "Stats":
 
         if historial_db:
             df_hist = pd.DataFrame(historial_db)
-            df_hist['fecha_dt'] = pd.to_datetime(df_hist['fecha']).dt.tz_localize(None)
+            # --- FIX ROBUSTO DE FECHAS EN STATS ---
+            df_hist['fecha_obj'] = pd.to_datetime(df_hist['fecha'])
+            df_hist['fecha_only'] = df_hist['fecha_obj'].dt.date
             
             if len(date_range_stats) == 2:
-                s_date = pd.to_datetime(date_range_stats[0])
-                e_date = pd.to_datetime(date_range_stats[1]) + timedelta(days=1)
-                df_hist = df_hist[(df_hist['fecha_dt'] >= s_date) & (df_hist['fecha_dt'] < e_date)]
+                s_date = date_range_stats[0]
+                e_date = date_range_stats[1]
+                df_hist = df_hist[(df_hist['fecha_only'] >= s_date) & (df_hist['fecha_only'] <= e_date)]
             
             df_salidas = df_hist[df_hist['cantidad'] < 0].copy()
             df_salidas['cantidad'] = df_salidas['cantidad'].abs()
