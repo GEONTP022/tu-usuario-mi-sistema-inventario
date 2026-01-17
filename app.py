@@ -19,10 +19,11 @@ except:
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide")
 
 # ==============================================================================
-# 2. SISTEMA DE SESIÓN (12 HORAS)
+# 2. SISTEMA DE SESIÓN INTELIGENTE (PERSISTENTE + 12 HORAS)
 # ==============================================================================
 SESSION_DURATION = 12 * 3600 # 12 Horas
 
+# Inicializar estado
 if 'autenticado' not in st.session_state:
     st.session_state.autenticado = False
     st.session_state.rol = None
@@ -30,18 +31,36 @@ if 'autenticado' not in st.session_state:
     st.session_state.menu = "Stock"
     st.session_state.login_time = 0
 
-# Verificar caducidad
+# A) LÓGICA DE RECUPERACIÓN DE SESIÓN (ANTI-REFRESCO)
+# Si no está autenticado en RAM, revisamos si hay una sesión válida en la URL (Query Params)
+if not st.session_state.autenticado:
+    params = st.query_params
+    if "logged_user" in params and "session_valid" in params:
+        user_param = params["logged_user"]
+        # Recuperamos el rol silenciosamente para restaurar la sesión
+        try:
+            res = supabase.table("usuarios").select("rol").eq("usuario", user_param).execute()
+            if res.data:
+                st.session_state.autenticado = True
+                st.session_state.user = user_param
+                st.session_state.rol = res.data[0]['rol']
+                st.session_state.login_time = time.time() # Reinicia contador al refrescar
+        except:
+            pass # Si falla, pedirá login normal
+
+# B) VERIFICACIÓN DE TIEMPO (12 HORAS)
 if st.session_state.autenticado:
     current_time = time.time()
     if (current_time - st.session_state.login_time) > SESSION_DURATION:
         st.session_state.autenticado = False
         st.session_state.rol = None
         st.session_state.user = None
+        st.query_params.clear() # Limpiar URL
         st.error("⏳ Tu sesión de 12 horas ha expirado. Ingresa nuevamente.")
         time.sleep(2)
         st.rerun()
 
-# --- PANTALLA DE LOGIN (AHORA CON ENTER PARA ENTRAR) ---
+# C) PANTALLA DE LOGIN (CON ENTER)
 if not st.session_state.autenticado:
     st.markdown("<br><br><h1 style='text-align:center; color:#2488bc;'>VILLAFIX SYSTEM</h1>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 1.5, 1])
@@ -49,22 +68,26 @@ if not st.session_state.autenticado:
         with st.container(border=True):
             st.markdown("<h3 style='text-align:center;'>Iniciar Sesión</h3>", unsafe_allow_html=True)
             
-            # USO DE FORMULARIO AQUÍ PARA QUE "ENTER" FUNCIONE
+            # Formulario para permitir Enter
             with st.form("login_form"):
                 u = st.text_input("Usuario")
                 p = st.text_input("Contraseña", type="password")
-                
-                # El botón submit permite usar Enter
-                submit_login = st.form_submit_button("INGRESAR", use_container_width=True)
+                submit = st.form_submit_button("INGRESAR", use_container_width=True)
             
-            if submit_login:
+            if submit:
                 try:
                     res = supabase.table("usuarios").select("*").eq("usuario", u).eq("contrasena", p).execute()
                     if res.data:
+                        # Guardar en RAM
                         st.session_state.autenticado = True
                         st.session_state.rol = res.data[0]['rol']
                         st.session_state.user = u
                         st.session_state.login_time = time.time()
+                        
+                        # Guardar en URL para persistencia (Hack Anti-Refresco)
+                        st.query_params["logged_user"] = u
+                        st.query_params["session_valid"] = "true"
+                        
                         st.rerun()
                     else:
                         st.error("Credenciales incorrectas")
@@ -89,7 +112,7 @@ def es_coincidencia(busqueda, texto_db):
     if b_nospace in t_nospace: return True
     return False
 
-# CSS MAESTRO (Intacto)
+# CSS MAESTRO (DISEÑO V7 - EL BUENO)
 st.markdown("""
     <style>
     .stApp, .main, .block-container { background-color: #ffffff !important; }
@@ -123,7 +146,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 4. VENTANAS EMERGENTES (MODIFICADAS: CLIC OBLIGATORIO PARA GUARDAR)
+# 4. VENTANAS EMERGENTES (SIN ENTER PARA GUARDAR, SOLO CLIC)
 # ==============================================================================
 
 @st.dialog("Gestionar Inventario")
@@ -138,7 +161,7 @@ def modal_gestion(producto):
         try: locs = [l['nombre'] for l in supabase.table("locales").select("nombre").execute().data]
         except: locs = ["Principal"]
 
-        # Sin st.form para evitar submit con Enter
+        # Sin formulario para que Enter no envíe
         tecnico = st.selectbox("Técnico", ["Seleccionar"] + techs, key="tec_sal")
         local = st.selectbox("Local", ["Seleccionar"] + locs, key="loc_sal")
         max_val = producto['stock'] if producto['stock'] > 0 else 1
@@ -165,7 +188,6 @@ def modal_gestion(producto):
 
     with tab_devolucion:
         st.info("Use esto para devoluciones de técnicos o ingresos rápidos.")
-        # Sin st.form
         razon = st.text_input("Motivo (Ej: Devolución Técnico, Error)", value="Devolución")
         cant_dev = st.number_input("Cantidad a INGRESAR/DEVOLVER", min_value=1, step=1, key="cant_dev")
         
@@ -190,10 +212,7 @@ def modal_gestion(producto):
 def modal_nuevo_producto():
     st.markdown("<h3 style='color:black;'>Crear Producto</h3>", unsafe_allow_html=True)
     
-    # NO USAMOS st.form AQUÍ.
-    # Al no usar form, presionar Enter en un campo NO envía los datos.
-    # El usuario debe hacer clic obligatoriamente en el botón.
-    
+    # Campos sueltos (sin st.form) para evitar envío con Enter
     n = st.text_input("Nombre / Modelo *")
     
     col_cat, col_mar = st.columns(2)
@@ -216,9 +235,8 @@ def modal_nuevo_producto():
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("GUARDAR PRODUCTO", use_container_width=True, type="primary"):
         if not n or c == "Seleccionar" or p_gen <= 0:
-            st.error("⚠️ Datos incompletos. Revisa Nombre, Categoría y Precio.")
+            st.error("⚠️ Datos incompletos.")
         else:
-            # Validación
             query = supabase.table("productos").select("id")\
                 .eq("nombre", n).eq("marca", m).eq("categoria", c)
             
@@ -241,7 +259,7 @@ def modal_nuevo_producto():
                             "tecnico": "Ingreso Inicial", "local": "Almacén"
                         }).execute()
                         time.sleep(1)
-                    st.success("✅ ¡Producto Creado Exitosamente!")
+                    st.success("✅ ¡Producto Creado!")
                     time.sleep(0.5)
                     st.rerun()
                 except Exception as e:
@@ -305,6 +323,7 @@ with st.sidebar:
     st.markdown("<br><br>", unsafe_allow_html=True)
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state.autenticado = False
+        st.query_params.clear() # Limpiar persistencia al salir
         st.rerun()
 
 # ==============================================================================
@@ -343,7 +362,6 @@ if opcion == "Stock":
             b_clean = busqueda.lower().strip()
             filtered_items.sort(key=lambda x: 0 if x['nombre'].lower().startswith(b_clean) else 1)
 
-        # GRID SYSTEM ROBUSTO
         N_COLS = 4
         rows = [filtered_items[i:i + N_COLS] for i in range(0, len(filtered_items), N_COLS)]
         
@@ -420,10 +438,15 @@ elif opcion == "Carga":
             with st.container(border=True):
                 st.markdown(f"### Editando: {prod_data['nombre']}")
                 
-                # Sin formulario para evitar submit con enter en edición también
+                # Campos sueltos (NO st.form) -> Así Enter no guarda
                 col_u1, col_u2 = st.columns(2)
                 with col_u1:
-                    new_cat = st.selectbox("Categoría", ["Pantallas", "Baterías", "Flex", "Glases", "Otros"], index=["Pantallas", "Baterías", "Flex", "Glases", "Otros"].index(prod_data['categoria']))
+                    # FIX: selectbox totalmente libre (no disabled)
+                    current_cat = prod_data['categoria']
+                    cat_opts = ["Pantallas", "Baterías", "Flex", "Glases", "Otros"]
+                    idx_cat = cat_opts.index(current_cat) if current_cat in cat_opts else 0
+                    
+                    new_cat = st.selectbox("Categoría", cat_opts, index=idx_cat)
                     new_marca = st.text_input("Marca", value=prod_data.get('marca') or "")
                     new_cod = st.text_input("Código de Batería", value=prod_data.get('codigo_bateria') or "")
 
@@ -616,10 +639,6 @@ elif opcion == "Prov":
     st.markdown("<h2>📞 Proveedores</h2>", unsafe_allow_html=True)
     provs = supabase.table("proveedores").select("*").execute().data
     if provs:
-        for pr in provs:
-            with st.container(border=True):
-                st.markdown(f"**{pr['nombre_contacto']}**")
-                st.link_button("WhatsApp", f"https://wa.me/{pr['whatsapp']}")
         for pr in provs:
             with st.container(border=True):
                 st.markdown(f"**{pr['nombre_contacto']}**")
