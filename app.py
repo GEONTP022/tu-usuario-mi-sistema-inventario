@@ -31,13 +31,11 @@ if 'autenticado' not in st.session_state:
     st.session_state.login_time = 0
 
 # --- LÓGICA ANTI-REFRESCO (RECUPERAR SESIÓN) ---
-# Si se recarga la página, buscamos el usuario en la URL
 if not st.session_state.autenticado:
     params = st.query_params
     if "user_session" in params:
         user_in_url = params["user_session"]
         try:
-            # Validamos silenciosamente con la base de datos
             res = supabase.table("usuarios").select("*").eq("usuario", user_in_url).execute()
             if res.data:
                 st.session_state.autenticado = True
@@ -55,7 +53,7 @@ if st.session_state.autenticado:
         st.session_state.autenticado = False
         st.session_state.rol = None
         st.session_state.user = None
-        st.query_params.clear() # Limpiamos URL
+        st.query_params.clear()
         st.error("⏳ Tu sesión de 12 horas ha expirado. Ingresa nuevamente.")
         time.sleep(2)
         st.rerun()
@@ -71,7 +69,6 @@ if not st.session_state.autenticado:
             with st.form("login_form"):
                 u = st.text_input("Usuario")
                 p = st.text_input("Contraseña", type="password")
-                # El botón submit permite usar ENTER para entrar
                 submit = st.form_submit_button("INGRESAR", use_container_width=True)
             
             if submit:
@@ -82,10 +79,7 @@ if not st.session_state.autenticado:
                         st.session_state.rol = res.data[0]['rol']
                         st.session_state.user = u
                         st.session_state.login_time = time.time()
-                        
-                        # GUARDAR EN URL PARA QUE NO SE BORRE AL REFRESCAR
                         st.query_params["user_session"] = u
-                        
                         st.rerun()
                     else:
                         st.error("Credenciales incorrectas")
@@ -94,7 +88,7 @@ if not st.session_state.autenticado:
     st.stop()
 
 # ==============================================================================
-# 3. FUNCIONES DE AYUDA Y ESTILOS
+# 3. FUNCIONES Y ESTILOS
 # ==============================================================================
 
 def es_coincidencia(busqueda, texto_db):
@@ -110,7 +104,6 @@ def es_coincidencia(busqueda, texto_db):
     if b_nospace in t_nospace: return True
     return False
 
-# CSS MAESTRO (Diseño Original Intacto)
 st.markdown("""
     <style>
     .stApp, .main, .block-container { background-color: #ffffff !important; }
@@ -128,19 +121,7 @@ st.markdown("""
     ul[data-testid="stSelectboxVirtualDropdown"] li { background-color: #ffffff !important; color: #000000 !important; }
     ul[data-testid="stSelectboxVirtualDropdown"] li:hover { background-color: #f0f2f6 !important; }
     div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
-    
-    /* FIX VISUAL: Altura mínima para que no se rompa al buscar */
-    div[data-testid="stVerticalBlockBorderWrapper"] { 
-        background-color: #ffffff !important; 
-        border: 1px solid #ddd !important; 
-        padding: 10px !important; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; 
-        min-height: 360px !important; 
-        display: flex; 
-        flex-direction: column; 
-        justify-content: space-between; 
-    }
-    
+    div[data-testid="stVerticalBlockBorderWrapper"] { background-color: #ffffff !important; border: 1px solid #ddd !important; padding: 10px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; height: 100% !important; min-height: 350px !important; display: flex; flex-direction: column; justify-content: space-between; }
     div[data-testid="stImage"] { display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; margin: 0 auto !important; height: 160px !important; }
     div[data-testid="stImage"] img { display: block !important; margin-left: auto !important; margin-right: auto !important; max-height: 150px !important; width: auto !important; object-fit: contain !important; }
     div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
@@ -156,7 +137,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 4. VENTANAS EMERGENTES (MODALES)
+# 4. MODALES (VENTANAS EMERGENTES)
 # ==============================================================================
 
 @st.dialog("Gestionar Inventario")
@@ -171,7 +152,6 @@ def modal_gestion(producto):
         try: locs = [l['nombre'] for l in supabase.table("locales").select("nombre").execute().data]
         except: locs = ["Principal"]
 
-        # Sin formulario para que ENTER no dispare el envío
         tecnico = st.selectbox("Técnico", ["Seleccionar"] + techs, key="tec_sal")
         local = st.selectbox("Local", ["Seleccionar"] + locs, key="loc_sal")
         max_val = producto['stock'] if producto['stock'] > 0 else 1
@@ -222,7 +202,6 @@ def modal_gestion(producto):
 def modal_nuevo_producto():
     st.markdown("<h3 style='color:black;'>Crear Producto</h3>", unsafe_allow_html=True)
     
-    # Campos individuales (Sin st.form para evitar Enter accidental)
     n = st.text_input("Nombre / Modelo *")
     
     col_cat, col_mar = st.columns(2)
@@ -372,7 +351,7 @@ if opcion == "Stock":
             b_clean = busqueda.lower().strip()
             filtered_items.sort(key=lambda x: 0 if x['nombre'].lower().startswith(b_clean) else 1)
 
-        # GRID SYSTEM (4 columnas, layout seguro)
+        # GRID SYSTEM (4 columnas)
         N_COLS = 4
         rows = [filtered_items[i:i + N_COLS] for i in range(0, len(filtered_items), N_COLS)]
         
@@ -449,18 +428,13 @@ elif opcion == "Carga":
             with st.container(border=True):
                 st.markdown(f"### Editando: {prod_data['nombre']}")
                 
-                # --- EDICIÓN DESBLOQUEADA ---
-                # Categoría, Marca y Código ahora son editables
+                # --- EDICIÓN BLOQUEADA PARA CAT/MARCA/COD ---
                 col_u1, col_u2 = st.columns(2)
                 with col_u1:
-                    current_cat = prod_data['categoria']
-                    cat_options = ["Pantallas", "Baterías", "Flex", "Glases", "Otros"]
-                    # Si la categoría actual no está en la lista (raro), usar index 0
-                    cat_index = cat_options.index(current_cat) if current_cat in cat_options else 0
-                    
-                    new_cat = st.selectbox("Categoría", cat_options, index=cat_index)
-                    new_marca = st.text_input("Marca", value=prod_data.get('marca') or "")
-                    new_cod = st.text_input("Código de Batería", value=prod_data.get('codigo_bateria') or "")
+                    # Mostrar como inputs pero disabled=True
+                    st.text_input("Categoría", value=prod_data['categoria'], disabled=True)
+                    st.text_input("Marca", value=prod_data.get('marca') or "", disabled=True)
+                    st.text_input("Código de Batería", value=prod_data.get('codigo_bateria') or "", disabled=True)
 
                 with col_u2:
                     new_price_gen = st.number_input("Precio General (S/)", value=float(prod_data['precio_venta']), min_value=0.0, step=0.5)
@@ -480,10 +454,8 @@ elif opcion == "Carga":
                                 "stock": total_stock, 
                                 "precio_venta": new_price_gen, 
                                 "precio_punto": new_price_punto,
-                                "imagen_url": new_img,
-                                "marca": new_marca,
-                                "categoria": new_cat,
-                                "codigo_bateria": new_cod
+                                "imagen_url": new_img
+                                # No actualizamos marca, categoria ni codigo porque están bloqueados
                             }
                             supabase.table("productos").update(datos_update).eq("id", prod_data['id']).execute()
                             
