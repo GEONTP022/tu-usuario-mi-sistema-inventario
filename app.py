@@ -5,24 +5,43 @@ import plotly.express as px
 from datetime import datetime, timedelta, date
 import time
 
-# --- CONEXIÓN ---
+# ==============================================================================
+# 1. CONFIGURACIÓN Y CONEXIÓN
+# ==============================================================================
 try:
     url = st.secrets["SUPABASE_URL"]
     key = st.secrets["SUPABASE_KEY"]
     supabase = create_client(url, key)
 except:
-    st.error("⚠️ Error crítico de conexión. Verifique secrets.")
+    st.error("⚠️ Error crítico de conexión. Verifica tus 'secrets' en Streamlit.")
     st.stop()
 
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide")
 
-# --- LÓGICA DE SESIÓN ---
+# ==============================================================================
+# 2. SISTEMA DE SESIÓN (12 HORAS)
+# ==============================================================================
+SESSION_DURATION = 12 * 3600 # 12 Horas en segundos
+
 if 'autenticado' not in st.session_state:
     st.session_state.autenticado = False
     st.session_state.rol = None
     st.session_state.user = None
     st.session_state.menu = "Stock"
+    st.session_state.login_time = 0
 
+# Verificar si la sesión expiró
+if st.session_state.autenticado:
+    current_time = time.time()
+    if (current_time - st.session_state.login_time) > SESSION_DURATION:
+        st.session_state.autenticado = False
+        st.session_state.rol = None
+        st.session_state.user = None
+        st.error("⏳ Tu sesión ha expirado (12h). Por favor ingresa nuevamente.")
+        time.sleep(2)
+        st.rerun()
+
+# Pantalla de Login
 if not st.session_state.autenticado:
     st.markdown("<br><br><h1 style='text-align:center; color:#2488bc;'>VILLAFIX SYSTEM</h1>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 1.5, 1])
@@ -31,105 +50,170 @@ if not st.session_state.autenticado:
             st.markdown("<h3 style='text-align:center;'>Iniciar Sesión</h3>", unsafe_allow_html=True)
             u = st.text_input("Usuario")
             p = st.text_input("Contraseña", type="password")
-            if st.button("INGRESAR", use_container_width=True):
+            
+            if st.button("INGRESAR AL SISTEMA", use_container_width=True):
                 try:
                     res = supabase.table("usuarios").select("*").eq("usuario", u).eq("contrasena", p).execute()
                     if res.data:
                         st.session_state.autenticado = True
                         st.session_state.rol = res.data[0]['rol']
                         st.session_state.user = u
+                        st.session_state.login_time = time.time()
                         st.rerun()
                     else:
                         st.error("Credenciales incorrectas")
                 except Exception as e:
-                    st.error("Error de conexión.")
+                    st.error(f"Error de conexión: {e}")
     st.stop()
 
-# --- FUNCIÓN DE BÚSQUEDA AVANZADA ---
+# ==============================================================================
+# 3. FUNCIONES DE AYUDA Y ESTILOS
+# ==============================================================================
+
 def es_coincidencia(busqueda, texto_db):
+    """Busca coincidencias inteligentes (ej: 'ip13' encuentra 'iPhone 13')"""
     if not busqueda: return True 
     if not texto_db: return False
     
-    # 1. Normalizar
     b = str(busqueda).lower().strip()
     
-    # 2. Alias Inteligentes
+    # Alias comunes
     if b.startswith("ip") and len(b) > 2 and b[2].isdigit(): 
         b = b.replace("ip", "iphone", 1)
     elif b == "ip":
         b = "iphone"
 
-    # 3. Comprimir espacios
     b_nospace = b.replace(" ", "").replace("-", "")
     t = str(texto_db).lower()
     t_nospace = t.replace(" ", "").replace("-", "")
     
-    # 4. Comparar
     if b in t: return True
     if b_nospace in t_nospace: return True
     return False
 
-# --- CSS MAESTRO RESTAURADO (ESTILO ORIGINAL) ---
+# CSS MAESTRO (Diseño Completo Restaurado)
 st.markdown("""
     <style>
-    /* Fondo y estructura */
+    /* Estructura Principal */
     .stApp, .main, .block-container { background-color: #ffffff !important; }
+    
+    /* Barra Lateral */
     [data-testid="stSidebar"] { background-color: #1a222b !important; }
     [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+    [data-testid="stSidebar"] button { 
+        background-color: transparent !important; 
+        border: none !important; 
+        color: #bdc3c7 !important; 
+        text-align: left !important; 
+        padding-left: 15px !important; 
+        transition: all 0.3s ease;
+    }
+    [data-testid="stSidebar"] button:hover { 
+        background-color: rgba(255,255,255,0.05) !important; 
+        border-left: 4px solid #3498db !important; 
+        color: #ffffff !important; 
+        padding-left: 25px !important;
+    }
     
-    /* Botones del Sidebar */
-    [data-testid="stSidebar"] button { background-color: transparent !important; border: none !important; color: #bdc3c7 !important; text-align: left !important; padding-left: 15px !important; transition: 0.3s; }
-    [data-testid="stSidebar"] button:hover { background-color: rgba(255,255,255,0.05) !important; border-left: 4px solid #3498db !important; color: #ffffff !important; padding-left: 20px !important; }
+    /* Tipografía y Textos */
+    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetricLabel { 
+        color: #000000 !important; 
+        -webkit-text-fill-color: #000000 !important; 
+        font-weight: 700 !important; 
+    }
+    div[data-testid="stMetricValue"] { 
+        color: #2488bc !important; 
+        -webkit-text-fill-color: #2488bc !important; 
+    }
     
-    /* Textos Generales (Forzar Negro) */
-    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetriclabel { color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-weight: 700 !important; }
-    div[data-testid="stMetricValue"] { color: #2488bc !important; -webkit-text-fill-color: #2488bc !important; }
-    
-    /* Inputs y Selects */
-    input, textarea, .stNumberInput input { background-color: #ffffff !important; color: #000000 !important; -webkit-text-fill-color: #000000 !important; border: 1px solid #888888 !important; caret-color: #000000 !important; }
-    input:disabled { background-color: #e9ecef !important; color: #555555 !important; -webkit-text-fill-color: #555555 !important; }
-    div[data-baseweb="select"] > div { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #888888 !important; }
-    div[data-baseweb="select"] span { color: #000000 !important; -webkit-text-fill-color: #000000 !important; }
+    /* Controles de Formulario */
+    input, textarea, .stNumberInput input { 
+        background-color: #ffffff !important; 
+        color: #000000 !important; 
+        -webkit-text-fill-color: #000000 !important; 
+        border: 1px solid #888888 !important; 
+        caret-color: #000000 !important; 
+    }
+    input:disabled { 
+        background-color: #e9ecef !important; 
+        color: #555555 !important; 
+        -webkit-text-fill-color: #555555 !important; 
+    }
+    div[data-baseweb="select"] > div { 
+        background-color: #ffffff !important; 
+        color: #000000 !important; 
+        border: 1px solid #888888 !important; 
+    }
+    div[data-baseweb="select"] span { 
+        color: #000000 !important; 
+        -webkit-text-fill-color: #000000 !important; 
+    }
     ul[data-testid="stSelectboxVirtualDropdown"] { background-color: #ffffff !important; }
     ul[data-testid="stSelectboxVirtualDropdown"] li { background-color: #ffffff !important; color: #000000 !important; }
     ul[data-testid="stSelectboxVirtualDropdown"] li:hover { background-color: #f0f2f6 !important; }
     
-    /* Modal */
-    div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
-    
-    /* Contenedores de Tarjetas (Restaurado el diseño, pero flex seguro) */
+    /* Tarjetas de Producto (Layout Seguro) */
     div[data-testid="stVerticalBlockBorderWrapper"] { 
         background-color: #ffffff !important; 
         border: 1px solid #ddd !important; 
         padding: 10px !important; 
         box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; 
-        height: 100% !important; /* Altura 100% para igualar filas */
-        min-height: 340px !important; 
+        height: 100% !important; 
+        min-height: 350px !important; 
         display: flex; 
         flex-direction: column; 
         justify-content: space-between; 
     }
     
     /* Imágenes */
-    div[data-testid="stImage"] { display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; margin: 0 auto !important; height: 160px !important; }
-    div[data-testid="stImage"] img { display: block !important; margin-left: auto !important; margin-right: auto !important; max-height: 150px !important; width: auto !important; object-fit: contain !important; }
+    div[data-testid="stImage"] { 
+        display: flex !important; 
+        justify-content: center !important; 
+        align-items: center !important; 
+        width: 100% !important; 
+        margin: 0 auto !important; 
+        height: 160px !important; 
+    }
+    div[data-testid="stImage"] img { 
+        display: block !important; 
+        margin-left: auto !important; 
+        margin-right: auto !important; 
+        max-height: 150px !important; 
+        width: auto !important; 
+        object-fit: contain !important; 
+    }
     
-    /* Botones */
-    div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
+    /* Botones de Acción */
+    div.stButton button { 
+        background-color: #2488bc !important; 
+        color: #ffffff !important; 
+        border: none !important; 
+        font-weight: bold !important; 
+        width: 100% !important; 
+        margin-top: auto !important; 
+    }
     div.stButton button p { color: #ffffff !important; }
-    div.stButton button:disabled, button[kind="secondary"] { background-color: #e74c3c !important; color: white !important; opacity: 1 !important; border: 1px solid #c0392b !important; }
+    div.stButton button:disabled, button[kind="secondary"] { 
+        background-color: #e74c3c !important; 
+        color: white !important; 
+        opacity: 1 !important; 
+        border: 1px solid #c0392b !important; 
+    }
     div.stButton button:disabled p { color: white !important; }
     
-    /* Extras */
+    /* Tabs y Perfil */
     button[data-baseweb="tab"] { color: #000000 !important; }
     div[data-baseweb="tab-list"] { background-color: #f1f3f4 !important; border-radius: 8px; }
     .profile-section { text-align: center !important; padding: 20px 0px; }
     .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
+    
     [data-testid="stSidebarNav"] {display: none;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- VENTANAS FLOTANTES (MODALES COMPLETOS) ---
+# ==============================================================================
+# 4. VENTANAS EMERGENTES (MODALES)
+# ==============================================================================
 
 @st.dialog("Gestionar Inventario")
 def modal_gestion(producto):
@@ -144,10 +228,8 @@ def modal_gestion(producto):
         except: locs = ["Principal"]
 
         with st.form("form_salida_modal"):
-            col1, col2 = st.columns(2)
-            with col1: tecnico = st.selectbox("Técnico", ["Seleccionar"] + techs, key="tec_sal")
-            with col2: local = st.selectbox("Local", ["Seleccionar"] + locs, key="loc_sal")
-            
+            tecnico = st.selectbox("Técnico", ["Seleccionar"] + techs, key="tec_sal")
+            local = st.selectbox("Local", ["Seleccionar"] + locs, key="loc_sal")
             max_val = producto['stock'] if producto['stock'] > 0 else 1
             cantidad = st.number_input("Cantidad a RETIRAR", min_value=1, max_value=max_val, step=1, key="cant_sal")
             
@@ -164,8 +246,8 @@ def modal_gestion(producto):
                             "producto_nombre": producto['nombre'], "cantidad": -cantidad,
                             "usuario": st.session_state.user, "tecnico": tecnico, "local": local
                         }).execute()
-                        time.sleep(1)
-                    st.success("✅ ¡Listo!")
+                        time.sleep(0.5)
+                    st.success("✅ Salida Registrada")
                     time.sleep(0.5)
                     st.rerun()
 
@@ -186,8 +268,8 @@ def modal_gestion(producto):
                         "tecnico": razon,
                         "local": "Almacén"
                     }).execute()
-                    time.sleep(1)
-                st.success("✅ ¡Listo!")
+                    time.sleep(0.5)
+                st.success("✅ Stock devuelto correctamente.")
                 time.sleep(0.5)
                 st.rerun()
 
@@ -196,10 +278,11 @@ def modal_nuevo_producto():
     st.markdown("<h3 style='color:black;'>Crear Producto</h3>", unsafe_allow_html=True)
     with st.form("form_nuevo_prod"):
         n = st.text_input("Nombre / Modelo *")
-        
-        c1, c2 = st.columns(2)
-        with c1: c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
-        with c2: m = st.text_input("Marca (Solo si aplica)")
+        col_cat, col_mar = st.columns(2)
+        with col_cat: 
+            c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
+        with col_mar:
+            m = st.text_input("Marca (Solo si aplica)")
         
         cb = st.text_input("Código de Batería (Solo para Baterías)")
         s = st.number_input("Stock Inicial *", min_value=0, step=1)
@@ -216,23 +299,21 @@ def modal_nuevo_producto():
             if not n or c == "Seleccionar" or p_gen <= 0:
                 st.error("⚠️ Datos incompletos.")
             else:
-                # --- VALIDACIÓN CORREGIDA ---
-                # Solo bloquea si Nombre + Marca + Categoría + Código son IGUALES
-                # Si el código es igual pero el modelo es distinto, PERMITE CREAR.
-                
+                # --- VALIDACIÓN LÓGICA VILLAFIX ---
+                # Solo bloquea si coinciden NOMBRE, MARCA, CATEGORÍA y CÓDIGO
+                # Permite: Iphone 13 (Celda) y Iphone 13 (Diagnóstico) como productos distintos.
                 query = supabase.table("productos").select("id")\
                     .eq("nombre", n)\
                     .eq("marca", m)\
                     .eq("categoria", c)
                 
-                # Manejo de código vacío o lleno
                 if cb: query = query.eq("codigo_bateria", cb)
-                else: query = query.eq("codigo_bateria", "")
+                else: query = query.eq("codigo_bateria", "") # Manejar código vacío
 
                 existe_dupla = query.execute()
 
                 if existe_dupla.data:
-                    st.error("⚠️ Ya existe este producto EXACTO (Mismo Nombre, Marca y Código).")
+                    st.error(f"⚠️ Ya existe EXACTAMENTE este producto (Mismo Nombre, Marca y Código).")
                 else:
                     try:
                         with st.spinner('Creando producto...'):
@@ -245,11 +326,11 @@ def modal_nuevo_producto():
                                 "tecnico": "Ingreso Inicial", "local": "Almacén"
                             }).execute()
                             time.sleep(1)
-                        st.success("✅ ¡Listo!")
+                        st.success("✅ ¡Producto Creado Exitosamente!")
                         time.sleep(0.5)
                         st.rerun()
                     except Exception as e:
-                        st.error(f"Error Base de Datos: {e}. ¿Creaste la columna 'precio_punto' en la tabla productos?")
+                        st.error(f"Error al guardar en base de datos: {e}")
 
 @st.dialog("⚠️ Confirmar Eliminación")
 def modal_borrar_producto(producto):
@@ -265,7 +346,7 @@ def modal_borrar_producto(producto):
 
 @st.dialog("⚠️ Confirmar Eliminación")
 def modal_borrar_tecnico(nombre):
-    st.write(f"¿Eliminar {nombre}?")
+    st.write(f"¿Eliminar al técnico {nombre}?")
     if st.button("SÍ, ELIMINAR", use_container_width=True):
         with st.spinner('Eliminando...'):
             supabase.table("tecnicos").delete().eq("nombre", nombre).execute()
@@ -276,7 +357,7 @@ def modal_borrar_tecnico(nombre):
 
 @st.dialog("⚠️ Confirmar Eliminación")
 def modal_borrar_local(nombre):
-    st.write(f"¿Eliminar {nombre}?")
+    st.write(f"¿Eliminar el local {nombre}?")
     if st.button("SÍ, ELIMINAR", use_container_width=True):
         with st.spinner('Eliminando...'):
             supabase.table("locales").delete().eq("nombre", nombre).execute()
@@ -285,7 +366,9 @@ def modal_borrar_local(nombre):
         time.sleep(0.5)
         st.rerun()
 
-# --- PANEL IZQUIERDO ---
+# ==============================================================================
+# 5. MENÚ LATERAL (SIDEBAR)
+# ==============================================================================
 with st.sidebar:
     st.markdown(f"""
         <div class="profile-section">
@@ -309,7 +392,9 @@ with st.sidebar:
         st.session_state.autenticado = False
         st.rerun()
 
-# --- ÁREA CENTRAL ---
+# ==============================================================================
+# 6. PANTALLAS PRINCIPALES
+# ==============================================================================
 opcion = st.session_state.menu
 
 if opcion == "Stock":
@@ -343,16 +428,14 @@ if opcion == "Stock":
             b_clean = busqueda.lower().strip()
             filtered_items.sort(key=lambda x: 0 if x['nombre'].lower().startswith(b_clean) else 1)
 
-        # --- GRID SYSTEM ROBUSTO (FIX VISUAL DEFINITIVO) ---
-        # Dividimos en grupos de 4 y dibujamos FILA POR FILA.
-        # Esto mantiene el diseño de tarjetas pero evita que se rompa al filtrar.
+        # --- SISTEMA DE FILAS (SOLUCIONA EL ERROR VISUAL) ---
+        N_COLS = 4
+        # Dividimos en bloques de 4 para renderizar fila por fila
+        rows = [filtered_items[i:i + N_COLS] for i in range(0, len(filtered_items), N_COLS)]
         
-        columnas_por_fila = 4
-        chunks = [filtered_items[i:i + columnas_por_fila] for i in range(0, len(filtered_items), columnas_por_fila)]
-
-        for chunk in chunks:
-            cols = st.columns(columnas_por_fila)
-            for i, p in enumerate(chunk):
+        for row in rows:
+            cols = st.columns(N_COLS)
+            for i, p in enumerate(row):
                 with cols[i]:
                     with st.container(border=True):
                         # Imagen protegida
@@ -379,14 +462,13 @@ if opcion == "Stock":
                             </div>
                         """, unsafe_allow_html=True)
 
-                        # --- DISEÑO 3 COLUMNAS PARA PRECIOS (TU DISEÑO FAVORITO) ---
+                        # --- DISEÑO DE PRECIOS ORIGINAL ---
                         c1, c2, c3 = st.columns([1, 1.2, 1.2])
                         with c1: 
                             st.markdown(f"<div style='text-align:center; color:black; font-size:12px; font-weight:bold;'>Stock<br><span style='font-size:14px;'>{p['stock']}</span></div>", unsafe_allow_html=True)
                         with c2: 
                             st.markdown(f"<div style='text-align:center; color:#2c3e50; font-size:12px;'>Gral.<br><span style='font-weight:bold;'>S/ {p['precio_venta']}</span></div>", unsafe_allow_html=True)
                         with c3:
-                            # Manejo seguro de precio punto
                             p_punto = p.get('precio_punto', 0)
                             color_punto = "#27ae60" if p_punto else "#bdc3c7"
                             val_str = f"S/ {p_punto}" if p_punto else "--"
@@ -494,7 +576,7 @@ elif opcion == "Log":
     
     if logs:
         df = pd.DataFrame(logs)
-        # --- FIX FECHAS (Para evitar TypeError) ---
+        # --- FIX FECHAS ---
         df['fecha_obj'] = pd.to_datetime(df['fecha'])
         df['fecha_date'] = df['fecha_obj'].dt.date
         
@@ -573,6 +655,7 @@ elif opcion == "Stats":
 elif opcion == "Users":
     st.markdown("<h2>👥 Gestión</h2>", unsafe_allow_html=True)
     tab1, tab2, tab3 = st.tabs(["🔑 Accesos", "👨‍🔧 Técnicos", "🏠 Locales"])
+    
     with tab1:
         with st.form("nu"):
             un = st.text_input("Usuario")
