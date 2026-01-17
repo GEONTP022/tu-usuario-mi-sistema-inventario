@@ -21,7 +21,7 @@ st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="w
 # ==============================================================================
 # 2. SISTEMA DE SESIÓN (12 HORAS)
 # ==============================================================================
-SESSION_DURATION = 12 * 3600 # 12 Horas en segundos
+SESSION_DURATION = 12 * 3600 # 12 Horas
 
 if 'autenticado' not in st.session_state:
     st.session_state.autenticado = False
@@ -30,28 +30,34 @@ if 'autenticado' not in st.session_state:
     st.session_state.menu = "Stock"
     st.session_state.login_time = 0
 
-# Verificar si la sesión expiró
+# Verificar caducidad
 if st.session_state.autenticado:
     current_time = time.time()
     if (current_time - st.session_state.login_time) > SESSION_DURATION:
         st.session_state.autenticado = False
         st.session_state.rol = None
         st.session_state.user = None
-        st.error("⏳ Tu sesión ha expirado (12h). Por favor ingresa nuevamente.")
+        st.error("⏳ Tu sesión de 12 horas ha expirado. Ingresa nuevamente.")
         time.sleep(2)
         st.rerun()
 
-# Pantalla de Login
+# --- PANTALLA DE LOGIN (AHORA CON ENTER PARA ENTRAR) ---
 if not st.session_state.autenticado:
     st.markdown("<br><br><h1 style='text-align:center; color:#2488bc;'>VILLAFIX SYSTEM</h1>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
         with st.container(border=True):
             st.markdown("<h3 style='text-align:center;'>Iniciar Sesión</h3>", unsafe_allow_html=True)
-            u = st.text_input("Usuario")
-            p = st.text_input("Contraseña", type="password")
             
-            if st.button("INGRESAR AL SISTEMA", use_container_width=True):
+            # USO DE FORMULARIO AQUÍ PARA QUE "ENTER" FUNCIONE
+            with st.form("login_form"):
+                u = st.text_input("Usuario")
+                p = st.text_input("Contraseña", type="password")
+                
+                # El botón submit permite usar Enter
+                submit_login = st.form_submit_button("INGRESAR", use_container_width=True)
+            
+            if submit_login:
                 try:
                     res = supabase.table("usuarios").select("*").eq("usuario", u).eq("contrasena", p).execute()
                     if res.data:
@@ -71,148 +77,53 @@ if not st.session_state.autenticado:
 # ==============================================================================
 
 def es_coincidencia(busqueda, texto_db):
-    """Busca coincidencias inteligentes (ej: 'ip13' encuentra 'iPhone 13')"""
     if not busqueda: return True 
     if not texto_db: return False
-    
     b = str(busqueda).lower().strip()
-    
-    # Alias comunes
-    if b.startswith("ip") and len(b) > 2 and b[2].isdigit(): 
-        b = b.replace("ip", "iphone", 1)
-    elif b == "ip":
-        b = "iphone"
-
+    if b.startswith("ip") and len(b) > 2 and b[2].isdigit(): b = b.replace("ip", "iphone", 1)
+    elif b == "ip": b = "iphone"
     b_nospace = b.replace(" ", "").replace("-", "")
     t = str(texto_db).lower()
     t_nospace = t.replace(" ", "").replace("-", "")
-    
     if b in t: return True
     if b_nospace in t_nospace: return True
     return False
 
-# CSS MAESTRO (Diseño Completo Restaurado)
+# CSS MAESTRO (Intacto)
 st.markdown("""
     <style>
-    /* Estructura Principal */
     .stApp, .main, .block-container { background-color: #ffffff !important; }
-    
-    /* Barra Lateral */
     [data-testid="stSidebar"] { background-color: #1a222b !important; }
     [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
-    [data-testid="stSidebar"] button { 
-        background-color: transparent !important; 
-        border: none !important; 
-        color: #bdc3c7 !important; 
-        text-align: left !important; 
-        padding-left: 15px !important; 
-        transition: all 0.3s ease;
-    }
-    [data-testid="stSidebar"] button:hover { 
-        background-color: rgba(255,255,255,0.05) !important; 
-        border-left: 4px solid #3498db !important; 
-        color: #ffffff !important; 
-        padding-left: 25px !important;
-    }
-    
-    /* Tipografía y Textos */
-    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetricLabel { 
-        color: #000000 !important; 
-        -webkit-text-fill-color: #000000 !important; 
-        font-weight: 700 !important; 
-    }
-    div[data-testid="stMetricValue"] { 
-        color: #2488bc !important; 
-        -webkit-text-fill-color: #2488bc !important; 
-    }
-    
-    /* Controles de Formulario */
-    input, textarea, .stNumberInput input { 
-        background-color: #ffffff !important; 
-        color: #000000 !important; 
-        -webkit-text-fill-color: #000000 !important; 
-        border: 1px solid #888888 !important; 
-        caret-color: #000000 !important; 
-    }
-    input:disabled { 
-        background-color: #e9ecef !important; 
-        color: #555555 !important; 
-        -webkit-text-fill-color: #555555 !important; 
-    }
-    div[data-baseweb="select"] > div { 
-        background-color: #ffffff !important; 
-        color: #000000 !important; 
-        border: 1px solid #888888 !important; 
-    }
-    div[data-baseweb="select"] span { 
-        color: #000000 !important; 
-        -webkit-text-fill-color: #000000 !important; 
-    }
+    [data-testid="stSidebar"] button { background-color: transparent !important; border: none !important; color: #bdc3c7 !important; text-align: left !important; padding-left: 15px !important; transition: all 0.3s ease; }
+    [data-testid="stSidebar"] button:hover { background-color: rgba(255,255,255,0.05) !important; border-left: 4px solid #3498db !important; color: #ffffff !important; padding-left: 25px !important; }
+    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetricLabel { color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-weight: 700 !important; }
+    div[data-testid="stMetricValue"] { color: #2488bc !important; -webkit-text-fill-color: #2488bc !important; }
+    input, textarea, .stNumberInput input { background-color: #ffffff !important; color: #000000 !important; -webkit-text-fill-color: #000000 !important; border: 1px solid #888888 !important; caret-color: #000000 !important; }
+    input:disabled { background-color: #e9ecef !important; color: #555555 !important; -webkit-text-fill-color: #555555 !important; }
+    div[data-baseweb="select"] > div { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #888888 !important; }
+    div[data-baseweb="select"] span { color: #000000 !important; -webkit-text-fill-color: #000000 !important; }
     ul[data-testid="stSelectboxVirtualDropdown"] { background-color: #ffffff !important; }
     ul[data-testid="stSelectboxVirtualDropdown"] li { background-color: #ffffff !important; color: #000000 !important; }
     ul[data-testid="stSelectboxVirtualDropdown"] li:hover { background-color: #f0f2f6 !important; }
-    
-    /* Tarjetas de Producto (Layout Seguro) */
-    div[data-testid="stVerticalBlockBorderWrapper"] { 
-        background-color: #ffffff !important; 
-        border: 1px solid #ddd !important; 
-        padding: 10px !important; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; 
-        height: 100% !important; 
-        min-height: 350px !important; 
-        display: flex; 
-        flex-direction: column; 
-        justify-content: space-between; 
-    }
-    
-    /* Imágenes */
-    div[data-testid="stImage"] { 
-        display: flex !important; 
-        justify-content: center !important; 
-        align-items: center !important; 
-        width: 100% !important; 
-        margin: 0 auto !important; 
-        height: 160px !important; 
-    }
-    div[data-testid="stImage"] img { 
-        display: block !important; 
-        margin-left: auto !important; 
-        margin-right: auto !important; 
-        max-height: 150px !important; 
-        width: auto !important; 
-        object-fit: contain !important; 
-    }
-    
-    /* Botones de Acción */
-    div.stButton button { 
-        background-color: #2488bc !important; 
-        color: #ffffff !important; 
-        border: none !important; 
-        font-weight: bold !important; 
-        width: 100% !important; 
-        margin-top: auto !important; 
-    }
+    div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
+    div[data-testid="stVerticalBlockBorderWrapper"] { background-color: #ffffff !important; border: 1px solid #ddd !important; padding: 10px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; height: 100% !important; min-height: 350px !important; display: flex; flex-direction: column; justify-content: space-between; }
+    div[data-testid="stImage"] { display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; margin: 0 auto !important; height: 160px !important; }
+    div[data-testid="stImage"] img { display: block !important; margin-left: auto !important; margin-right: auto !important; max-height: 150px !important; width: auto !important; object-fit: contain !important; }
+    div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
     div.stButton button p { color: #ffffff !important; }
-    div.stButton button:disabled, button[kind="secondary"] { 
-        background-color: #e74c3c !important; 
-        color: white !important; 
-        opacity: 1 !important; 
-        border: 1px solid #c0392b !important; 
-    }
+    div.stButton button:disabled, button[kind="secondary"] { background-color: #e74c3c !important; color: white !important; opacity: 1 !important; border: 1px solid #c0392b !important; }
     div.stButton button:disabled p { color: white !important; }
-    
-    /* Tabs y Perfil */
     button[data-baseweb="tab"] { color: #000000 !important; }
     div[data-baseweb="tab-list"] { background-color: #f1f3f4 !important; border-radius: 8px; }
     .profile-section { text-align: center !important; padding: 20px 0px; }
     .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
-    
     [data-testid="stSidebarNav"] {display: none;}
     </style>
     """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 4. VENTANAS EMERGENTES (MODALES)
+# 4. VENTANAS EMERGENTES (MODIFICADAS: CLIC OBLIGATORIO PARA GUARDAR)
 # ==============================================================================
 
 @st.dialog("Gestionar Inventario")
@@ -227,110 +138,114 @@ def modal_gestion(producto):
         try: locs = [l['nombre'] for l in supabase.table("locales").select("nombre").execute().data]
         except: locs = ["Principal"]
 
-        with st.form("form_salida_modal"):
-            tecnico = st.selectbox("Técnico", ["Seleccionar"] + techs, key="tec_sal")
-            local = st.selectbox("Local", ["Seleccionar"] + locs, key="loc_sal")
-            max_val = producto['stock'] if producto['stock'] > 0 else 1
-            cantidad = st.number_input("Cantidad a RETIRAR", min_value=1, max_value=max_val, step=1, key="cant_sal")
-            
-            if st.form_submit_button("CONFIRMAR SALIDA"):
-                if producto['stock'] <= 0:
-                     st.error("⚠️ No hay stock para retirar.")
-                elif tecnico == "Seleccionar" or local == "Seleccionar":
-                    st.error("⚠️ Faltan datos.")
-                else:
-                    with st.spinner('Procesando salida...'):
-                        nuevo_stock = producto['stock'] - cantidad
-                        supabase.table("productos").update({"stock": nuevo_stock}).eq("id", producto['id']).execute()
-                        supabase.table("historial").insert({
-                            "producto_nombre": producto['nombre'], "cantidad": -cantidad,
-                            "usuario": st.session_state.user, "tecnico": tecnico, "local": local
-                        }).execute()
-                        time.sleep(0.5)
-                    st.success("✅ Salida Registrada")
+        # Sin st.form para evitar submit con Enter
+        tecnico = st.selectbox("Técnico", ["Seleccionar"] + techs, key="tec_sal")
+        local = st.selectbox("Local", ["Seleccionar"] + locs, key="loc_sal")
+        max_val = producto['stock'] if producto['stock'] > 0 else 1
+        cantidad = st.number_input("Cantidad a RETIRAR", min_value=1, max_value=max_val, step=1, key="cant_sal")
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("CONFIRMAR SALIDA", use_container_width=True):
+            if producto['stock'] <= 0:
+                    st.error("⚠️ No hay stock para retirar.")
+            elif tecnico == "Seleccionar" or local == "Seleccionar":
+                st.error("⚠️ Faltan datos.")
+            else:
+                with st.spinner('Procesando salida...'):
+                    nuevo_stock = producto['stock'] - cantidad
+                    supabase.table("productos").update({"stock": nuevo_stock}).eq("id", producto['id']).execute()
+                    supabase.table("historial").insert({
+                        "producto_nombre": producto['nombre'], "cantidad": -cantidad,
+                        "usuario": st.session_state.user, "tecnico": tecnico, "local": local
+                    }).execute()
                     time.sleep(0.5)
-                    st.rerun()
+                st.success("✅ Salida Registrada")
+                time.sleep(0.5)
+                st.rerun()
 
     with tab_devolucion:
         st.info("Use esto para devoluciones de técnicos o ingresos rápidos.")
-        with st.form("form_devolucion_modal"):
-            razon = st.text_input("Motivo (Ej: Devolución Técnico, Error)", value="Devolución")
-            cant_dev = st.number_input("Cantidad a INGRESAR/DEVOLVER", min_value=1, step=1, key="cant_dev")
-            
-            if st.form_submit_button("CONFIRMAR DEVOLUCIÓN"):
-                with st.spinner('Procesando devolución...'):
-                    nuevo_stock_dev = producto['stock'] + cant_dev
-                    supabase.table("productos").update({"stock": nuevo_stock_dev}).eq("id", producto['id']).execute()
-                    supabase.table("historial").insert({
-                        "producto_nombre": producto['nombre'], 
-                        "cantidad": cant_dev,
-                        "usuario": st.session_state.user, 
-                        "tecnico": razon,
-                        "local": "Almacén"
-                    }).execute()
-                    time.sleep(0.5)
-                st.success("✅ Stock devuelto correctamente.")
+        # Sin st.form
+        razon = st.text_input("Motivo (Ej: Devolución Técnico, Error)", value="Devolución")
+        cant_dev = st.number_input("Cantidad a INGRESAR/DEVOLVER", min_value=1, step=1, key="cant_dev")
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("CONFIRMAR DEVOLUCIÓN", use_container_width=True):
+            with st.spinner('Procesando devolución...'):
+                nuevo_stock_dev = producto['stock'] + cant_dev
+                supabase.table("productos").update({"stock": nuevo_stock_dev}).eq("id", producto['id']).execute()
+                supabase.table("historial").insert({
+                    "producto_nombre": producto['nombre'], 
+                    "cantidad": cant_dev,
+                    "usuario": st.session_state.user, 
+                    "tecnico": razon,
+                    "local": "Almacén"
+                }).execute()
                 time.sleep(0.5)
-                st.rerun()
+            st.success("✅ Stock devuelto correctamente.")
+            time.sleep(0.5)
+            st.rerun()
 
 @st.dialog("✨ Nuevo Producto")
 def modal_nuevo_producto():
     st.markdown("<h3 style='color:black;'>Crear Producto</h3>", unsafe_allow_html=True)
-    with st.form("form_nuevo_prod"):
-        n = st.text_input("Nombre / Modelo *")
-        col_cat, col_mar = st.columns(2)
-        with col_cat: 
-            c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
-        with col_mar:
-            m = st.text_input("Marca (Solo si aplica)")
-        
-        cb = st.text_input("Código de Batería (Solo para Baterías)")
-        s = st.number_input("Stock Inicial *", min_value=0, step=1)
-        
-        col_p1, col_p2 = st.columns(2)
-        with col_p1:
-            p_gen = st.number_input("Precio General (S/) *", min_value=0.0, step=0.5)
-        with col_p2:
-            p_punto = st.number_input("Precio Punto (S/)", min_value=0.0, step=0.5)
-        
-        img = st.text_input("URL Imagen (Opcional)")
+    
+    # NO USAMOS st.form AQUÍ.
+    # Al no usar form, presionar Enter en un campo NO envía los datos.
+    # El usuario debe hacer clic obligatoriamente en el botón.
+    
+    n = st.text_input("Nombre / Modelo *")
+    
+    col_cat, col_mar = st.columns(2)
+    with col_cat: 
+        c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
+    with col_mar:
+        m = st.text_input("Marca (Solo si aplica)")
+    
+    cb = st.text_input("Código de Batería (Solo para Baterías)")
+    s = st.number_input("Stock Inicial *", min_value=0, step=1)
+    
+    col_p1, col_p2 = st.columns(2)
+    with col_p1:
+        p_gen = st.number_input("Precio General (S/) *", min_value=0.0, step=0.5)
+    with col_p2:
+        p_punto = st.number_input("Precio Punto (S/)", min_value=0.0, step=0.5)
+    
+    img = st.text_input("URL Imagen (Opcional)")
 
-        if st.form_submit_button("GUARDAR"):
-            if not n or c == "Seleccionar" or p_gen <= 0:
-                st.error("⚠️ Datos incompletos.")
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("GUARDAR PRODUCTO", use_container_width=True, type="primary"):
+        if not n or c == "Seleccionar" or p_gen <= 0:
+            st.error("⚠️ Datos incompletos. Revisa Nombre, Categoría y Precio.")
+        else:
+            # Validación
+            query = supabase.table("productos").select("id")\
+                .eq("nombre", n).eq("marca", m).eq("categoria", c)
+            
+            if cb: query = query.eq("codigo_bateria", cb)
+            else: query = query.eq("codigo_bateria", "")
+
+            existe_dupla = query.execute()
+
+            if existe_dupla.data:
+                st.error(f"⚠️ Ya existe EXACTAMENTE este producto.")
             else:
-                # --- VALIDACIÓN LÓGICA VILLAFIX ---
-                # Solo bloquea si coinciden NOMBRE, MARCA, CATEGORÍA y CÓDIGO
-                # Permite: Iphone 13 (Celda) y Iphone 13 (Diagnóstico) como productos distintos.
-                query = supabase.table("productos").select("id")\
-                    .eq("nombre", n)\
-                    .eq("marca", m)\
-                    .eq("categoria", c)
-                
-                if cb: query = query.eq("codigo_bateria", cb)
-                else: query = query.eq("codigo_bateria", "") # Manejar código vacío
-
-                existe_dupla = query.execute()
-
-                if existe_dupla.data:
-                    st.error(f"⚠️ Ya existe EXACTAMENTE este producto (Mismo Nombre, Marca y Código).")
-                else:
-                    try:
-                        with st.spinner('Creando producto...'):
-                            supabase.table("productos").insert({
-                                "nombre": n, "categoria": c, "marca": m, "codigo_bateria": cb,
-                                "stock": s, "precio_venta": p_gen, "precio_punto": p_punto, "imagen_url": img
-                            }).execute()
-                            supabase.table("historial").insert({
-                                "producto_nombre": n, "cantidad": s, "usuario": st.session_state.user,
-                                "tecnico": "Ingreso Inicial", "local": "Almacén"
-                            }).execute()
-                            time.sleep(1)
-                        st.success("✅ ¡Producto Creado Exitosamente!")
-                        time.sleep(0.5)
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Error al guardar en base de datos: {e}")
+                try:
+                    with st.spinner('Creando producto...'):
+                        supabase.table("productos").insert({
+                            "nombre": n, "categoria": c, "marca": m, "codigo_bateria": cb,
+                            "stock": s, "precio_venta": p_gen, "precio_punto": p_punto, "imagen_url": img
+                        }).execute()
+                        supabase.table("historial").insert({
+                            "producto_nombre": n, "cantidad": s, "usuario": st.session_state.user,
+                            "tecnico": "Ingreso Inicial", "local": "Almacén"
+                        }).execute()
+                        time.sleep(1)
+                    st.success("✅ ¡Producto Creado Exitosamente!")
+                    time.sleep(0.5)
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error: {e}")
 
 @st.dialog("⚠️ Confirmar Eliminación")
 def modal_borrar_producto(producto):
@@ -428,9 +343,8 @@ if opcion == "Stock":
             b_clean = busqueda.lower().strip()
             filtered_items.sort(key=lambda x: 0 if x['nombre'].lower().startswith(b_clean) else 1)
 
-        # --- SISTEMA DE FILAS (SOLUCIONA EL ERROR VISUAL) ---
+        # GRID SYSTEM ROBUSTO
         N_COLS = 4
-        # Dividimos en bloques de 4 para renderizar fila por fila
         rows = [filtered_items[i:i + N_COLS] for i in range(0, len(filtered_items), N_COLS)]
         
         for row in rows:
@@ -438,7 +352,6 @@ if opcion == "Stock":
             for i, p in enumerate(row):
                 with cols[i]:
                     with st.container(border=True):
-                        # Imagen protegida
                         img_url = p.get('imagen_url')
                         if not img_url: img_url = "https://via.placeholder.com/150"
                         
@@ -448,7 +361,6 @@ if opcion == "Stock":
                             </div>
                         """, unsafe_allow_html=True)
                         
-                        # Info
                         marca_val = p.get('marca', '')
                         marca_html = f"<div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase;'>{marca_val}</div>" if marca_val else "<div style='height:16px;'></div>"
                         cod_bat = p.get('codigo_bateria')
@@ -462,7 +374,6 @@ if opcion == "Stock":
                             </div>
                         """, unsafe_allow_html=True)
 
-                        # --- DISEÑO DE PRECIOS ORIGINAL ---
                         c1, c2, c3 = st.columns([1, 1.2, 1.2])
                         with c1: 
                             st.markdown(f"<div style='text-align:center; color:black; font-size:12px; font-weight:bold;'>Stock<br><span style='font-size:14px;'>{p['stock']}</span></div>", unsafe_allow_html=True)
@@ -506,34 +417,27 @@ elif opcion == "Carga":
     if seleccion_str != "Seleccionar":
         prod_data = opciones_map[seleccion_str]
         if prod_data:
-            with st.form("form_update_stock"):
+            with st.container(border=True):
+                st.markdown(f"### Editando: {prod_data['nombre']}")
+                
+                # Sin formulario para evitar submit con enter en edición también
                 col_u1, col_u2 = st.columns(2)
                 with col_u1:
-                    st.text_input("Categoría", value=prod_data['categoria'], disabled=True)
-                    
-                    marca_val = prod_data.get('marca') or ""
-                    new_marca = st.text_input("Marca", value=marca_val)
-                    
-                    cod_bat_new = ""
-                    if prod_data['categoria'] == "Baterías":
-                        current_code = prod_data.get('codigo_bateria') or ""
-                        cod_bat_new = st.text_input("Código de Batería", value=current_code)
+                    new_cat = st.selectbox("Categoría", ["Pantallas", "Baterías", "Flex", "Glases", "Otros"], index=["Pantallas", "Baterías", "Flex", "Glases", "Otros"].index(prod_data['categoria']))
+                    new_marca = st.text_input("Marca", value=prod_data.get('marca') or "")
+                    new_cod = st.text_input("Código de Batería", value=prod_data.get('codigo_bateria') or "")
 
                 with col_u2:
                     new_price_gen = st.number_input("Precio General (S/)", value=float(prod_data['precio_venta']), min_value=0.0, step=0.5)
-                    
-                    # Manejo seguro de posible null
-                    val_actual_punto = float(prod_data.get('precio_punto') or 0.0)
-                    new_price_punto = st.number_input("Precio Punto (S/)", value=val_actual_punto, min_value=0.0, step=0.5)
-                    
-                    img_val = prod_data.get('imagen_url') or ""
-                    new_img = st.text_input("URL Imagen", value=img_val)
+                    new_price_punto = st.number_input("Precio Punto (S/)", value=float(prod_data.get('precio_punto') or 0.0), min_value=0.0, step=0.5)
+                    new_img = st.text_input("URL Imagen", value=prod_data.get('imagen_url') or "")
 
                 st.divider()
                 st.markdown(f"**Stock Actual:** {prod_data['stock']}")
                 stock_add = st.number_input("Cantidad a AÑADIR (+)", min_value=0, value=0, step=1)
                 
-                if st.form_submit_button("CONSOLIDAR INGRESO"):
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("GUARDAR CAMBIOS", type="primary", use_container_width=True):
                     try:
                         with st.spinner('Guardando cambios...'):
                             total_stock = prod_data['stock'] + stock_add
@@ -542,10 +446,10 @@ elif opcion == "Carga":
                                 "precio_venta": new_price_gen, 
                                 "precio_punto": new_price_punto,
                                 "imagen_url": new_img,
-                                "marca": new_marca 
+                                "marca": new_marca,
+                                "categoria": new_cat,
+                                "codigo_bateria": new_cod
                             }
-                            if prod_data['categoria'] == "Baterías": datos_update["codigo_bateria"] = cod_bat_new
-
                             supabase.table("productos").update(datos_update).eq("id", prod_data['id']).execute()
                             
                             if stock_add > 0:
@@ -576,7 +480,6 @@ elif opcion == "Log":
     
     if logs:
         df = pd.DataFrame(logs)
-        # --- FIX FECHAS ---
         df['fecha_obj'] = pd.to_datetime(df['fecha'])
         df['fecha_date'] = df['fecha_obj'].dt.date
         
@@ -655,7 +558,6 @@ elif opcion == "Stats":
 elif opcion == "Users":
     st.markdown("<h2>👥 Gestión</h2>", unsafe_allow_html=True)
     tab1, tab2, tab3 = st.tabs(["🔑 Accesos", "👨‍🔧 Técnicos", "🏠 Locales"])
-    
     with tab1:
         with st.form("nu"):
             un = st.text_input("Usuario")
@@ -714,6 +616,10 @@ elif opcion == "Prov":
     st.markdown("<h2>📞 Proveedores</h2>", unsafe_allow_html=True)
     provs = supabase.table("proveedores").select("*").execute().data
     if provs:
+        for pr in provs:
+            with st.container(border=True):
+                st.markdown(f"**{pr['nombre_contacto']}**")
+                st.link_button("WhatsApp", f"https://wa.me/{pr['whatsapp']}")
         for pr in provs:
             with st.container(border=True):
                 st.markdown(f"**{pr['nombre_contacto']}**")
