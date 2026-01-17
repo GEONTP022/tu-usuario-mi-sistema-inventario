@@ -19,11 +19,10 @@ except:
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide")
 
 # ==============================================================================
-# 2. SISTEMA DE SESIÓN INTELIGENTE (PERSISTENTE + 12 HORAS)
+# 2. SISTEMA DE SESIÓN (PERSISTENTE + 12 HORAS)
 # ==============================================================================
-SESSION_DURATION = 12 * 3600 # 12 Horas
+SESSION_DURATION = 12 * 3600 
 
-# Inicializar estado
 if 'autenticado' not in st.session_state:
     st.session_state.autenticado = False
     st.session_state.rol = None
@@ -31,36 +30,37 @@ if 'autenticado' not in st.session_state:
     st.session_state.menu = "Stock"
     st.session_state.login_time = 0
 
-# A) LÓGICA DE RECUPERACIÓN DE SESIÓN (ANTI-REFRESCO)
-# Si no está autenticado en RAM, revisamos si hay una sesión válida en la URL (Query Params)
+# --- LÓGICA ANTI-REFRESCO (RECUPERAR SESIÓN) ---
+# Si se recarga la página, buscamos el usuario en la URL
 if not st.session_state.autenticado:
     params = st.query_params
-    if "logged_user" in params and "session_valid" in params:
-        user_param = params["logged_user"]
-        # Recuperamos el rol silenciosamente para restaurar la sesión
+    if "user_session" in params:
+        user_in_url = params["user_session"]
         try:
-            res = supabase.table("usuarios").select("rol").eq("usuario", user_param).execute()
+            # Validamos silenciosamente con la base de datos
+            res = supabase.table("usuarios").select("*").eq("usuario", user_in_url).execute()
             if res.data:
                 st.session_state.autenticado = True
-                st.session_state.user = user_param
+                st.session_state.user = user_in_url
                 st.session_state.rol = res.data[0]['rol']
-                st.session_state.login_time = time.time() # Reinicia contador al refrescar
+                st.session_state.login_time = time.time()
+                st.rerun()
         except:
-            pass # Si falla, pedirá login normal
+            pass
 
-# B) VERIFICACIÓN DE TIEMPO (12 HORAS)
+# Verificar caducidad de tiempo (12h)
 if st.session_state.autenticado:
     current_time = time.time()
     if (current_time - st.session_state.login_time) > SESSION_DURATION:
         st.session_state.autenticado = False
         st.session_state.rol = None
         st.session_state.user = None
-        st.query_params.clear() # Limpiar URL
+        st.query_params.clear() # Limpiamos URL
         st.error("⏳ Tu sesión de 12 horas ha expirado. Ingresa nuevamente.")
         time.sleep(2)
         st.rerun()
 
-# C) PANTALLA DE LOGIN (CON ENTER)
+# --- PANTALLA DE LOGIN ---
 if not st.session_state.autenticado:
     st.markdown("<br><br><h1 style='text-align:center; color:#2488bc;'>VILLAFIX SYSTEM</h1>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 1.5, 1])
@@ -68,25 +68,23 @@ if not st.session_state.autenticado:
         with st.container(border=True):
             st.markdown("<h3 style='text-align:center;'>Iniciar Sesión</h3>", unsafe_allow_html=True)
             
-            # Formulario para permitir Enter
             with st.form("login_form"):
                 u = st.text_input("Usuario")
                 p = st.text_input("Contraseña", type="password")
+                # El botón submit permite usar ENTER para entrar
                 submit = st.form_submit_button("INGRESAR", use_container_width=True)
             
             if submit:
                 try:
                     res = supabase.table("usuarios").select("*").eq("usuario", u).eq("contrasena", p).execute()
                     if res.data:
-                        # Guardar en RAM
                         st.session_state.autenticado = True
                         st.session_state.rol = res.data[0]['rol']
                         st.session_state.user = u
                         st.session_state.login_time = time.time()
                         
-                        # Guardar en URL para persistencia (Hack Anti-Refresco)
-                        st.query_params["logged_user"] = u
-                        st.query_params["session_valid"] = "true"
+                        # GUARDAR EN URL PARA QUE NO SE BORRE AL REFRESCAR
+                        st.query_params["user_session"] = u
                         
                         st.rerun()
                     else:
@@ -112,13 +110,13 @@ def es_coincidencia(busqueda, texto_db):
     if b_nospace in t_nospace: return True
     return False
 
-# CSS MAESTRO (DISEÑO V7 - EL BUENO)
+# CSS MAESTRO (Diseño Original Intacto)
 st.markdown("""
     <style>
     .stApp, .main, .block-container { background-color: #ffffff !important; }
     [data-testid="stSidebar"] { background-color: #1a222b !important; }
     [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
-    [data-testid="stSidebar"] button { background-color: transparent !important; border: none !important; color: #bdc3c7 !important; text-align: left !important; padding-left: 15px !important; transition: all 0.3s ease; }
+    [data-testid="stSidebar"] button { background-color: transparent !important; border: none !important; color: #bdc3c7 !important; text-align: left !important; padding-left: 15px !important; transition: 0.3s; }
     [data-testid="stSidebar"] button:hover { background-color: rgba(255,255,255,0.05) !important; border-left: 4px solid #3498db !important; color: #ffffff !important; padding-left: 25px !important; }
     div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetricLabel { color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-weight: 700 !important; }
     div[data-testid="stMetricValue"] { color: #2488bc !important; -webkit-text-fill-color: #2488bc !important; }
@@ -130,7 +128,19 @@ st.markdown("""
     ul[data-testid="stSelectboxVirtualDropdown"] li { background-color: #ffffff !important; color: #000000 !important; }
     ul[data-testid="stSelectboxVirtualDropdown"] li:hover { background-color: #f0f2f6 !important; }
     div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
-    div[data-testid="stVerticalBlockBorderWrapper"] { background-color: #ffffff !important; border: 1px solid #ddd !important; padding: 10px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; height: 100% !important; min-height: 350px !important; display: flex; flex-direction: column; justify-content: space-between; }
+    
+    /* FIX VISUAL: Altura mínima para que no se rompa al buscar */
+    div[data-testid="stVerticalBlockBorderWrapper"] { 
+        background-color: #ffffff !important; 
+        border: 1px solid #ddd !important; 
+        padding: 10px !important; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; 
+        min-height: 360px !important; 
+        display: flex; 
+        flex-direction: column; 
+        justify-content: space-between; 
+    }
+    
     div[data-testid="stImage"] { display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; margin: 0 auto !important; height: 160px !important; }
     div[data-testid="stImage"] img { display: block !important; margin-left: auto !important; margin-right: auto !important; max-height: 150px !important; width: auto !important; object-fit: contain !important; }
     div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
@@ -146,7 +156,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 4. VENTANAS EMERGENTES (SIN ENTER PARA GUARDAR, SOLO CLIC)
+# 4. VENTANAS EMERGENTES (MODALES)
 # ==============================================================================
 
 @st.dialog("Gestionar Inventario")
@@ -161,7 +171,7 @@ def modal_gestion(producto):
         try: locs = [l['nombre'] for l in supabase.table("locales").select("nombre").execute().data]
         except: locs = ["Principal"]
 
-        # Sin formulario para que Enter no envíe
+        # Sin formulario para que ENTER no dispare el envío
         tecnico = st.selectbox("Técnico", ["Seleccionar"] + techs, key="tec_sal")
         local = st.selectbox("Local", ["Seleccionar"] + locs, key="loc_sal")
         max_val = producto['stock'] if producto['stock'] > 0 else 1
@@ -212,7 +222,7 @@ def modal_gestion(producto):
 def modal_nuevo_producto():
     st.markdown("<h3 style='color:black;'>Crear Producto</h3>", unsafe_allow_html=True)
     
-    # Campos sueltos (sin st.form) para evitar envío con Enter
+    # Campos individuales (Sin st.form para evitar Enter accidental)
     n = st.text_input("Nombre / Modelo *")
     
     col_cat, col_mar = st.columns(2)
@@ -259,7 +269,7 @@ def modal_nuevo_producto():
                             "tecnico": "Ingreso Inicial", "local": "Almacén"
                         }).execute()
                         time.sleep(1)
-                    st.success("✅ ¡Producto Creado!")
+                    st.success("✅ ¡Producto Creado Exitosamente!")
                     time.sleep(0.5)
                     st.rerun()
                 except Exception as e:
@@ -323,7 +333,7 @@ with st.sidebar:
     st.markdown("<br><br>", unsafe_allow_html=True)
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state.autenticado = False
-        st.query_params.clear() # Limpiar persistencia al salir
+        st.query_params.clear() # Limpiar persistencia
         st.rerun()
 
 # ==============================================================================
@@ -362,6 +372,7 @@ if opcion == "Stock":
             b_clean = busqueda.lower().strip()
             filtered_items.sort(key=lambda x: 0 if x['nombre'].lower().startswith(b_clean) else 1)
 
+        # GRID SYSTEM (4 columnas, layout seguro)
         N_COLS = 4
         rows = [filtered_items[i:i + N_COLS] for i in range(0, len(filtered_items), N_COLS)]
         
@@ -438,15 +449,16 @@ elif opcion == "Carga":
             with st.container(border=True):
                 st.markdown(f"### Editando: {prod_data['nombre']}")
                 
-                # Campos sueltos (NO st.form) -> Así Enter no guarda
+                # --- EDICIÓN DESBLOQUEADA ---
+                # Categoría, Marca y Código ahora son editables
                 col_u1, col_u2 = st.columns(2)
                 with col_u1:
-                    # FIX: selectbox totalmente libre (no disabled)
                     current_cat = prod_data['categoria']
-                    cat_opts = ["Pantallas", "Baterías", "Flex", "Glases", "Otros"]
-                    idx_cat = cat_opts.index(current_cat) if current_cat in cat_opts else 0
+                    cat_options = ["Pantallas", "Baterías", "Flex", "Glases", "Otros"]
+                    # Si la categoría actual no está en la lista (raro), usar index 0
+                    cat_index = cat_options.index(current_cat) if current_cat in cat_options else 0
                     
-                    new_cat = st.selectbox("Categoría", cat_opts, index=idx_cat)
+                    new_cat = st.selectbox("Categoría", cat_options, index=cat_index)
                     new_marca = st.text_input("Marca", value=prod_data.get('marca') or "")
                     new_cod = st.text_input("Código de Batería", value=prod_data.get('codigo_bateria') or "")
 
