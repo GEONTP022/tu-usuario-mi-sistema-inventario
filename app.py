@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, date
 import time
 
 # ==============================================================================
-# 1. CONFIGURACIÓN Y CONEXIÓN
+# 1. CONFIGURACIÓN: BARRA SIEMPRE ABIERTA (OBLIGATORIO)
 # ==============================================================================
 try:
     url = st.secrets["SUPABASE_URL"]
@@ -16,10 +16,126 @@ except:
     st.error("⚠️ Error crítico de conexión. Verifica tus 'secrets' en Streamlit.")
     st.stop()
 
-st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide")
+# 'initial_sidebar_state="expanded"' es vital aquí para que arranque abierta
+st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide", initial_sidebar_state="expanded")
 
 # ==============================================================================
-# 2. SISTEMA DE SESIÓN (PERSISTENTE + 12 HORAS)
+# 2. CSS MAESTRO: FIJAR BARRA Y LIMPIEZA TOTAL
+# ==============================================================================
+st.markdown("""
+    <style>
+    /* -----------------------------------------------------------------------
+       1. ZONA DE EXTERMINIO DE LA FLECHA (<<)
+       ----------------------------------------------------------------------- */
+    /* Selector 1: Busca el botón por su función de colapsar */
+    button[aria-label="Collapse sidebar"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    
+    /* Selector 2: Busca el botón por ser tipo 'header' dentro del sidebar */
+    section[data-testid="stSidebar"] button[kind="header"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    
+    /* Selector 3: El control flotante estándar */
+    [data-testid="stSidebarCollapsedControl"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    
+    /* Ajuste para que no quede espacio vacío arriba */
+    section[data-testid="stSidebar"] .block-container {
+        padding-top: 1rem !important;
+    }
+
+    /* -----------------------------------------------------------------------
+       2. LIMPIEZA GENERAL (TOOLBAR, FOOTER, ETC)
+       ----------------------------------------------------------------------- */
+    [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
+    header { background-color: transparent !important; }
+    [data-testid="stDecoration"] { display: none !important; }
+    footer { display: none !important; }
+    
+    /* -----------------------------------------------------------------------
+       3. ESTILOS DE LA APP (FONDO BLANCO LIMPIO)
+       ----------------------------------------------------------------------- */
+    .stApp, .main, .block-container { background-color: #ffffff !important; }
+    
+    /* Sidebar (Color Oscuro) */
+    [data-testid="stSidebar"] { background-color: #1a222b !important; }
+    [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+    
+    /* Botones Sidebar - ASEGURAMOS QUE SEAN VISIBLES */
+    [data-testid="stSidebar"] button { 
+        background-color: transparent !important; 
+        border: none !important; 
+        color: #bdc3c7 !important; 
+        text-align: left !important; 
+        padding-left: 15px !important; 
+        transition: 0.3s;
+        display: block !important; /* IMPORTANTE: Forzar visibilidad */
+        visibility: visible !important;
+    }
+    [data-testid="stSidebar"] button:hover { 
+        background-color: rgba(255,255,255,0.05) !important; 
+        border-left: 4px solid #3498db !important; 
+        color: #ffffff !important; 
+        padding-left: 25px !important; 
+    }
+    
+    /* Textos Generales (Negro) */
+    div[data-testid="stWidgetLabel"] p, label, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetricLabel { 
+        color: #000000 !important; 
+        -webkit-text-fill-color: #000000 !important; 
+        font-weight: 700 !important; 
+    }
+    div[data-testid="stMetricValue"] { color: #2488bc !important; -webkit-text-fill-color: #2488bc !important; }
+    
+    /* Inputs */
+    input, textarea, .stNumberInput input { 
+        background-color: #ffffff !important; 
+        color: #000000 !important; 
+        -webkit-text-fill-color: #000000 !important; 
+        border: 1px solid #888888 !important; 
+    }
+    /* Inputs Bloqueados (Gris) */
+    input:disabled { 
+        background-color: #e9ecef !important; 
+        color: #555555 !important; 
+        -webkit-text-fill-color: #555555 !important; 
+    }
+    
+    /* Tarjetas y Modales */
+    div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
+    div[data-testid="stVerticalBlockBorderWrapper"] { 
+        background-color: #ffffff !important; 
+        border: 1px solid #ddd !important; 
+        padding: 10px !important; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; 
+        display: flex; flex-direction: column; justify-content: space-between; 
+    }
+    
+    /* Imágenes */
+    div[data-testid="stImage"] { display: flex !important; justify-content: center !important; height: 160px !important; }
+    div[data-testid="stImage"] img { max-height: 150px !important; width: auto !important; object-fit: contain !important; }
+    
+    /* Botones */
+    div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
+    div.stButton button p { color: #ffffff !important; }
+    div.stButton button:disabled, button[kind="secondary"] { background-color: #e74c3c !important; color: white !important; opacity: 1 !important; border: 1px solid #c0392b !important; }
+    div.stButton button:disabled p { color: white !important; }
+    
+    /* Perfil */
+    .profile-section { text-align: center !important; padding: 20px 0px; }
+    .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
+    [data-testid="stSidebarNav"] {display: none;}
+    </style>
+    """, unsafe_allow_html=True)
+
+# ==============================================================================
+# 3. SISTEMA DE SESIÓN (12H + ANTI-REFRESCO)
 # ==============================================================================
 SESSION_DURATION = 12 * 3600 
 
@@ -30,7 +146,7 @@ if 'autenticado' not in st.session_state:
     st.session_state.menu = "Stock"
     st.session_state.login_time = 0
 
-# --- LÓGICA ANTI-REFRESCO (RECUPERAR SESIÓN) ---
+# Anti-Refresco
 if not st.session_state.autenticado:
     params = st.query_params
     if "user_session" in params:
@@ -46,16 +162,11 @@ if not st.session_state.autenticado:
         except:
             pass
 
-# Verificar caducidad de tiempo (12h)
+# Verificar tiempo
 if st.session_state.autenticado:
-    current_time = time.time()
-    if (current_time - st.session_state.login_time) > SESSION_DURATION:
+    if (time.time() - st.session_state.login_time) > SESSION_DURATION:
         st.session_state.autenticado = False
-        st.session_state.rol = None
-        st.session_state.user = None
         st.query_params.clear()
-        st.error("⏳ Tu sesión de 12 horas ha expirado. Ingresa nuevamente.")
-        time.sleep(2)
         st.rerun()
 
 # --- PANTALLA DE LOGIN ---
@@ -65,7 +176,6 @@ if not st.session_state.autenticado:
     with c2:
         with st.container(border=True):
             st.markdown("<h3 style='text-align:center;'>Iniciar Sesión</h3>", unsafe_allow_html=True)
-            
             with st.form("login_form"):
                 u = st.text_input("Usuario")
                 p = st.text_input("Contraseña", type="password")
@@ -88,7 +198,7 @@ if not st.session_state.autenticado:
     st.stop()
 
 # ==============================================================================
-# 3. FUNCIONES Y ESTILOS
+# 4. FUNCIONES DE AYUDA
 # ==============================================================================
 
 def es_coincidencia(busqueda, texto_db):
@@ -104,40 +214,8 @@ def es_coincidencia(busqueda, texto_db):
     if b_nospace in t_nospace: return True
     return False
 
-st.markdown("""
-    <style>
-    .stApp, .main, .block-container { background-color: #ffffff !important; }
-    [data-testid="stSidebar"] { background-color: #1a222b !important; }
-    [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
-    [data-testid="stSidebar"] button { background-color: transparent !important; border: none !important; color: #bdc3c7 !important; text-align: left !important; padding-left: 15px !important; transition: 0.3s; }
-    [data-testid="stSidebar"] button:hover { background-color: rgba(255,255,255,0.05) !important; border-left: 4px solid #3498db !important; color: #ffffff !important; padding-left: 25px !important; }
-    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetricLabel { color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-weight: 700 !important; }
-    div[data-testid="stMetricValue"] { color: #2488bc !important; -webkit-text-fill-color: #2488bc !important; }
-    input, textarea, .stNumberInput input { background-color: #ffffff !important; color: #000000 !important; -webkit-text-fill-color: #000000 !important; border: 1px solid #888888 !important; caret-color: #000000 !important; }
-    input:disabled { background-color: #e9ecef !important; color: #555555 !important; -webkit-text-fill-color: #555555 !important; }
-    div[data-baseweb="select"] > div { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #888888 !important; }
-    div[data-baseweb="select"] span { color: #000000 !important; -webkit-text-fill-color: #000000 !important; }
-    ul[data-testid="stSelectboxVirtualDropdown"] { background-color: #ffffff !important; }
-    ul[data-testid="stSelectboxVirtualDropdown"] li { background-color: #ffffff !important; color: #000000 !important; }
-    ul[data-testid="stSelectboxVirtualDropdown"] li:hover { background-color: #f0f2f6 !important; }
-    div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
-    div[data-testid="stVerticalBlockBorderWrapper"] { background-color: #ffffff !important; border: 1px solid #ddd !important; padding: 10px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; height: 100% !important; min-height: 350px !important; display: flex; flex-direction: column; justify-content: space-between; }
-    div[data-testid="stImage"] { display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; margin: 0 auto !important; height: 160px !important; }
-    div[data-testid="stImage"] img { display: block !important; margin-left: auto !important; margin-right: auto !important; max-height: 150px !important; width: auto !important; object-fit: contain !important; }
-    div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
-    div.stButton button p { color: #ffffff !important; }
-    div.stButton button:disabled, button[kind="secondary"] { background-color: #e74c3c !important; color: white !important; opacity: 1 !important; border: 1px solid #c0392b !important; }
-    div.stButton button:disabled p { color: white !important; }
-    button[data-baseweb="tab"] { color: #000000 !important; }
-    div[data-baseweb="tab-list"] { background-color: #f1f3f4 !important; border-radius: 8px; }
-    .profile-section { text-align: center !important; padding: 20px 0px; }
-    .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
-    [data-testid="stSidebarNav"] {display: none;}
-    </style>
-    """, unsafe_allow_html=True)
-
 # ==============================================================================
-# 4. MODALES (VENTANAS EMERGENTES)
+# 5. MODALES (VENTANAS EMERGENTES)
 # ==============================================================================
 
 @st.dialog("Gestionar Inventario")
@@ -289,7 +367,7 @@ def modal_borrar_local(nombre):
         st.rerun()
 
 # ==============================================================================
-# 5. MENÚ LATERAL (SIDEBAR)
+# 6. MENÚ LATERAL (SIDEBAR)
 # ==============================================================================
 with st.sidebar:
     st.markdown(f"""
@@ -301,22 +379,22 @@ with st.sidebar:
         <div style="height:1px; background-color:#3498db; opacity:0.3; margin-bottom:20px;"></div>
     """, unsafe_allow_html=True)
     
-    if st.button(" Dashboard / Stock", use_container_width=True): st.session_state.menu = "Stock"
+    if st.button("📊 Dashboard / Stock", use_container_width=True): st.session_state.menu = "Stock"
     if st.session_state.rol == "Super":
-        if st.button(" Añadir Producto", use_container_width=True): st.session_state.menu = "Carga"
-        if st.button(" Historial", use_container_width=True): st.session_state.menu = "Log"
-        if st.button(" Estadísticas", use_container_width=True): st.session_state.menu = "Stats"
-        if st.button(" Usuarios / Config", use_container_width=True): st.session_state.menu = "Users"
-        if st.button(" Proveedores", use_container_width=True): st.session_state.menu = "Prov"
+        if st.button("📥 Añadir Producto", use_container_width=True): st.session_state.menu = "Carga"
+        if st.button("📋 Historial", use_container_width=True): st.session_state.menu = "Log"
+        if st.button("📈 Estadísticas", use_container_width=True): st.session_state.menu = "Stats"
+        if st.button("👥 Usuarios / Config", use_container_width=True): st.session_state.menu = "Users"
+        if st.button("📞 Proveedores", use_container_width=True): st.session_state.menu = "Prov"
 
     st.markdown("<br><br>", unsafe_allow_html=True)
-    if st.button(" Cerrar Sesión", use_container_width=True):
+    if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state.autenticado = False
         st.query_params.clear() # Limpiar persistencia
         st.rerun()
 
 # ==============================================================================
-# 6. PANTALLAS PRINCIPALES
+# 7. PANTALLAS PRINCIPALES
 # ==============================================================================
 opcion = st.session_state.menu
 
@@ -613,7 +691,7 @@ elif opcion == "Users":
         if locs:
             col_a, col_b = st.columns([3,1])
             with col_a: l_del = st.selectbox("Borrar Local", [l['nombre'] for l in locs])
-            with col_b:
+            with col_b: 
                 st.write("")
                 st.write("") 
                 if st.button("🗑️", key="bl"): modal_borrar_local(l_del)
