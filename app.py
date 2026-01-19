@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, date
 import time
 
 # ==============================================================================
-# 1. CONFIGURACIÓN Y ESTILOS "FANTASMA" (OCULTAR TODO)
+# 1. CONFIGURACIÓN Y CONEXIÓN
 # ==============================================================================
 try:
     url = st.secrets["SUPABASE_URL"]
@@ -18,34 +18,42 @@ except:
 
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide")
 
-# --- CSS MAESTRO (LIMPIEZA TOTAL DE INTERFAZ INCLUYENDO MANAGE APP) ---
+# --- CSS NUCLEAR (PARA BORRAR "MANAGE APP" Y BARRAS) ---
 st.markdown("""
     <style>
-    /* =========================================
-       1. OCULTAR TODAS LAS BARRAS (SUPERIOR E INFERIOR)
-       ========================================= */
+    /* 1. OCULTAR LA BARRA NEGRA INFERIOR (Manage App / Toolbar) */
+    [data-testid="stToolbar"] {
+        visibility: hidden !important;
+        display: none !important;
+        height: 0px !important;
+    }
     
-    /* Ocultar Menú hamburguesa y Header superior */
-    #MainMenu {visibility: hidden; display: none;}
-    header {visibility: hidden; display: none;}
+    /* 2. OCULTAR BARRA SUPERIOR Y MENÚ HAMBURGUESA */
+    header {
+        visibility: hidden !important;
+        display: none !important;
+    }
+    #MainMenu {
+        visibility: hidden !important;
+        display: none !important;
+    }
     
-    /* Ocultar Barra de herramientas inferior (Manage app) */
-    [data-testid="stToolbar"] {visibility: hidden; display: none !important;}
+    /* 3. OCULTAR FOOTER Y DECORACIONES */
+    footer {
+        visibility: hidden !important;
+        display: none !important;
+    }
+    .stDeployButton {
+        display: none !important;
+    }
+    [data-testid="stDecoration"] {
+        display: none !important;
+    }
+    [data-testid="stStatusWidget"] {
+        display: none !important;
+    }
     
-    /* Ocultar Footer estándar */
-    footer {visibility: hidden; display: none !important;}
-    
-    /* Ocultar botón de Deploy y decoraciones */
-    .stDeployButton {display:none !important;}
-    [data-testid="stDecoration"] {display:none !important;}
-    [data-testid="stStatusWidget"] {display:none !important;}
-    
-    /* Forzar ocultamiento del header nativo de la app */
-    .stApp > header {display: none !important;}
-    
-    /* =========================================
-       2. ESTILOS DE LA APP (TUS COLORES)
-       ========================================= */
+    /* 4. ESTILOS DE LA APP (DISEÑO VILLAFIX) */
     .stApp, .main, .block-container { background-color: #ffffff !important; }
     
     /* Sidebar */
@@ -498,7 +506,7 @@ elif opcion == "Carga":
                                 "precio_venta": new_price_gen, 
                                 "precio_punto": new_price_punto,
                                 "imagen_url": new_img
-                                # NO se actualizan los campos bloqueados para mantener identidad
+                                # NO se actualizan los campos bloqueados
                             }
                             supabase.table("productos").update(datos_update).eq("id", prod_data['id']).execute()
                             
