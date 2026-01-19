@@ -18,86 +18,6 @@ except:
 
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide")
 
-# --- CSS CORREGIDO (OCULTA TODO MENOS LA FLECHITA DEL MENÚ) ---
-st.markdown("""
-    <style>
-    /* 1. OCULTAR BARRA INFERIOR (Manage App) - ESTO SIGUE IGUAL */
-    [data-testid="stToolbar"] {
-        visibility: hidden !important;
-        display: none !important;
-    }
-    
-    /* 2. OCULTAR FOOTER */
-    footer {
-        visibility: hidden !important;
-        display: none !important;
-    }
-    
-    /* 3. OCULTAR MENÚ DE HAMBURGUESA (Los 3 puntos a la derecha) */
-    #MainMenu {
-        visibility: hidden !important;
-        display: none !important;
-    }
-    
-    /* 4. OCULTAR LA BARRA DE COLORES DE ARRIBA (Decoración) */
-    [data-testid="stDecoration"] {
-        visibility: hidden !important;
-        display: none !important;
-    }
-    
-    /* 5. FIX CRÍTICO: ASEGURAR QUE LA FLECHITA (>) SEA VISIBLE */
-    [data-testid="stSidebarCollapsedControl"] {
-        visibility: visible !important;
-        display: block !important;
-        color: #1a222b !important; /* Color oscuro para que se vea */
-    }
-    
-    /* 6. ESTILOS GENERALES */
-    .stApp, .main, .block-container { background-color: #ffffff !important; }
-    
-    /* Sidebar */
-    [data-testid="stSidebar"] { background-color: #1a222b !important; }
-    [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
-    [data-testid="stSidebar"] button { background-color: transparent !important; border: none !important; color: #bdc3c7 !important; text-align: left !important; padding-left: 15px !important; transition: 0.3s; }
-    [data-testid="stSidebar"] button:hover { background-color: rgba(255,255,255,0.05) !important; border-left: 4px solid #3498db !important; color: #ffffff !important; padding-left: 25px !important; }
-    
-    /* Textos */
-    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetricLabel { color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-weight: 700 !important; }
-    div[data-testid="stMetricValue"] { color: #2488bc !important; -webkit-text-fill-color: #2488bc !important; }
-    
-    /* Inputs */
-    input, textarea, .stNumberInput input { background-color: #ffffff !important; color: #000000 !important; -webkit-text-fill-color: #000000 !important; border: 1px solid #888888 !important; caret-color: #000000 !important; }
-    input:disabled { background-color: #e9ecef !important; color: #555555 !important; -webkit-text-fill-color: #555555 !important; }
-    div[data-baseweb="select"] > div { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #888888 !important; }
-    div[data-baseweb="select"] span { color: #000000 !important; -webkit-text-fill-color: #000000 !important; }
-    ul[data-testid="stSelectboxVirtualDropdown"] { background-color: #ffffff !important; }
-    ul[data-testid="stSelectboxVirtualDropdown"] li { background-color: #ffffff !important; color: #000000 !important; }
-    ul[data-testid="stSelectboxVirtualDropdown"] li:hover { background-color: #f0f2f6 !important; }
-    
-    /* Modal */
-    div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
-    
-    /* Tarjetas */
-    div[data-testid="stVerticalBlockBorderWrapper"] { background-color: #ffffff !important; border: 1px solid #ddd !important; padding: 10px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; height: 100% !important; min-height: 350px !important; display: flex; flex-direction: column; justify-content: space-between; }
-    
-    /* Imágenes */
-    div[data-testid="stImage"] { display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; margin: 0 auto !important; height: 160px !important; }
-    div[data-testid="stImage"] img { display: block !important; margin-left: auto !important; margin-right: auto !important; max-height: 150px !important; width: auto !important; object-fit: contain !important; }
-    
-    /* Botones */
-    div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
-    div.stButton button p { color: #ffffff !important; }
-    div.stButton button:disabled, button[kind="secondary"] { background-color: #e74c3c !important; color: white !important; opacity: 1 !important; border: 1px solid #c0392b !important; }
-    div.stButton button:disabled p { color: white !important; }
-    
-    button[data-baseweb="tab"] { color: #000000 !important; }
-    div[data-baseweb="tab-list"] { background-color: #f1f3f4 !important; border-radius: 8px; }
-    .profile-section { text-align: center !important; padding: 20px 0px; }
-    .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
-    [data-testid="stSidebarNav"] {display: none;}
-    </style>
-    """, unsafe_allow_html=True)
-
 # ==============================================================================
 # 2. SISTEMA DE SESIÓN (PERSISTENTE + 12 HORAS)
 # ==============================================================================
@@ -138,18 +58,93 @@ if st.session_state.autenticado:
         time.sleep(2)
         st.rerun()
 
-# --- PANTALLA DE LOGIN (DISEÑO ELEGANTE) ---
+# --- CSS MAESTRO (CORREGIDO: MENÚ VISIBLE, SIN BARRA NEGRA) ---
+st.markdown("""
+    <style>
+    /* 1. ELIMINAR BARRA NEGRA SUPERIOR Y DEJAR SOLO EL BOTÓN DE MENÚ */
+    header {
+        background-color: transparent !important;
+    }
+    
+    /* Ocultar la decoración de colores (arcoíris) de arriba */
+    [data-testid="stDecoration"] {
+        display: none !important;
+    }
+    
+    /* Ocultar el botón "Deploy" y el menú de opciones de la derecha */
+    .stDeployButton {display: none !important;}
+    [data-testid="stToolbar"] {
+        visibility: hidden !important; 
+        right: 2rem; /* Lo movemos lejos por si acaso */
+    }
+    
+    /* ASEGURAR QUE EL BOTÓN DEL MENÚ (IZQUIERDA) SEA VISIBLE Y DE COLOR OSCURO */
+    [data-testid="stSidebarCollapsedControl"] {
+        display: block !important;
+        color: #000000 !important;
+        z-index: 999999 !important;
+    }
+    
+    /* 2. OCULTAR BARRA INFERIOR (Manage App / Footer) */
+    footer {
+        visibility: hidden !important;
+        display: none !important;
+        height: 0px !important;
+    }
+    
+    /* 3. QUITAR ESPACIO BLANCO/NEGRO EXTRA ARRIBA */
+    .main .block-container {
+        padding-top: 2rem !important; /* Subir el contenido */
+    }
+    
+    /* 4. ESTILOS GENERALES (TUS COLORES) */
+    .stApp { background-color: #ffffff !important; }
+    
+    /* Sidebar */
+    [data-testid="stSidebar"] { background-color: #1a222b !important; }
+    [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+    [data-testid="stSidebar"] button { background-color: transparent !important; border: none !important; color: #bdc3c7 !important; text-align: left !important; padding-left: 15px !important; transition: 0.3s; }
+    [data-testid="stSidebar"] button:hover { background-color: rgba(255,255,255,0.05) !important; border-left: 4px solid #3498db !important; color: #ffffff !important; padding-left: 25px !important; }
+    
+    /* Textos */
+    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetricLabel { color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-weight: 700 !important; }
+    div[data-testid="stMetricValue"] { color: #2488bc !important; -webkit-text-fill-color: #2488bc !important; }
+    
+    /* Inputs */
+    input, textarea, .stNumberInput input { background-color: #ffffff !important; color: #000000 !important; -webkit-text-fill-color: #000000 !important; border: 1px solid #888888 !important; caret-color: #000000 !important; }
+    input:disabled { background-color: #e9ecef !important; color: #555555 !important; -webkit-text-fill-color: #555555 !important; }
+    div[data-baseweb="select"] > div { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #888888 !important; }
+    div[data-baseweb="select"] span { color: #000000 !important; -webkit-text-fill-color: #000000 !important; }
+    ul[data-testid="stSelectboxVirtualDropdown"] { background-color: #ffffff !important; }
+    ul[data-testid="stSelectboxVirtualDropdown"] li { background-color: #ffffff !important; color: #000000 !important; }
+    ul[data-testid="stSelectboxVirtualDropdown"] li:hover { background-color: #f0f2f6 !important; }
+    
+    /* Tarjetas */
+    div[data-testid="stVerticalBlockBorderWrapper"] { background-color: #ffffff !important; border: 1px solid #ddd !important; padding: 10px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; height: 100% !important; min-height: 350px !important; display: flex; flex-direction: column; justify-content: space-between; }
+    
+    /* Imágenes */
+    div[data-testid="stImage"] { display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; margin: 0 auto !important; height: 160px !important; }
+    div[data-testid="stImage"] img { display: block !important; margin-left: auto !important; margin-right: auto !important; max-height: 150px !important; width: auto !important; object-fit: contain !important; }
+    
+    /* Botones */
+    div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
+    div.stButton button p { color: #ffffff !important; }
+    div.stButton button:disabled, button[kind="secondary"] { background-color: #e74c3c !important; color: white !important; opacity: 1 !important; border: 1px solid #c0392b !important; }
+    div.stButton button:disabled p { color: white !important; }
+    
+    .profile-section { text-align: center !important; padding: 20px 0px; }
+    .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
+    [data-testid="stSidebarNav"] {display: none;}
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- PANTALLA DE LOGIN ---
 if not st.session_state.autenticado:
-    # CSS específico del login
     st.markdown("""
         <style>
-        .stApp {
-            background-image: url('https://img.freepik.com/free-vector/gradient-technological-background_23-2148884155.jpg?w=1380'); 
-            background-size: cover; background-position: center;
-        }
+        .stApp { background-image: url('https://img.freepik.com/free-vector/gradient-technological-background_23-2148884155.jpg?w=1380'); background-size: cover; background-position: center; }
         .login-title { text-align: center; color: white !important; font-size: 42px; font-weight: 800; text-shadow: 0px 2px 4px rgba(0,0,0,0.5); }
-        [data-testid="stVerticalBlockBorderWrapper"] { background-color: rgba(255, 255, 255, 0.95) !important; border-radius: 20px !important; box-shadow: 0 15px 35px rgba(0,0,0,0.3) !important; padding: 30px !important; }
-        .block-container { padding-top: 10vh !important; }
+        [data-testid="stVerticalBlockBorderWrapper"] { background-color: rgba(255, 255, 255, 0.95) !important; border-radius: 20px !important; box-shadow: 0 15px 35px rgba(0,0,0,0.3) !important; padding: 30px !important; min-height: unset !important; }
         </style>
     """, unsafe_allow_html=True)
 
@@ -213,6 +208,7 @@ def modal_gestion(producto):
         try: locs = [l['nombre'] for l in supabase.table("locales").select("nombre").execute().data]
         except: locs = ["Principal"]
 
+        # Sin st.form
         tecnico = st.selectbox("Técnico", ["Seleccionar"] + techs, key="tec_sal")
         local = st.selectbox("Local", ["Seleccionar"] + locs, key="loc_sal")
         max_val = producto['stock'] if producto['stock'] > 0 else 1
@@ -264,7 +260,6 @@ def modal_nuevo_producto():
     st.markdown("<h3 style='color:black;'>Crear Producto</h3>", unsafe_allow_html=True)
     
     n = st.text_input("Nombre / Modelo *")
-    
     col_cat, col_mar = st.columns(2)
     with col_cat: 
         c = st.selectbox("Categoría *", ["Seleccionar", "Pantallas", "Baterías", "Flex", "Glases", "Otros"])
@@ -362,13 +357,13 @@ with st.sidebar:
         <div style="height:1px; background-color:#3498db; opacity:0.3; margin-bottom:20px;"></div>
     """, unsafe_allow_html=True)
     
-    if st.button(" Dashboard / Stock", use_container_width=True): st.session_state.menu = "Stock"
+    if st.button("📊 Dashboard / Stock", use_container_width=True): st.session_state.menu = "Stock"
     if st.session_state.rol == "Super":
-        if st.button(" Añadir Producto", use_container_width=True): st.session_state.menu = "Carga"
-        if st.button(" Historial", use_container_width=True): st.session_state.menu = "Log"
-        if st.button(" Estadísticas", use_container_width=True): st.session_state.menu = "Stats"
-        if st.button(" Usuarios / Config", use_container_width=True): st.session_state.menu = "Users"
-        if st.button(" Proveedores", use_container_width=True): st.session_state.menu = "Prov"
+        if st.button("📥 Añadir Producto", use_container_width=True): st.session_state.menu = "Carga"
+        if st.button("📋 Historial", use_container_width=True): st.session_state.menu = "Log"
+        if st.button("📈 Estadísticas", use_container_width=True): st.session_state.menu = "Stats"
+        if st.button("👥 Usuarios / Config", use_container_width=True): st.session_state.menu = "Users"
+        if st.button("📞 Proveedores", use_container_width=True): st.session_state.menu = "Prov"
 
     st.markdown("<br><br>", unsafe_allow_html=True)
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
@@ -488,8 +483,8 @@ elif opcion == "Carga":
             with st.container(border=True):
                 st.markdown(f"### Editando: {prod_data['nombre']}")
                 
-                # --- EDICIÓN BLOQUEADA ---
-                # Categoría, Marca y Código fijos (Disabled)
+                # --- EDICIÓN BLOQUEADA PARA CAT/MARCA/COD ---
+                # Usamos disabled=True para que sean de solo lectura
                 col_u1, col_u2 = st.columns(2)
                 with col_u1:
                     st.text_input("Categoría", value=prod_data['categoria'], disabled=True)
@@ -506,7 +501,6 @@ elif opcion == "Carga":
                 stock_add = st.number_input("Cantidad a AÑADIR (+)", min_value=0, value=0, step=1)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
-                # Botón para GUARDAR
                 if st.button("GUARDAR CAMBIOS", type="primary", use_container_width=True):
                     try:
                         with st.spinner('Guardando cambios...'):
@@ -516,7 +510,7 @@ elif opcion == "Carga":
                                 "precio_venta": new_price_gen, 
                                 "precio_punto": new_price_punto,
                                 "imagen_url": new_img
-                                # NO se actualizan los campos bloqueados para mantener identidad
+                                # NO se actualizan los campos bloqueados
                             }
                             supabase.table("productos").update(datos_update).eq("id", prod_data['id']).execute()
                             
