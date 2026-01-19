@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, date
 import time
 
 # ==============================================================================
-# 1. CONFIGURACIÓN: BARRA SIEMPRE ABIERTA (OBLIGATORIO)
+# 1. CONFIGURACIÓN: BARRA LATERAL SIEMPRE ABIERTA (ANCLADA)
 # ==============================================================================
 try:
     url = st.secrets["SUPABASE_URL"]
@@ -16,46 +16,47 @@ except:
     st.error("⚠️ Error crítico de conexión. Verifica tus 'secrets' en Streamlit.")
     st.stop()
 
-# 'initial_sidebar_state="expanded"' es vital aquí
+# 'initial_sidebar_state="expanded"' OBLIGA a que la barra inicie abierta siempre
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide", initial_sidebar_state="expanded")
 
 # ==============================================================================
-# 2. CSS MAESTRO: FIJAR BARRA Y LIMPIEZA
+# 2. CSS MAESTRO: LIMPIEZA Y FIJACIÓN DE MENÚ
 # ==============================================================================
 st.markdown("""
     <style>
-    /* 1. ELIMINAR EL BOTÓN DE CERRAR LA BARRA LATERAL (LA FLECHITA/X) */
-    /* Esto hace que la barra sea imposible de cerrar */
-    [data-testid="stSidebarCollapsedControl"] {
-        display: none !important;
-        visibility: hidden !important;
-    }
-    
-    /* 2. OCULTAR BARRA SUPERIOR (HEADER Y TOOLBAR) */
+    /* 1. OCULTAR LA BARRA DE HERRAMIENTAS DE ARRIBA (Share, GitHub, etc.) */
     [data-testid="stToolbar"] {
         visibility: hidden !important;
         display: none !important;
     }
-    header {
-        background-color: transparent !important;
-    }
+    
+    /* 2. OCULTAR LA DECORACIÓN DE COLORES SUPERIOR */
     [data-testid="stDecoration"] {
         display: none !important;
     }
     
-    /* 3. OCULTAR PIE DE PÁGINA */
-    footer {
+    /* 3. ANCLAR LA BARRA LATERAL (QUITAR EL BOTÓN PARA CERRARLA) */
+    [data-testid="stSidebarCollapsedControl"] {
         display: none !important;
     }
     
-    /* 4. ESTILOS DE LA APP (FONDO BLANCO LIMPIO) */
-    .stApp, .main, .block-container { background-color: #ffffff !important; }
+    /* 4. OCULTAR PIE DE PÁGINA "MADE WITH STREAMLIT" */
+    footer {
+        visibility: hidden !important;
+        display: none !important;
+        height: 0px !important;
+    }
     
-    /* Sidebar (Color Oscuro) */
+    /* 5. ESTILOS DE LA APP (FONDO BLANCO Y LETRAS NEGRAS) */
+    .stApp, .main, .block-container {
+        background-color: #ffffff !important;
+    }
+    
+    /* Sidebar (Color Oscuro Profesional) */
     [data-testid="stSidebar"] { background-color: #1a222b !important; }
     [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
     
-    /* Botones Sidebar */
+    /* Botones del Sidebar */
     [data-testid="stSidebar"] button { 
         background-color: transparent !important; 
         border: none !important; 
@@ -71,36 +72,36 @@ st.markdown("""
         padding-left: 25px !important; 
     }
     
-    /* Textos Generales (Negro) */
+    /* Textos Generales (Negro Fuerte) */
     div[data-testid="stWidgetLabel"] p, label, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetricLabel { 
         color: #000000 !important; 
         -webkit-text-fill-color: #000000 !important; 
         font-weight: 700 !important; 
     }
+    
+    /* Valores de Métricas (Azul) */
     div[data-testid="stMetricValue"] { color: #2488bc !important; -webkit-text-fill-color: #2488bc !important; }
     
-    /* Inputs */
+    /* Inputs (Cajas de texto) */
     input, textarea, .stNumberInput input { 
         background-color: #ffffff !important; 
         color: #000000 !important; 
         -webkit-text-fill-color: #000000 !important; 
         border: 1px solid #888888 !important; 
     }
-    /* Inputs Bloqueados (Gris) */
+    /* Inputs Bloqueados (Gris claro) */
     input:disabled { 
         background-color: #e9ecef !important; 
         color: #555555 !important; 
         -webkit-text-fill-color: #555555 !important; 
     }
     
-    /* Tarjetas y Modales */
-    div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
+    /* Tarjetas */
     div[data-testid="stVerticalBlockBorderWrapper"] { 
         background-color: #ffffff !important; 
         border: 1px solid #ddd !important; 
         padding: 10px !important; 
         box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; 
-        height: 100% !important; 
         display: flex; flex-direction: column; justify-content: space-between; 
     }
     
@@ -108,11 +109,16 @@ st.markdown("""
     div[data-testid="stImage"] { display: flex !important; justify-content: center !important; height: 160px !important; }
     div[data-testid="stImage"] img { max-height: 150px !important; width: auto !important; object-fit: contain !important; }
     
-    /* Botones */
-    div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
+    /* Botones Principales */
+    div.stButton button { 
+        background-color: #2488bc !important; 
+        color: #ffffff !important; 
+        border: none !important; 
+        font-weight: bold !important; 
+        width: 100% !important; 
+        margin-top: auto !important; 
+    }
     div.stButton button p { color: #ffffff !important; }
-    div.stButton button:disabled, button[kind="secondary"] { background-color: #e74c3c !important; color: white !important; opacity: 1 !important; border: 1px solid #c0392b !important; }
-    div.stButton button:disabled p { color: white !important; }
     
     /* Perfil */
     .profile-section { text-align: center !important; padding: 20px 0px; }
@@ -122,7 +128,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 3. SISTEMA DE SESIÓN (12H + ANTI-REFRESCO)
+# 3. SISTEMA DE SESIÓN (12 HORAS)
 # ==============================================================================
 SESSION_DURATION = 12 * 3600 
 
@@ -151,22 +157,35 @@ if not st.session_state.autenticado:
 
 # Verificar tiempo
 if st.session_state.autenticado:
-    if (time.time() - st.session_state.login_time) > SESSION_DURATION:
+    current_time = time.time()
+    if (current_time - st.session_state.login_time) > SESSION_DURATION:
         st.session_state.autenticado = False
         st.query_params.clear()
         st.rerun()
 
-# --- PANTALLA DE LOGIN ---
+# --- LOGIN (DISEÑO ELEGANTE) ---
 if not st.session_state.autenticado:
-    st.markdown("<br><br><h1 style='text-align:center; color:#2488bc;'>VILLAFIX SYSTEM</h1>", unsafe_allow_html=True)
-    c1, c2, c3 = st.columns([1, 1.5, 1])
+    st.markdown("""
+        <style>
+        .stApp { 
+            background-image: url('https://img.freepik.com/free-vector/gradient-technological-background_23-2148884155.jpg?w=1380'); 
+            background-size: cover; background-position: center; 
+        }
+        .login-title { text-align: center; color: white !important; font-size: 42px; font-weight: 800; text-shadow: 0px 2px 4px rgba(0,0,0,0.5); }
+        [data-testid="stVerticalBlockBorderWrapper"] { background-color: rgba(255, 255, 255, 0.95) !important; border-radius: 20px !important; box-shadow: 0 15px 35px rgba(0,0,0,0.3) !important; padding: 30px !important; }
+        .block-container { padding-top: 10vh !important; }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<h1 class="login-title">VILLAFIX SYSTEM</h1>', unsafe_allow_html=True)
+    c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
         with st.container(border=True):
-            st.markdown("<h3 style='text-align:center;'>Iniciar Sesión</h3>", unsafe_allow_html=True)
+            st.markdown('<h3 style="text-align:center; color:#333;">Acceso Seguro</h3>', unsafe_allow_html=True)
             with st.form("login_form"):
-                u = st.text_input("Usuario")
-                p = st.text_input("Contraseña", type="password")
-                submit = st.form_submit_button("INGRESAR", use_container_width=True)
+                u = st.text_input("👤 Usuario")
+                p = st.text_input("🔒 Contraseña", type="password")
+                submit = st.form_submit_button("➡️ INGRESAR", use_container_width=True)
             
             if submit:
                 try:
@@ -179,7 +198,7 @@ if not st.session_state.autenticado:
                         st.query_params["user_session"] = u
                         st.rerun()
                     else:
-                        st.error("Credenciales incorrectas")
+                        st.error("❌ Credenciales incorrectas")
                 except:
                     st.error("Error de conexión")
     st.stop()
@@ -201,7 +220,7 @@ def es_coincidencia(busqueda, texto_db):
     return False
 
 # ==============================================================================
-# 5. MODALES (VENTANAS EMERGENTES)
+# 5. MODALES (GUARDADO CON CLIC)
 # ==============================================================================
 @st.dialog("Gestionar Inventario")
 def modal_gestion(producto):
@@ -304,7 +323,7 @@ def modal_borrar_local(nombre):
         st.rerun()
 
 # ==============================================================================
-# 6. SIDEBAR (FIJA Y ABIERTA)
+# 6. SIDEBAR (FIJA Y ANCLADA)
 # ==============================================================================
 with st.sidebar:
     st.markdown(f"""
