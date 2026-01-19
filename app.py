@@ -2,69 +2,75 @@ import streamlit as st
 from supabase import create_client
 import pandas as pd
 import plotly.express as px
+import streamlit.components.v1 as components
 from datetime import datetime, timedelta, date
 import time
 
 # ==============================================================================
-# 1. CONFIGURACIÓN: BARRA SIEMPRE ABIERTA
+# 1. CONFIGURACIÓN
 # ==============================================================================
 try:
     url = st.secrets["SUPABASE_URL"]
     key = st.secrets["SUPABASE_KEY"]
     supabase = create_client(url, key)
 except:
-    st.error("⚠️ Error crítico de conexión. Verifica tus 'secrets' en Streamlit.")
+    st.error("⚠️ Error crítico de conexión.")
     st.stop()
 
-# ESTO OBLIGA A QUE LA BARRA ARRANQUE ABIERTA
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide", initial_sidebar_state="expanded")
 
 # ==============================================================================
-# 2. CSS DE FRANCOTIRADOR: SOLO MATA LA FLECHA <<
+# 2. JAVASCRIPT INTELIGENTE (DETECTA EL TAB)
+# ==============================================================================
+# Este script escucha la tecla TAB. Si no estás escribiendo, abre/cierra la barra.
+js_code = """
+<script>
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Tab') {
+            // Verificar si el usuario está escribiendo en un input
+            const activeTag = document.activeElement.tagName.toLowerCase();
+            if (activeTag === 'input' || activeTag === 'textarea') {
+                return; // Si escribe, deja que el TAB funcione normal
+            }
+            
+            // Si no escribe, evita el salto y busca el botón de la barra
+            e.preventDefault();
+            const collapseBtn = window.parent.document.querySelector('[data-testid="stSidebarCollapsedControl"]');
+            if (collapseBtn) {
+                collapseBtn.click();
+            }
+        }
+    });
+</script>
+"""
+components.html(js_code, height=0, width=0)
+
+# ==============================================================================
+# 3. CSS MAESTRO: OCULTAR FLECHAS VISUALMENTE PERO DEJARLAS FUNCIONALES
 # ==============================================================================
 st.markdown("""
     <style>
-    /* -----------------------------------------------------------------------
-       1. ELIMINAR SOLO LA FLECHA DOBLE (<<) DE ARRIBA A LA DERECHA
-       ----------------------------------------------------------------------- */
-    /* Este selector busca especificamente el botón de "cabecera" dentro del sidebar */
-    section[data-testid="stSidebar"] button[kind="header"] {
-        display: none !important;
-        visibility: hidden !important;
-    }
-    
-    /* Por si acaso, ocultamos el contenedor del control de colapso */
+    /* 1. TRUCO DE MAGIA: HACER LA FLECHA INVISIBLE PERO CLICKEABLE POR CODIGO */
     [data-testid="stSidebarCollapsedControl"] {
-        display: none !important;
-    }
-
-    /* -----------------------------------------------------------------------
-       2. LIMPIEZA VISUAL (Ocultar Toolbar de arriba y Footer de abajo)
-       ----------------------------------------------------------------------- */
-    [data-testid="stToolbar"] {
-        visibility: hidden !important;
-        display: none !important;
-    }
-    header {
-        background-color: transparent !important;
-    }
-    [data-testid="stDecoration"] {
-        display: none !important;
-    }
-    footer {
-        display: none !important;
+        opacity: 0 !important;        /* Invisible al ojo */
+        width: 0px !important;        /* Sin ancho visual */
+        margin-left: -20px;           /* Moverlo fuera de la vista */
     }
     
-    /* -----------------------------------------------------------------------
-       3. ESTILOS DE LA APP
-       ----------------------------------------------------------------------- */
+    /* 2. LIMPIEZA GENERAL */
+    [data-testid="stToolbar"] { display: none !important; }
+    header { background-color: transparent !important; }
+    [data-testid="stDecoration"] { display: none !important; }
+    footer { display: none !important; }
+    
+    /* 3. ESTILOS APP */
     .stApp, .main, .block-container { background-color: #ffffff !important; }
     
-    /* Sidebar (Color Oscuro) */
+    /* 4. SIDEBAR OSCURO */
     [data-testid="stSidebar"] { background-color: #1a222b !important; }
     [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
     
-    /* 4. ESTILO DE TUS BOTONES DEL MENÚ (Para asegurar que SE VEAN) */
+    /* 5. BOTONES DEL MENÚ (Asegurar que se vean bien) */
     [data-testid="stSidebar"] button { 
         background-color: transparent !important; 
         border: none !important; 
@@ -72,9 +78,7 @@ st.markdown("""
         text-align: left !important; 
         padding-left: 15px !important; 
         transition: 0.3s;
-        /* Esto asegura que tus botones NO se oculten */
-        display: block !important; 
-        visibility: visible !important;
+        display: block !important;
     }
     [data-testid="stSidebar"] button:hover { 
         background-color: rgba(255,255,255,0.05) !important; 
@@ -83,46 +87,28 @@ st.markdown("""
         padding-left: 25px !important; 
     }
     
-    /* Textos Generales */
+    /* 6. ESTILOS GENERALES */
     div[data-testid="stWidgetLabel"] p, label, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetricLabel { 
-        color: #000000 !important; 
-        -webkit-text-fill-color: #000000 !important; 
-        font-weight: 700 !important; 
+        color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-weight: 700 !important; 
     }
     div[data-testid="stMetricValue"] { color: #2488bc !important; -webkit-text-fill-color: #2488bc !important; }
     
-    /* Inputs */
     input, textarea, .stNumberInput input { 
-        background-color: #ffffff !important; 
-        color: #000000 !important; 
+        background-color: #ffffff !important; color: #000000 !important; border: 1px solid #888888 !important; 
         -webkit-text-fill-color: #000000 !important; 
-        border: 1px solid #888888 !important; 
     }
-    input:disabled { 
-        background-color: #e9ecef !important; 
-        color: #555555 !important; 
-        -webkit-text-fill-color: #555555 !important; 
-    }
+    input:disabled { background-color: #e9ecef !important; color: #555555 !important; }
     
-    /* UI General */
-    div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
     div[data-testid="stVerticalBlockBorderWrapper"] { 
-        background-color: #ffffff !important; 
-        border: 1px solid #ddd !important; 
-        padding: 10px !important; 
+        background-color: #ffffff !important; border: 1px solid #ddd !important; padding: 10px !important; 
         box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; 
-        display: flex; flex-direction: column; justify-content: space-between; 
     }
-    div[data-testid="stImage"] { display: flex !important; justify-content: center !important; height: 160px !important; }
-    div[data-testid="stImage"] img { max-height: 150px !important; width: auto !important; object-fit: contain !important; }
     
-    /* Botones de Acción */
     div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
     div.stButton button p { color: #ffffff !important; }
     div.stButton button:disabled, button[kind="secondary"] { background-color: #e74c3c !important; color: white !important; opacity: 1 !important; border: 1px solid #c0392b !important; }
     div.stButton button:disabled p { color: white !important; }
     
-    /* Perfil */
     .profile-section { text-align: center !important; padding: 20px 0px; }
     .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
     [data-testid="stSidebarNav"] {display: none;}
@@ -130,7 +116,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 3. SISTEMA DE SESIÓN
+# 4. SISTEMA DE SESIÓN
 # ==============================================================================
 SESSION_DURATION = 12 * 3600 
 
@@ -191,7 +177,7 @@ if not st.session_state.autenticado:
     st.stop()
 
 # ==============================================================================
-# 4. FUNCIONES
+# 5. FUNCIONES
 # ==============================================================================
 def es_coincidencia(busqueda, texto_db):
     if not busqueda: return True 
@@ -207,7 +193,7 @@ def es_coincidencia(busqueda, texto_db):
     return False
 
 # ==============================================================================
-# 5. MODALES
+# 6. MODALES
 # ==============================================================================
 @st.dialog("Gestionar Inventario")
 def modal_gestion(producto):
@@ -307,7 +293,7 @@ def modal_borrar_local(nombre):
         st.rerun()
 
 # ==============================================================================
-# 6. SIDEBAR (MENÚ OK - FLECHA ELIMINADA)
+# 7. SIDEBAR
 # ==============================================================================
 with st.sidebar:
     st.markdown(f"""
@@ -334,7 +320,7 @@ with st.sidebar:
         st.rerun()
 
 # ==============================================================================
-# 7. VISTAS PRINCIPALES
+# 8. VISTAS PRINCIPALES
 # ==============================================================================
 opcion = st.session_state.menu
 
