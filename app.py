@@ -407,7 +407,7 @@ with st.sidebar:
         <div style="height:1px; background-color:#3498db; opacity:0.3; margin-bottom:20px;"></div>
     """, unsafe_allow_html=True)
     
-    if st.button("📊 Dashboard / Stock", use_container_width=True): st.session_state.menu = "Stock"
+    if st.button(" Dashboard / Stock", use_container_width=True): st.session_state.menu = "Stock"
     if st.session_state.rol == "Super":
         if st.button(" Añadir Producto", use_container_width=True): st.session_state.menu = "Carga"
         if st.button(" Historial", use_container_width=True): st.session_state.menu = "Log"
