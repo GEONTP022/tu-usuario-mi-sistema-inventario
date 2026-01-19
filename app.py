@@ -6,89 +6,20 @@ from datetime import datetime, timedelta, date
 import time
 
 # ==============================================================================
-# 1. CONFIGURACIÓN INICIAL
+# 1. CONFIGURACIÓN Y CONEXIÓN
 # ==============================================================================
 try:
     url = st.secrets["SUPABASE_URL"]
     key = st.secrets["SUPABASE_KEY"]
     supabase = create_client(url, key)
 except:
-    st.error("⚠️ Error de conexión. Revisa los secrets.")
+    st.error("⚠️ Error de conexión.")
     st.stop()
 
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide")
 
 # ==============================================================================
-# 2. CSS QUIRÚRGICO (SOLUCIÓN REAL)
-# ==============================================================================
-st.markdown("""
-    <style>
-    /* 1. OCULTAR BARRA DE COLORES SUPERIOR */
-    [data-testid="stDecoration"] {
-        display: none !important;
-    }
-    
-    /* 2. OCULTAR EL BOTÓN DE MENU DE LA DERECHA (LOS 3 PUNTOS) Y DEPLOY */
-    [data-testid="stToolbar"] {
-        visibility: hidden !important;
-        display: none !important;
-    }
-    .stDeployButton {
-        display: none !important;
-    }
-    
-    /* 3. HACER TRANSPARENTE LA CABECERA PERO MANTENER LA FLECHA */
-    header {
-        background-color: transparent !important;
-    }
-    
-    /* 4. ASEGURAR QUE LA FLECHA DEL MENÚ (IZQUIERDA) SE VEA */
-    [data-testid="stSidebarCollapsedControl"] {
-        display: block !important;
-        visibility: visible !important;
-        color: #000000 !important;
-        background-color: white !important;
-        border-radius: 50%;
-        padding: 2px;
-    }
-    
-    /* 5. OCULTAR FOOTER "MADE WITH STREAMLIT" */
-    footer {
-        visibility: hidden !important;
-        display: none !important;
-        height: 0px !important;
-    }
-    
-    /* 6. SUBIR EL CONTENIDO PARA QUITAR ESPACIO VACÍO ARRIBA */
-    .block-container {
-        padding-top: 1rem !important;
-    }
-    
-    /* 7. ESTILOS GENERALES */
-    .stApp { background-color: #ffffff !important; }
-    
-    /* Sidebar */
-    [data-testid="stSidebar"] { background-color: #1a222b !important; }
-    [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
-    [data-testid="stSidebar"] button { background-color: transparent !important; border: none !important; color: #bdc3c7 !important; text-align: left !important; padding-left: 15px !important; transition: 0.3s; }
-    [data-testid="stSidebar"] button:hover { background-color: rgba(255,255,255,0.05) !important; border-left: 4px solid #3498db !important; color: #ffffff !important; padding-left: 25px !important; }
-    
-    /* Tarjetas y Textos */
-    div[data-testid="stVerticalBlockBorderWrapper"] { background-color: #ffffff !important; border: 1px solid #ddd !important; padding: 10px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; }
-    div[data-testid="stMetricValue"] { color: #2488bc !important; }
-    div[data-testid="stWidgetLabel"] p, label, .stMarkdown h1, h2, h3 { color: #000000 !important; }
-    
-    /* Inputs */
-    input, textarea { background-color: #ffffff !important; color: black !important; border: 1px solid #ccc !important; }
-    input:disabled { background-color: #f0f2f6 !important; color: #555 !important; }
-    
-    /* Botones */
-    div.stButton button { background-color: #2488bc !important; color: white !important; border: none !important; font-weight: bold; }
-    </style>
-    """, unsafe_allow_html=True)
-
-# ==============================================================================
-# 3. LÓGICA DE SESIÓN
+# 2. SISTEMA DE SESIÓN
 # ==============================================================================
 SESSION_DURATION = 12 * 3600 
 
@@ -115,21 +46,89 @@ if not st.session_state.autenticado:
         except:
             pass
 
-# Verificar tiempo
 if st.session_state.autenticado:
     if (time.time() - st.session_state.login_time) > SESSION_DURATION:
         st.session_state.autenticado = False
         st.query_params.clear()
         st.rerun()
 
-# --- LOGIN ---
+# --- CSS DE EMERGENCIA (RESTAURACIÓN VISUAL) ---
+st.markdown("""
+    <style>
+    /* 1. FORZAR MODO CLARO (FONDO BLANCO / LETRAS NEGRAS) */
+    .stApp, .main, .block-container {
+        background-color: #ffffff !important;
+        background-image: none !important; /* Quita el fondo del login si se quedó pegado */
+    }
+    
+    /* 2. REPARAR TEXTOS INVISIBLES */
+    h1, h2, h3, h4, h5, p, label, div, span, .stMarkdown {
+        color: #000000 !important; /* Texto NEGRO obligatorio */
+        text-shadow: none !important;
+    }
+    
+    /* 3. EXCEPCIONES: BOTONES Y SIDEBAR (LETRAS BLANCAS) */
+    [data-testid="stSidebar"] * { color: #ffffff !important; }
+    div.stButton button, div.stButton button p { color: #ffffff !important; }
+    div.stButton button:disabled p { color: white !important; }
+    
+    /* 4. BARRA SUPERIOR (SOLUCIÓN SEGURA) */
+    /* No la ocultamos del todo para no perder el menú, solo la limpiamos */
+    header { background-color: #ffffff !important; }
+    [data-testid="stDecoration"] { display: none !important; } /* Ocultar arcoíris */
+    .stDeployButton { display: none !important; } /* Ocultar botón deploy */
+    
+    /* 5. OCULTAR FOOTER */
+    footer { display: none !important; }
+    
+    /* 6. ESTILOS DE TARJETAS (VILLAFIX ORIGINAL) */
+    div[data-testid="stVerticalBlockBorderWrapper"] { 
+        background-color: #ffffff !important; 
+        border: 1px solid #ddd !important; 
+        padding: 10px !important; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; 
+    }
+    
+    /* 7. ESTILOS SIDEBAR */
+    [data-testid="stSidebar"] { background-color: #1a222b !important; }
+    [data-testid="stSidebar"] button { background-color: transparent !important; border: none !important; color: #bdc3c7 !important; text-align: left !important; padding-left: 15px !important; }
+    [data-testid="stSidebar"] button:hover { background-color: rgba(255,255,255,0.05) !important; border-left: 4px solid #3498db !important; color: #ffffff !important; padding-left: 25px !important; }
+    
+    /* 8. BOTONES */
+    div.stButton button { background-color: #2488bc !important; border: none !important; font-weight: bold; }
+    
+    /* 9. INPUTS */
+    input, textarea { border: 1px solid #ccc !important; color: black !important; }
+    input:disabled { background-color: #e9ecef !important; color: #555 !important; }
+    
+    /* PERFIL */
+    .profile-section { text-align: center !important; padding: 20px 0px; }
+    .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
+    [data-testid="stSidebarNav"] {display: none;}
+    </style>
+    """, unsafe_allow_html=True)
+
+# ==============================================================================
+# 3. LOGIN (DISEÑO AISLADO)
+# ==============================================================================
 if not st.session_state.autenticado:
-    st.markdown("""<style>.stApp {background-image: url('https://img.freepik.com/free-vector/gradient-technological-background_23-2148884155.jpg?w=1380'); background-size: cover;}</style>""", unsafe_allow_html=True)
-    st.markdown("<br><br><h1 style='text-align:center; color:white; text-shadow: 2px 2px 4px #000000;'>VILLAFIX SYSTEM</h1>", unsafe_allow_html=True)
+    # Este CSS SOLO afecta al momento del Login
+    st.markdown("""
+        <style>
+        .stApp { 
+            background-image: url('https://img.freepik.com/free-vector/gradient-technological-background_23-2148884155.jpg?w=1380') !important; 
+            background-size: cover !important; 
+        }
+        /* Solo el título del login debe ser blanco */
+        h1 { color: white !important; text-shadow: 0px 2px 4px rgba(0,0,0,0.5) !important; }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<br><h1 style='text-align:center;'>VILLAFIX SYSTEM</h1>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
         with st.container(border=True):
-            st.markdown("<h3 style='text-align:center;'>Acceso Seguro</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='text-align:center; color:black !important;'>Acceso Seguro</h3>", unsafe_allow_html=True)
             with st.form("login_form"):
                 u = st.text_input("Usuario")
                 p = st.text_input("Contraseña", type="password")
@@ -146,13 +145,13 @@ if not st.session_state.autenticado:
                         st.query_params["user_session"] = u
                         st.rerun()
                     else:
-                        st.error("Credenciales incorrectas")
+                        st.error("❌ Credenciales incorrectas")
                 except:
                     st.error("Error de conexión")
     st.stop()
 
 # ==============================================================================
-# 4. FUNCIONES Y SIDEBAR
+# 4. FUNCIONES DE AYUDA
 # ==============================================================================
 def es_coincidencia(busqueda, texto_db):
     if not busqueda: return True 
@@ -167,7 +166,9 @@ def es_coincidencia(busqueda, texto_db):
     if b_nospace in t_nospace: return True
     return False
 
-# MODALES
+# ==============================================================================
+# 5. MODALES
+# ==============================================================================
 @st.dialog("Gestionar Inventario")
 def modal_gestion(producto):
     st.markdown(f"### {producto['nombre']}")
@@ -180,7 +181,7 @@ def modal_gestion(producto):
         try: locs = [l['nombre'] for l in supabase.table("locales").select("nombre").execute().data]
         except: locs = ["Principal"]
 
-        # Sin form para evitar enter
+        # Sin form (Clic guarda)
         t = st.selectbox("Técnico", ["Seleccionar"] + techs, key="ts")
         l = st.selectbox("Local", ["Seleccionar"] + locs, key="ls")
         c = st.number_input("Cantidad", 1, max(1, producto['stock']), 1, key="cs")
@@ -236,7 +237,7 @@ def modal_borrar(p):
 
 # SIDEBAR
 with st.sidebar:
-    st.markdown(f"<div class='profile-section'><img src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png' class='profile-pic'><p style='color:white;text-align:center;'>{st.session_state.user.upper()}</p></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='profile-section'><img src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png' class='profile-pic'><p style='color:white !important;text-align:center;'>{st.session_state.user.upper()}</p></div>", unsafe_allow_html=True)
     if st.button("📊 Stock"): st.session_state.menu = "Stock"
     if st.session_state.rol == "Super":
         if st.button("📥 Carga/Edit"): st.session_state.menu = "Carga"
@@ -251,7 +252,7 @@ with st.sidebar:
         st.rerun()
 
 # ==============================================================================
-# 5. VISTAS
+# 6. VISTAS
 # ==============================================================================
 opcion = st.session_state.menu
 
@@ -301,6 +302,7 @@ elif opcion == "Carga":
         p = prods[lista.index(sel)]
         with st.container(border=True):
             st.markdown(f"### {p['nombre']}")
+            # BLOQUEO DE EDICIÓN
             c1, c2 = st.columns(2)
             with c1:
                 st.text_input("Categoría", p['categoria'], disabled=True)
