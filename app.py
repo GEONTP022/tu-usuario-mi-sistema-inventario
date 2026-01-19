@@ -16,21 +16,31 @@ except:
     st.error("⚠️ Error crítico de conexión. Verifica tus 'secrets' en Streamlit.")
     st.stop()
 
-# Esto obliga a que la barra lateral arranque abierta
+# ESTO OBLIGA A QUE LA BARRA ARRANQUE ABIERTA
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide", initial_sidebar_state="expanded")
 
 # ==============================================================================
-# 2. CSS CORRECTO (BORRA FLECHA << PERO DEJA LOS BOTONES)
+# 2. CSS DE FRANCOTIRADOR: SOLO MATA LA FLECHA <<
 # ==============================================================================
 st.markdown("""
     <style>
-    /* 1. ELIMINAR SOLO LA FLECHA DE COLAPSAR (<<) */
-    [data-testid="stSidebarCollapsedControl"] {
+    /* -----------------------------------------------------------------------
+       1. ELIMINAR SOLO LA FLECHA DOBLE (<<) DE ARRIBA A LA DERECHA
+       ----------------------------------------------------------------------- */
+    /* Este selector busca especificamente el botón de "cabecera" dentro del sidebar */
+    section[data-testid="stSidebar"] button[kind="header"] {
         display: none !important;
         visibility: hidden !important;
     }
     
-    /* 2. OCULTAR BARRA DE HERRAMIENTAS SUPERIOR (SHARE, GITHUB, ETC) */
+    /* Por si acaso, ocultamos el contenedor del control de colapso */
+    [data-testid="stSidebarCollapsedControl"] {
+        display: none !important;
+    }
+
+    /* -----------------------------------------------------------------------
+       2. LIMPIEZA VISUAL (Ocultar Toolbar de arriba y Footer de abajo)
+       ----------------------------------------------------------------------- */
     [data-testid="stToolbar"] {
         visibility: hidden !important;
         display: none !important;
@@ -41,20 +51,20 @@ st.markdown("""
     [data-testid="stDecoration"] {
         display: none !important;
     }
-    
-    /* 3. OCULTAR PIE DE PÁGINA */
     footer {
         display: none !important;
     }
     
-    /* 4. ESTILOS DE LA APP (FONDO BLANCO) */
+    /* -----------------------------------------------------------------------
+       3. ESTILOS DE LA APP
+       ----------------------------------------------------------------------- */
     .stApp, .main, .block-container { background-color: #ffffff !important; }
     
-    /* 5. SIDEBAR (COLOR OSCURO) - ESTILOS SEGUROS */
+    /* Sidebar (Color Oscuro) */
     [data-testid="stSidebar"] { background-color: #1a222b !important; }
     [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
     
-    /* ESTILO DE TUS BOTONES DEL MENÚ (AQUÍ ESTABA EL ERROR ANTES, YA CORREGIDO) */
+    /* 4. ESTILO DE TUS BOTONES DEL MENÚ (Para asegurar que SE VEAN) */
     [data-testid="stSidebar"] button { 
         background-color: transparent !important; 
         border: none !important; 
@@ -62,7 +72,8 @@ st.markdown("""
         text-align: left !important; 
         padding-left: 15px !important; 
         transition: 0.3s;
-        display: block !important; /* Asegura que se muestren */
+        /* Esto asegura que tus botones NO se oculten */
+        display: block !important; 
         visibility: visible !important;
     }
     [data-testid="stSidebar"] button:hover { 
@@ -72,7 +83,7 @@ st.markdown("""
         padding-left: 25px !important; 
     }
     
-    /* RESTO DE ESTILOS (Textos, Inputs, etc.) */
+    /* Textos Generales */
     div[data-testid="stWidgetLabel"] p, label, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetricLabel { 
         color: #000000 !important; 
         -webkit-text-fill-color: #000000 !important; 
@@ -80,6 +91,7 @@ st.markdown("""
     }
     div[data-testid="stMetricValue"] { color: #2488bc !important; -webkit-text-fill-color: #2488bc !important; }
     
+    /* Inputs */
     input, textarea, .stNumberInput input { 
         background-color: #ffffff !important; 
         color: #000000 !important; 
@@ -92,12 +104,7 @@ st.markdown("""
         -webkit-text-fill-color: #555555 !important; 
     }
     
-    div[data-baseweb="select"] > div { background-color: #ffffff !important; border: 1px solid #888888 !important; }
-    div[data-baseweb="select"] span { color: #000000 !important; }
-    ul[data-testid="stSelectboxVirtualDropdown"] { background-color: #ffffff !important; }
-    ul[data-testid="stSelectboxVirtualDropdown"] li { background-color: #ffffff !important; color: #000000 !important; }
-    ul[data-testid="stSelectboxVirtualDropdown"] li:hover { background-color: #f0f2f6 !important; }
-    
+    /* UI General */
     div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
     div[data-testid="stVerticalBlockBorderWrapper"] { 
         background-color: #ffffff !important; 
@@ -109,12 +116,13 @@ st.markdown("""
     div[data-testid="stImage"] { display: flex !important; justify-content: center !important; height: 160px !important; }
     div[data-testid="stImage"] img { max-height: 150px !important; width: auto !important; object-fit: contain !important; }
     
-    /* Botones generales */
+    /* Botones de Acción */
     div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
     div.stButton button p { color: #ffffff !important; }
     div.stButton button:disabled, button[kind="secondary"] { background-color: #e74c3c !important; color: white !important; opacity: 1 !important; border: 1px solid #c0392b !important; }
     div.stButton button:disabled p { color: white !important; }
     
+    /* Perfil */
     .profile-section { text-align: center !important; padding: 20px 0px; }
     .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
     [data-testid="stSidebarNav"] {display: none;}
@@ -299,7 +307,7 @@ def modal_borrar_local(nombre):
         st.rerun()
 
 # ==============================================================================
-# 6. SIDEBAR (BOTONES VISIBLES, FLECHA OCULTA)
+# 6. SIDEBAR (MENÚ OK - FLECHA ELIMINADA)
 # ==============================================================================
 with st.sidebar:
     st.markdown(f"""
@@ -401,7 +409,6 @@ elif opcion == "Carga":
         p = mapa[sel]
         with st.container(border=True):
             st.markdown(f"### Editando: {p['nombre']}")
-            
             c1, c2 = st.columns(2)
             with c1:
                 st.text_input("Categoría (Bloqueado)", p['categoria'], disabled=True)
@@ -411,11 +418,9 @@ elif opcion == "Carga":
                 npg = st.number_input("Precio Gral (S/)", value=float(p['precio_venta']), min_value=0.0, step=0.5)
                 npp = st.number_input("Precio Punto (S/)", value=float(p.get('precio_punto') or 0.0), min_value=0.0, step=0.5)
                 nimg = st.text_input("URL Imagen", value=p.get('imagen_url',''))
-            
             st.divider()
             st.markdown(f"**Stock Actual:** {p['stock']}")
             mas = st.number_input("Cantidad a AÑADIR (+)", min_value=0, step=1)
-            
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("GUARDAR CAMBIOS", type="primary", use_container_width=True):
                 with st.spinner('Guardando...'):
@@ -425,7 +430,6 @@ elif opcion == "Carga":
                 st.success("✅ Guardado")
                 time.sleep(0.5)
                 st.rerun()
-        
         st.markdown("---")
         if st.button("🗑️ ELIMINAR PRODUCTO", type="primary"): modal_borrar(p)
 
