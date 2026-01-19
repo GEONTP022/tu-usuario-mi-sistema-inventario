@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, date
 import time
 
 # ==============================================================================
-# 1. CONFIGURACIÓN: BARRA SIEMPRE ABIERTA (OBLIGATORIO)
+# 1. CONFIGURACIÓN: BARRA SIEMPRE ABIERTA
 # ==============================================================================
 try:
     url = st.secrets["SUPABASE_URL"]
@@ -16,61 +16,54 @@ except:
     st.error("⚠️ Error crítico de conexión. Verifica tus 'secrets' en Streamlit.")
     st.stop()
 
-# ESTO OBLIGA A QUE ARRANQUE ABIERTA
+# Esto obliga a que la barra lateral arranque abierta
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide", initial_sidebar_state="expanded")
 
 # ==============================================================================
-# 2. CSS "CANDADO": BLOQUEA LA BARRA LATERAL PARA SIEMPRE
+# 2. CSS CORRECTO (BORRA FLECHA << PERO DEJA LOS BOTONES)
 # ==============================================================================
 st.markdown("""
     <style>
-    /* -----------------------------------------------------------------------
-       1. ELIMINACIÓN AGRESIVA DEL BOTÓN DE CERRAR (<<)
-       ----------------------------------------------------------------------- */
-    
-    /* Opción A: Ocultar el control de colapso nativo */
+    /* 1. ELIMINAR SOLO LA FLECHA DE COLAPSAR (<<) */
     [data-testid="stSidebarCollapsedControl"] {
         display: none !important;
         visibility: hidden !important;
-        pointer-events: none !important; /* HACE QUE NO SE PUEDA CLICKEAR */
     }
     
-    /* Opción B: Ocultar cualquier botón en la cabecera del sidebar */
-    section[data-testid="stSidebar"] div[class*="st-"] > button {
+    /* 2. OCULTAR BARRA DE HERRAMIENTAS SUPERIOR (SHARE, GITHUB, ETC) */
+    [data-testid="stToolbar"] {
+        visibility: hidden !important;
         display: none !important;
-        width: 0px !important;
+    }
+    header {
+        background-color: transparent !important;
+    }
+    [data-testid="stDecoration"] {
+        display: none !important;
     }
     
-    /* Opción C: Ocultar el contenedor del botón de cierre específicamente */
-    div[data-testid="stSidebarUserContent"] + div { 
-        display: none !important; 
+    /* 3. OCULTAR PIE DE PÁGINA */
+    footer {
+        display: none !important;
     }
-
-    /* -----------------------------------------------------------------------
-       2. LIMPIEZA VISUAL (HEADER, TOOLBAR, FOOTER)
-       ----------------------------------------------------------------------- */
-    [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
-    header { background-color: transparent !important; }
-    [data-testid="stDecoration"] { display: none !important; }
-    footer { display: none !important; }
     
-    /* -----------------------------------------------------------------------
-       3. ESTILOS DE LA APP (DISEÑO BLANCO LIMPIO)
-       ----------------------------------------------------------------------- */
+    /* 4. ESTILOS DE LA APP (FONDO BLANCO) */
     .stApp, .main, .block-container { background-color: #ffffff !important; }
     
-    /* Sidebar (Color Oscuro) */
+    /* 5. SIDEBAR (COLOR OSCURO) - ESTILOS SEGUROS */
     [data-testid="stSidebar"] { background-color: #1a222b !important; }
     [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
     
-    /* Botones Sidebar */
+    /* ESTILO DE TUS BOTONES DEL MENÚ (AQUÍ ESTABA EL ERROR ANTES, YA CORREGIDO) */
     [data-testid="stSidebar"] button { 
         background-color: transparent !important; 
         border: none !important; 
         color: #bdc3c7 !important; 
         text-align: left !important; 
         padding-left: 15px !important; 
-        transition: 0.3s; 
+        transition: 0.3s;
+        display: block !important; /* Asegura que se muestren */
+        visibility: visible !important;
     }
     [data-testid="stSidebar"] button:hover { 
         background-color: rgba(255,255,255,0.05) !important; 
@@ -79,7 +72,7 @@ st.markdown("""
         padding-left: 25px !important; 
     }
     
-    /* Textos Generales (Negro) */
+    /* RESTO DE ESTILOS (Textos, Inputs, etc.) */
     div[data-testid="stWidgetLabel"] p, label, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetricLabel { 
         color: #000000 !important; 
         -webkit-text-fill-color: #000000 !important; 
@@ -87,7 +80,6 @@ st.markdown("""
     }
     div[data-testid="stMetricValue"] { color: #2488bc !important; -webkit-text-fill-color: #2488bc !important; }
     
-    /* Inputs */
     input, textarea, .stNumberInput input { 
         background-color: #ffffff !important; 
         color: #000000 !important; 
@@ -100,7 +92,12 @@ st.markdown("""
         -webkit-text-fill-color: #555555 !important; 
     }
     
-    /* Tarjetas y Modales */
+    div[data-baseweb="select"] > div { background-color: #ffffff !important; border: 1px solid #888888 !important; }
+    div[data-baseweb="select"] span { color: #000000 !important; }
+    ul[data-testid="stSelectboxVirtualDropdown"] { background-color: #ffffff !important; }
+    ul[data-testid="stSelectboxVirtualDropdown"] li { background-color: #ffffff !important; color: #000000 !important; }
+    ul[data-testid="stSelectboxVirtualDropdown"] li:hover { background-color: #f0f2f6 !important; }
+    
     div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
     div[data-testid="stVerticalBlockBorderWrapper"] { 
         background-color: #ffffff !important; 
@@ -112,13 +109,12 @@ st.markdown("""
     div[data-testid="stImage"] { display: flex !important; justify-content: center !important; height: 160px !important; }
     div[data-testid="stImage"] img { max-height: 150px !important; width: auto !important; object-fit: contain !important; }
     
-    /* Botones */
+    /* Botones generales */
     div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
     div.stButton button p { color: #ffffff !important; }
     div.stButton button:disabled, button[kind="secondary"] { background-color: #e74c3c !important; color: white !important; opacity: 1 !important; border: 1px solid #c0392b !important; }
     div.stButton button:disabled p { color: white !important; }
     
-    /* Perfil */
     .profile-section { text-align: center !important; padding: 20px 0px; }
     .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
     [data-testid="stSidebarNav"] {display: none;}
@@ -126,7 +122,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 3. SISTEMA DE SESIÓN (12 HORAS)
+# 3. SISTEMA DE SESIÓN
 # ==============================================================================
 SESSION_DURATION = 12 * 3600 
 
@@ -217,7 +213,6 @@ def modal_gestion(producto):
         try: locs = [l['nombre'] for l in supabase.table("locales").select("nombre").execute().data]
         except: locs = ["Principal"]
 
-        # Sin st.form
         tecnico = st.selectbox("Técnico", ["Seleccionar"] + techs, key="ts")
         local = st.selectbox("Local", ["Seleccionar"] + locs, key="ls")
         max_val = producto['stock'] if producto['stock'] > 0 else 1
@@ -304,7 +299,7 @@ def modal_borrar_local(nombre):
         st.rerun()
 
 # ==============================================================================
-# 6. SIDEBAR (FIJA)
+# 6. SIDEBAR (BOTONES VISIBLES, FLECHA OCULTA)
 # ==============================================================================
 with st.sidebar:
     st.markdown(f"""
