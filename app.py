@@ -58,47 +58,45 @@ if st.session_state.autenticado:
         time.sleep(2)
         st.rerun()
 
-# --- CSS MAESTRO (CORREGIDO: MENÚ VISIBLE, SIN BARRA NEGRA) ---
+# --- CSS MAESTRO CORREGIDO (RECUPERA EL MENÚ LATERAL) ---
 st.markdown("""
     <style>
-    /* 1. ELIMINAR BARRA NEGRA SUPERIOR Y DEJAR SOLO EL BOTÓN DE MENÚ */
-    header {
+    /* 1. ARREGLO DE LA BARRA SUPERIOR (HEADER) */
+    /* Hacemos la cabecera transparente para que no se vea una barra negra/blanca fea */
+    header[data-testid="stHeader"] {
         background-color: transparent !important;
     }
     
-    /* Ocultar la decoración de colores (arcoíris) de arriba */
+    /* Ocultamos la decoración de colores (arcoíris) de arriba */
     [data-testid="stDecoration"] {
         display: none !important;
     }
     
-    /* Ocultar el botón "Deploy" y el menú de opciones de la derecha */
-    .stDeployButton {display: none !important;}
+    /* Ocultamos el menú de opciones de la DERECHA (3 puntos) y el botón Deploy */
     [data-testid="stToolbar"] {
         visibility: hidden !important; 
-        right: 2rem; /* Lo movemos lejos por si acaso */
+        display: none !important;
+    }
+    .stDeployButton {
+        display: none !important;
     }
     
-    /* ASEGURAR QUE EL BOTÓN DEL MENÚ (IZQUIERDA) SEA VISIBLE Y DE COLOR OSCURO */
+    /* ¡IMPORTANTE! Forzamos que el botón de la IZQUIERDA (Menú/Flecha) sea VISIBLE */
     [data-testid="stSidebarCollapsedControl"] {
         display: block !important;
-        color: #000000 !important;
-        z-index: 999999 !important;
+        visibility: visible !important;
+        color: #000000 !important; /* Color negro para que se vea sobre fondo blanco */
     }
     
-    /* 2. OCULTAR BARRA INFERIOR (Manage App / Footer) */
+    /* 2. OCULTAR BARRA INFERIOR (Footer nativo) */
     footer {
         visibility: hidden !important;
         display: none !important;
         height: 0px !important;
     }
     
-    /* 3. QUITAR ESPACIO BLANCO/NEGRO EXTRA ARRIBA */
-    .main .block-container {
-        padding-top: 2rem !important; /* Subir el contenido */
-    }
-    
-    /* 4. ESTILOS GENERALES (TUS COLORES) */
-    .stApp { background-color: #ffffff !important; }
+    /* 3. ESTILOS DE LA APP */
+    .stApp, .main, .block-container { background-color: #ffffff !important; }
     
     /* Sidebar */
     [data-testid="stSidebar"] { background-color: #1a222b !important; }
@@ -208,7 +206,7 @@ def modal_gestion(producto):
         try: locs = [l['nombre'] for l in supabase.table("locales").select("nombre").execute().data]
         except: locs = ["Principal"]
 
-        # Sin st.form
+        # Sin st.form para evitar Enter
         tecnico = st.selectbox("Técnico", ["Seleccionar"] + techs, key="tec_sal")
         local = st.selectbox("Local", ["Seleccionar"] + locs, key="loc_sal")
         max_val = producto['stock'] if producto['stock'] > 0 else 1
@@ -483,8 +481,8 @@ elif opcion == "Carga":
             with st.container(border=True):
                 st.markdown(f"### Editando: {prod_data['nombre']}")
                 
-                # --- EDICIÓN BLOQUEADA PARA CAT/MARCA/COD ---
-                # Usamos disabled=True para que sean de solo lectura
+                # --- EDICIÓN BLOQUEADA ---
+                # Categoría, Marca y Código fijos (Disabled)
                 col_u1, col_u2 = st.columns(2)
                 with col_u1:
                     st.text_input("Categoría", value=prod_data['categoria'], disabled=True)
@@ -501,6 +499,7 @@ elif opcion == "Carga":
                 stock_add = st.number_input("Cantidad a AÑADIR (+)", min_value=0, value=0, step=1)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
+                # Botón para GUARDAR
                 if st.button("GUARDAR CAMBIOS", type="primary", use_container_width=True):
                     try:
                         with st.spinner('Guardando cambios...'):
@@ -510,7 +509,7 @@ elif opcion == "Carga":
                                 "precio_venta": new_price_gen, 
                                 "precio_punto": new_price_punto,
                                 "imagen_url": new_img
-                                # NO se actualizan los campos bloqueados
+                                # NO se actualizan los campos bloqueados para mantener identidad
                             }
                             supabase.table("productos").update(datos_update).eq("id", prod_data['id']).execute()
                             
