@@ -18,43 +18,184 @@ except:
 
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide")
 
-# --- CSS NUCLEAR (PARA BORRAR "MANAGE APP" Y BARRAS) ---
+# ==============================================================================
+# 2. SISTEMA DE SESIÓN Y ESTILOS GLOBALES
+# ==============================================================================
+SESSION_DURATION = 12 * 3600 
+
+if 'autenticado' not in st.session_state:
+    st.session_state.autenticado = False
+    st.session_state.rol = None
+    st.session_state.user = None
+    st.session_state.menu = "Stock"
+    st.session_state.login_time = 0
+
+# --- CSS NUCLEAR GLOBAL (Oculta barras de Streamlit siempre) ---
 st.markdown("""
     <style>
-    /* 1. OCULTAR LA BARRA NEGRA INFERIOR (Manage App / Toolbar) */
-    [data-testid="stToolbar"] {
-        visibility: hidden !important;
-        display: none !important;
-        height: 0px !important;
-    }
+    [data-testid="stToolbar"] {visibility: hidden !important; display: none !important; height: 0px !important;}
+    header {visibility: hidden !important; display: none !important;}
+    #MainMenu {visibility: hidden !important; display: none !important;}
+    footer {visibility: hidden !important; display: none !important;}
+    .stDeployButton {display: none !important;}
+    [data-testid="stDecoration"] {display: none !important;}
+    [data-testid="stStatusWidget"] {display: none !important;}
+    .stApp > header {display: none !important;}
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- LÓGICA ANTI-REFRESCO ---
+if not st.session_state.autenticado:
+    params = st.query_params
+    if "user_session" in params:
+        user_in_url = params["user_session"]
+        try:
+            res = supabase.table("usuarios").select("*").eq("usuario", user_in_url).execute()
+            if res.data:
+                st.session_state.autenticado = True
+                st.session_state.user = user_in_url
+                st.session_state.rol = res.data[0]['rol']
+                st.session_state.login_time = time.time()
+                st.rerun()
+        except:
+            pass
+
+# Verificar caducidad
+if st.session_state.autenticado:
+    current_time = time.time()
+    if (current_time - st.session_state.login_time) > SESSION_DURATION:
+        st.session_state.autenticado = False
+        st.session_state.rol = None
+        st.session_state.user = None
+        st.query_params.clear()
+        st.error("⏳ Tu sesión de 12 horas ha expirado. Ingresa nuevamente.")
+        time.sleep(2)
+        st.rerun()
+
+# ==============================================================================
+# 3. PANTALLA DE LOGIN (DISEÑO "ELEGANTE Y PROFESIONAL")
+# ==============================================================================
+if not st.session_state.autenticado:
+    # --- CSS ESPECÍFICO SOLO PARA EL LOGIN ---
+    st.markdown("""
+        <style>
+        /* 1. FONDO DE PANTALLA PROFESIONAL */
+        .stApp {
+            /* Imagen de fondo tecnológica abstracta */
+            background-image: url('https://img.freepik.com/free-vector/gradient-technological-background_23-2148884155.jpg?w=1380&t=st=1706000000~exp=1706003600~hmac=example'); 
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        
+        /* 2. TÍTULO PRINCIPAL (Blanco y grande) */
+        .login-title {
+            text-align: center;
+            color: white !important;
+            font-size: 42px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 25px;
+            text-shadow: 0px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* 3. TARJETA DE LOGIN (Caja blanca flotante) */
+        [data-testid="stVerticalBlockBorderWrapper"] {
+            background-color: rgba(255, 255, 255, 0.95) !important; /* Blanco casi sólido */
+            border-radius: 20px !important; /* Bordes muy redondeados */
+            border: none !important; /* Quitar borde gris feo */
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3) !important; /* Sombra profunda y elegante */
+            padding: 30px !important;
+        }
+
+        /* 4. SUBTÍTULO DENTRO DE LA TARJETA */
+        .login-card-subtitle {
+            text-align: center;
+            color: #1a222b !important;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        
+        /* 5. MEJORA DE LOS INPUTS */
+        [data-testid="stTextInput"] input {
+            border-radius: 10px !important;
+            border: 1px solid #d1d5db !important;
+            padding: 10px !important;
+            background-color: #f9fafb !important;
+        }
+        
+        /* Centrar el contenido verticalmente */
+        .block-container {
+            padding-top: 10vh !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # --- ESTRUCTURA DEL LOGIN ---
+    st.markdown('<h1 class="login-title">VILLAFIX SYSTEM</h1>', unsafe_allow_html=True)
     
-    /* 2. OCULTAR BARRA SUPERIOR Y MENÚ HAMBURGUESA */
-    header {
-        visibility: hidden !important;
-        display: none !important;
-    }
-    #MainMenu {
-        visibility: hidden !important;
-        display: none !important;
-    }
+    # Usamos columnas para centrar la tarjeta
+    c_left, c_center, c_right = st.columns([1, 2, 1]) # c_center es más ancho ahora
     
-    /* 3. OCULTAR FOOTER Y DECORACIONES */
-    footer {
-        visibility: hidden !important;
-        display: none !important;
-    }
-    .stDeployButton {
-        display: none !important;
-    }
-    [data-testid="stDecoration"] {
-        display: none !important;
-    }
-    [data-testid="stStatusWidget"] {
-        display: none !important;
-    }
+    with c_center:
+        # El contenedor con border=True es el que nuestro CSS transforma en "tarjeta"
+        with st.container(border=True):
+            st.markdown('<h3 class="login-card-subtitle">Acceso Seguro</h3>', unsafe_allow_html=True)
+            
+            with st.form("login_form"):
+                # Iconos en los labels para que se vea más moderno
+                u = st.text_input("👤 Usuario")
+                p = st.text_input("🔒 Contraseña", type="password")
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                # Botón ancho
+                submit = st.form_submit_button("➡️ INGRESAR AL SISTEMA", use_container_width=True)
+            
+            if submit:
+                try:
+                    res = supabase.table("usuarios").select("*").eq("usuario", u).eq("contrasena", p).execute()
+                    if res.data:
+                        st.session_state.autenticado = True
+                        st.session_state.rol = res.data[0]['rol']
+                        st.session_state.user = u
+                        st.session_state.login_time = time.time()
+                        st.query_params["user_session"] = u
+                        st.rerun()
+                    else:
+                        # Mensaje de error dentro de la tarjeta
+                        st.error("❌ Usuario o contraseña incorrectos.")
+                except Exception as e:
+                    st.error(f"Error de conexión: {e}")
     
-    /* 4. ESTILOS DE LA APP (DISEÑO VILLAFIX) */
-    .stApp, .main, .block-container { background-color: #ffffff !important; }
+    # Detenemos aquí para que no se cargue el resto de la app si no hay login
+    st.stop()
+
+# ==============================================================================
+# 4. FUNCIONES DE AYUDA
+# ==============================================================================
+
+def es_coincidencia(busqueda, texto_db):
+    if not busqueda: return True 
+    if not texto_db: return False
+    b = str(busqueda).lower().strip()
+    if b.startswith("ip") and len(b) > 2 and b[2].isdigit(): b = b.replace("ip", "iphone", 1)
+    elif b == "ip": b = "iphone"
+    b_nospace = b.replace(" ", "").replace("-", "")
+    t = str(texto_db).lower()
+    t_nospace = t.replace(" ", "").replace("-", "")
+    if b in t: return True
+    if b_nospace in t_nospace: return True
+    return False
+
+# ==============================================================================
+# 5. ESTILOS DE LA APP PRINCIPAL (SE APLICAN CUANDO YA ENTRASTE)
+# ==============================================================================
+st.markdown("""
+    <style>
+    /* Volvemos el fondo blanco para la app principal */
+    .stApp, .main, .block-container { background-color: #ffffff !important; background-image: none !important; }
     
     /* Sidebar */
     [data-testid="stSidebar"] { background-color: #1a222b !important; }
@@ -78,8 +219,8 @@ st.markdown("""
     /* Modal */
     div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
     
-    /* Tarjetas */
-    div[data-testid="stVerticalBlockBorderWrapper"] { background-color: #ffffff !important; border: 1px solid #ddd !important; padding: 10px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; height: 100% !important; min-height: 350px !important; display: flex; flex-direction: column; justify-content: space-between; }
+    /* Tarjetas internas */
+    div[data-testid="stVerticalBlockBorderWrapper"] { background-color: #ffffff !important; border: 1px solid #ddd !important; padding: 10px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; min-height: unset !important; }
     
     /* Imágenes */
     div[data-testid="stImage"] { display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; margin: 0 auto !important; height: 160px !important; }
@@ -100,93 +241,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 2. SISTEMA DE SESIÓN (PERSISTENTE + 12 HORAS)
-# ==============================================================================
-SESSION_DURATION = 12 * 3600 
-
-if 'autenticado' not in st.session_state:
-    st.session_state.autenticado = False
-    st.session_state.rol = None
-    st.session_state.user = None
-    st.session_state.menu = "Stock"
-    st.session_state.login_time = 0
-
-# --- LÓGICA ANTI-REFRESCO (RECUPERAR SESIÓN) ---
-if not st.session_state.autenticado:
-    params = st.query_params
-    if "user_session" in params:
-        user_in_url = params["user_session"]
-        try:
-            res = supabase.table("usuarios").select("*").eq("usuario", user_in_url).execute()
-            if res.data:
-                st.session_state.autenticado = True
-                st.session_state.user = user_in_url
-                st.session_state.rol = res.data[0]['rol']
-                st.session_state.login_time = time.time()
-                st.rerun()
-        except:
-            pass
-
-# Verificar caducidad de tiempo (12h)
-if st.session_state.autenticado:
-    current_time = time.time()
-    if (current_time - st.session_state.login_time) > SESSION_DURATION:
-        st.session_state.autenticado = False
-        st.session_state.rol = None
-        st.session_state.user = None
-        st.query_params.clear()
-        st.error("⏳ Tu sesión de 12 horas ha expirado. Ingresa nuevamente.")
-        time.sleep(2)
-        st.rerun()
-
-# --- PANTALLA DE LOGIN ---
-if not st.session_state.autenticado:
-    st.markdown("<br><br><h1 style='text-align:center; color:#2488bc;'>VILLAFIX SYSTEM</h1>", unsafe_allow_html=True)
-    c1, c2, c3 = st.columns([1, 1.5, 1])
-    with c2:
-        with st.container(border=True):
-            st.markdown("<h3 style='text-align:center;'>Iniciar Sesión</h3>", unsafe_allow_html=True)
-            
-            with st.form("login_form"):
-                u = st.text_input("Usuario")
-                p = st.text_input("Contraseña", type="password")
-                submit = st.form_submit_button("INGRESAR", use_container_width=True)
-            
-            if submit:
-                try:
-                    res = supabase.table("usuarios").select("*").eq("usuario", u).eq("contrasena", p).execute()
-                    if res.data:
-                        st.session_state.autenticado = True
-                        st.session_state.rol = res.data[0]['rol']
-                        st.session_state.user = u
-                        st.session_state.login_time = time.time()
-                        st.query_params["user_session"] = u
-                        st.rerun()
-                    else:
-                        st.error("Credenciales incorrectas")
-                except Exception as e:
-                    st.error(f"Error de conexión: {e}")
-    st.stop()
-
-# ==============================================================================
-# 3. FUNCIONES DE AYUDA
-# ==============================================================================
-
-def es_coincidencia(busqueda, texto_db):
-    if not busqueda: return True 
-    if not texto_db: return False
-    b = str(busqueda).lower().strip()
-    if b.startswith("ip") and len(b) > 2 and b[2].isdigit(): b = b.replace("ip", "iphone", 1)
-    elif b == "ip": b = "iphone"
-    b_nospace = b.replace(" ", "").replace("-", "")
-    t = str(texto_db).lower()
-    t_nospace = t.replace(" ", "").replace("-", "")
-    if b in t: return True
-    if b_nospace in t_nospace: return True
-    return False
-
-# ==============================================================================
-# 4. VENTANAS EMERGENTES (MODALES)
+# 6. VENTANAS EMERGENTES (MODALES)
 # ==============================================================================
 
 @st.dialog("Gestionar Inventario")
@@ -340,7 +395,7 @@ def modal_borrar_local(nombre):
         st.rerun()
 
 # ==============================================================================
-# 5. MENÚ LATERAL (SIDEBAR)
+# 7. MENÚ LATERAL (SIDEBAR)
 # ==============================================================================
 with st.sidebar:
     st.markdown(f"""
@@ -367,7 +422,7 @@ with st.sidebar:
         st.rerun()
 
 # ==============================================================================
-# 6. PANTALLAS PRINCIPALES
+# 8. PANTALLAS PRINCIPALES
 # ==============================================================================
 opcion = st.session_state.menu
 
@@ -506,7 +561,7 @@ elif opcion == "Carga":
                                 "precio_venta": new_price_gen, 
                                 "precio_punto": new_price_punto,
                                 "imagen_url": new_img
-                                # NO se actualizan los campos bloqueados
+                                # NO se actualizan los campos bloqueados para mantener identidad
                             }
                             supabase.table("productos").update(datos_update).eq("id", prod_data['id']).execute()
                             
