@@ -16,39 +16,41 @@ except:
     st.error("⚠️ Error crítico de conexión. Verifica tus 'secrets' en Streamlit.")
     st.stop()
 
-# 'initial_sidebar_state="expanded"' es la clave para que inicie abierta
+# Obligar a que la barra arranque abierta
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide", initial_sidebar_state="expanded")
 
 # ==============================================================================
-# 2. CSS CORRECTIVO (SIN SCRIPT DE TAB)
+# 2. CSS DE PRECISIÓN: MATAR LA FLECHA << SIN TOCAR EL MENÚ
 # ==============================================================================
 st.markdown("""
     <style>
-    /* 1. ELIMINAR EL BOTÓN DE COLAPSAR (<<) DENTRO DEL SIDEBAR */
-    /* Este selector apunta específicamente al botón de cabecera de la barra lateral */
-    section[data-testid="stSidebar"] button[kind="header"] {
+    /* 1. ELIMINAR LA FLECHA DE "COLAPSAR" (<<) USANDO SU ETIQUETA EXACTA */
+    /* Esto es lo que borra esas flechitas de tu foto */
+    button[aria-label="Collapse sidebar"] {
         display: none !important;
+        visibility: hidden !important;
     }
     
-    /* 2. ELIMINAR EL BOTÓN FLOTANTE (>) POR SI ACASO */
+    /* 2. ELIMINAR EL BOTÓN DE "EXPANDIR" (>) POR SI ACASO */
     [data-testid="stSidebarCollapsedControl"] {
         display: none !important;
     }
 
-    /* 3. LIMPIEZA DE BARRAS SUPERIORES E INFERIORES */
+    /* 3. LIMPIEZA VISUAL (Barras y Pie de página) */
     [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
     header { background-color: transparent !important; }
     [data-testid="stDecoration"] { display: none !important; }
     footer { display: none !important; }
     
-    /* 4. ESTILOS GENERALES (FONDO BLANCO) */
+    /* 4. ESTILOS GENERALES (Fondo Blanco) */
     .stApp, .main, .block-container { background-color: #ffffff !important; }
     
-    /* 5. SIDEBAR (ASEGURAR QUE LOS BOTONES SE VEAN) */
+    /* 5. SIDEBAR (Color Oscuro) */
     [data-testid="stSidebar"] { background-color: #1a222b !important; }
     [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
     
-    /* Estilo de tus botones de menú */
+    /* 6. PROTECCIÓN DE TUS BOTONES DE MENÚ */
+    /* Esto asegura que tus botones azules SIEMPRE se vean, pase lo que pase */
     [data-testid="stSidebar"] button { 
         background-color: transparent !important; 
         border: none !important; 
@@ -56,7 +58,8 @@ st.markdown("""
         text-align: left !important; 
         padding-left: 15px !important; 
         transition: 0.3s;
-        display: block !important; 
+        display: block !important; /* Fuerza a que se muestren */
+        visibility: visible !important;
     }
     [data-testid="stSidebar"] button:hover { 
         background-color: rgba(255,255,255,0.05) !important; 
@@ -65,18 +68,20 @@ st.markdown("""
         padding-left: 25px !important; 
     }
     
-    /* RESTO DEL DISEÑO */
+    /* Textos Generales */
     div[data-testid="stWidgetLabel"] p, label, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetricLabel { 
         color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-weight: 700 !important; 
     }
     div[data-testid="stMetricValue"] { color: #2488bc !important; -webkit-text-fill-color: #2488bc !important; }
     
+    /* Inputs */
     input, textarea, .stNumberInput input { 
         background-color: #ffffff !important; color: #000000 !important; border: 1px solid #888888 !important; 
-        -webkit-text-fill-color: #000000 !important; 
     }
     input:disabled { background-color: #e9ecef !important; color: #555555 !important; }
     
+    /* Tarjetas y Modales */
+    div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
     div[data-testid="stVerticalBlockBorderWrapper"] { 
         background-color: #ffffff !important; border: 1px solid #ddd !important; padding: 10px !important; 
         box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; 
@@ -85,11 +90,13 @@ st.markdown("""
     div[data-testid="stImage"] { display: flex !important; justify-content: center !important; height: 160px !important; }
     div[data-testid="stImage"] img { max-height: 150px !important; width: auto !important; object-fit: contain !important; }
     
+    /* Botones de Acción (Azules) */
     div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
     div.stButton button p { color: #ffffff !important; }
     div.stButton button:disabled, button[kind="secondary"] { background-color: #e74c3c !important; color: white !important; opacity: 1 !important; border: 1px solid #c0392b !important; }
     div.stButton button:disabled p { color: white !important; }
     
+    /* Perfil */
     .profile-section { text-align: center !important; padding: 20px 0px; }
     .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
     [data-testid="stSidebarNav"] {display: none;}
@@ -376,6 +383,7 @@ elif opcion == "Carga":
         p = mapa[sel]
         with st.container(border=True):
             st.markdown(f"### Editando: {p['nombre']}")
+            
             c1, c2 = st.columns(2)
             with c1:
                 st.text_input("Categoría (Bloqueado)", p['categoria'], disabled=True)
@@ -385,9 +393,11 @@ elif opcion == "Carga":
                 npg = st.number_input("Precio Gral (S/)", value=float(p['precio_venta']), min_value=0.0, step=0.5)
                 npp = st.number_input("Precio Punto (S/)", value=float(p.get('precio_punto') or 0.0), min_value=0.0, step=0.5)
                 nimg = st.text_input("URL Imagen", value=p.get('imagen_url',''))
+            
             st.divider()
             st.markdown(f"**Stock Actual:** {p['stock']}")
             mas = st.number_input("Cantidad a AÑADIR (+)", min_value=0, step=1)
+            
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("GUARDAR CAMBIOS", type="primary", use_container_width=True):
                 with st.spinner('Guardando...'):
@@ -397,6 +407,7 @@ elif opcion == "Carga":
                 st.success("✅ Guardado")
                 time.sleep(0.5)
                 st.rerun()
+        
         st.markdown("---")
         if st.button("🗑️ ELIMINAR PRODUCTO", type="primary"): modal_borrar(p)
 
