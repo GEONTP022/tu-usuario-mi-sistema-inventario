@@ -301,16 +301,16 @@ with st.sidebar:
         <div style="height:1px; background-color:#3498db; opacity:0.3; margin-bottom:20px;"></div>
     """, unsafe_allow_html=True)
     
-    if st.button("📊 Dashboard / Stock", use_container_width=True): st.session_state.menu = "Stock"
+    if st.button(" Dashboard / Stock", use_container_width=True): st.session_state.menu = "Stock"
     if st.session_state.rol == "Super":
-        if st.button("📥 Añadir Producto", use_container_width=True): st.session_state.menu = "Carga"
-        if st.button("📋 Historial", use_container_width=True): st.session_state.menu = "Log"
-        if st.button("📈 Estadísticas", use_container_width=True): st.session_state.menu = "Stats"
-        if st.button("👥 Usuarios / Config", use_container_width=True): st.session_state.menu = "Users"
-        if st.button("📞 Proveedores", use_container_width=True): st.session_state.menu = "Prov"
+        if st.button(" Añadir Producto", use_container_width=True): st.session_state.menu = "Carga"
+        if st.button(" Historial", use_container_width=True): st.session_state.menu = "Log"
+        if st.button(" Estadísticas", use_container_width=True): st.session_state.menu = "Stats"
+        if st.button(" Usuarios / Config", use_container_width=True): st.session_state.menu = "Users"
+        if st.button(" Proveedores", use_container_width=True): st.session_state.menu = "Prov"
 
     st.markdown("<br><br>", unsafe_allow_html=True)
-    if st.button("🚪 Cerrar Sesión", use_container_width=True):
+    if st.button(" Cerrar Sesión", use_container_width=True):
         st.session_state.autenticado = False
         st.query_params.clear() # Limpiar persistencia
         st.rerun()
