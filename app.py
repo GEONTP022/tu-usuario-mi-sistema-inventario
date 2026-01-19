@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, date
 import time
 
 # ==============================================================================
-# 1. CONFIGURACIÓN Y ESTILOS GLOBALES (LO PRIMERO PARA QUE APLIQUE AL LOGIN)
+# 1. CONFIGURACIÓN Y ESTILOS "FANTASMA" (OCULTAR TODO)
 # ==============================================================================
 try:
     url = st.secrets["SUPABASE_URL"]
@@ -18,20 +18,26 @@ except:
 
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide")
 
-# --- CSS MAESTRO (APLICA A LOGIN Y A LA APP) ---
+# --- CSS MAESTRO (LIMPIEZA TOTAL DE INTERFAZ) ---
 st.markdown("""
     <style>
     /* =========================================
-       OCULTAR ELEMENTOS DE STREAMLIT (BARRA SUPERIOR, GITHUB, ETC)
+       1. OCULTAR BARRA SUPERIOR Y MENÚ
        ========================================= */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+    #MainMenu {visibility: hidden; display: none;}
+    header {visibility: hidden; display: none;}
     [data-testid="stToolbar"] {visibility: hidden; display: none;}
-    .stDeployButton {display:none;}
     
     /* =========================================
-       ESTILOS DE LA APP
+       2. OCULTAR BARRA INFERIOR (MANAGE APP)
+       ========================================= */
+    footer {visibility: hidden; display: none !important;}
+    .stDeployButton {display:none;}
+    [data-testid="stDecoration"] {display:none;}
+    [data-testid="stStatusWidget"] {display:none;}
+    
+    /* =========================================
+       3. ESTILOS DE LA APP (TUS COLORES)
        ========================================= */
     .stApp, .main, .block-container { background-color: #ffffff !important; }
     
@@ -165,7 +171,7 @@ def es_coincidencia(busqueda, texto_db):
     return False
 
 # ==============================================================================
-# 4. VENTANAS EMERGENTES
+# 4. VENTANAS EMERGENTES (MODALES)
 # ==============================================================================
 
 @st.dialog("Gestionar Inventario")
@@ -457,8 +463,8 @@ elif opcion == "Carga":
             with st.container(border=True):
                 st.markdown(f"### Editando: {prod_data['nombre']}")
                 
-                # --- EDICIÓN BLOQUEADA ---
-                # Categoría, Marca y Código fijos (Disabled)
+                # --- EDICIÓN BLOQUEADA PARA CAT/MARCA/COD ---
+                # Se muestran pero NO se pueden cambiar (disabled=True)
                 col_u1, col_u2 = st.columns(2)
                 with col_u1:
                     st.text_input("Categoría", value=prod_data['categoria'], disabled=True)
@@ -475,6 +481,7 @@ elif opcion == "Carga":
                 stock_add = st.number_input("Cantidad a AÑADIR (+)", min_value=0, value=0, step=1)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
+                # Botón para GUARDAR (SOLO PRECIOS, IMAGEN Y STOCK)
                 if st.button("GUARDAR CAMBIOS", type="primary", use_container_width=True):
                     try:
                         with st.spinner('Guardando cambios...'):
