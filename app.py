@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, date
 import time
 
 # ==============================================================================
-# 1. CONFIGURACIÓN Y CONEXIÓN
+# 1. CONFIGURACIÓN Y ESTILOS GLOBALES (LO PRIMERO PARA QUE APLIQUE AL LOGIN)
 # ==============================================================================
 try:
     url = st.secrets["SUPABASE_URL"]
@@ -17,6 +17,66 @@ except:
     st.stop()
 
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide")
+
+# --- CSS MAESTRO (APLICA A LOGIN Y A LA APP) ---
+st.markdown("""
+    <style>
+    /* =========================================
+       OCULTAR ELEMENTOS DE STREAMLIT (BARRA SUPERIOR, GITHUB, ETC)
+       ========================================= */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    [data-testid="stToolbar"] {visibility: hidden; display: none;}
+    .stDeployButton {display:none;}
+    
+    /* =========================================
+       ESTILOS DE LA APP
+       ========================================= */
+    .stApp, .main, .block-container { background-color: #ffffff !important; }
+    
+    /* Sidebar */
+    [data-testid="stSidebar"] { background-color: #1a222b !important; }
+    [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+    [data-testid="stSidebar"] button { background-color: transparent !important; border: none !important; color: #bdc3c7 !important; text-align: left !important; padding-left: 15px !important; transition: 0.3s; }
+    [data-testid="stSidebar"] button:hover { background-color: rgba(255,255,255,0.05) !important; border-left: 4px solid #3498db !important; color: #ffffff !important; padding-left: 25px !important; }
+    
+    /* Textos */
+    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetricLabel { color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-weight: 700 !important; }
+    div[data-testid="stMetricValue"] { color: #2488bc !important; -webkit-text-fill-color: #2488bc !important; }
+    
+    /* Inputs */
+    input, textarea, .stNumberInput input { background-color: #ffffff !important; color: #000000 !important; -webkit-text-fill-color: #000000 !important; border: 1px solid #888888 !important; caret-color: #000000 !important; }
+    input:disabled { background-color: #e9ecef !important; color: #555555 !important; -webkit-text-fill-color: #555555 !important; }
+    div[data-baseweb="select"] > div { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #888888 !important; }
+    div[data-baseweb="select"] span { color: #000000 !important; -webkit-text-fill-color: #000000 !important; }
+    ul[data-testid="stSelectboxVirtualDropdown"] { background-color: #ffffff !important; }
+    ul[data-testid="stSelectboxVirtualDropdown"] li { background-color: #ffffff !important; color: #000000 !important; }
+    ul[data-testid="stSelectboxVirtualDropdown"] li:hover { background-color: #f0f2f6 !important; }
+    
+    /* Modal */
+    div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
+    
+    /* Tarjetas */
+    div[data-testid="stVerticalBlockBorderWrapper"] { background-color: #ffffff !important; border: 1px solid #ddd !important; padding: 10px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; height: 100% !important; min-height: 350px !important; display: flex; flex-direction: column; justify-content: space-between; }
+    
+    /* Imágenes */
+    div[data-testid="stImage"] { display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; margin: 0 auto !important; height: 160px !important; }
+    div[data-testid="stImage"] img { display: block !important; margin-left: auto !important; margin-right: auto !important; max-height: 150px !important; width: auto !important; object-fit: contain !important; }
+    
+    /* Botones */
+    div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
+    div.stButton button p { color: #ffffff !important; }
+    div.stButton button:disabled, button[kind="secondary"] { background-color: #e74c3c !important; color: white !important; opacity: 1 !important; border: 1px solid #c0392b !important; }
+    div.stButton button:disabled p { color: white !important; }
+    
+    button[data-baseweb="tab"] { color: #000000 !important; }
+    div[data-baseweb="tab-list"] { background-color: #f1f3f4 !important; border-radius: 8px; }
+    .profile-section { text-align: center !important; padding: 20px 0px; }
+    .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
+    [data-testid="stSidebarNav"] {display: none;}
+    </style>
+    """, unsafe_allow_html=True)
 
 # ==============================================================================
 # 2. SISTEMA DE SESIÓN (PERSISTENTE + 12 HORAS)
@@ -88,7 +148,7 @@ if not st.session_state.autenticado:
     st.stop()
 
 # ==============================================================================
-# 3. FUNCIONES DE AYUDA Y ESTILOS
+# 3. FUNCIONES DE AYUDA
 # ==============================================================================
 
 def es_coincidencia(busqueda, texto_db):
@@ -103,66 +163,6 @@ def es_coincidencia(busqueda, texto_db):
     if b in t: return True
     if b_nospace in t_nospace: return True
     return False
-
-# CSS MAESTRO (CON EL TRUCO PARA OCULTAR BARRA SUPERIOR)
-st.markdown("""
-    <style>
-    /* =========================================
-       OCULTAR ELEMENTOS DE STREAMLIT (GITHUB, MENU, ETC)
-       ========================================= */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    [data-testid="stToolbar"] {visibility: hidden; display: none;}
-    .stDeployButton {display:none;}
-    
-    /* =========================================
-       ESTILOS DE LA APP
-       ========================================= */
-    .stApp, .main, .block-container { background-color: #ffffff !important; }
-    
-    /* Sidebar */
-    [data-testid="stSidebar"] { background-color: #1a222b !important; }
-    [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
-    [data-testid="stSidebar"] button { background-color: transparent !important; border: none !important; color: #bdc3c7 !important; text-align: left !important; padding-left: 15px !important; transition: 0.3s; }
-    [data-testid="stSidebar"] button:hover { background-color: rgba(255,255,255,0.05) !important; border-left: 4px solid #3498db !important; color: #ffffff !important; padding-left: 25px !important; }
-    
-    /* Textos */
-    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetricLabel { color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-weight: 700 !important; }
-    div[data-testid="stMetricValue"] { color: #2488bc !important; -webkit-text-fill-color: #2488bc !important; }
-    
-    /* Inputs */
-    input, textarea, .stNumberInput input { background-color: #ffffff !important; color: #000000 !important; -webkit-text-fill-color: #000000 !important; border: 1px solid #888888 !important; caret-color: #000000 !important; }
-    input:disabled { background-color: #e9ecef !important; color: #555555 !important; -webkit-text-fill-color: #555555 !important; }
-    div[data-baseweb="select"] > div { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #888888 !important; }
-    div[data-baseweb="select"] span { color: #000000 !important; -webkit-text-fill-color: #000000 !important; }
-    ul[data-testid="stSelectboxVirtualDropdown"] { background-color: #ffffff !important; }
-    ul[data-testid="stSelectboxVirtualDropdown"] li { background-color: #ffffff !important; color: #000000 !important; }
-    ul[data-testid="stSelectboxVirtualDropdown"] li:hover { background-color: #f0f2f6 !important; }
-    
-    /* Modal */
-    div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
-    
-    /* Tarjetas */
-    div[data-testid="stVerticalBlockBorderWrapper"] { background-color: #ffffff !important; border: 1px solid #ddd !important; padding: 10px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; height: 100% !important; min-height: 350px !important; display: flex; flex-direction: column; justify-content: space-between; }
-    
-    /* Imágenes */
-    div[data-testid="stImage"] { display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; margin: 0 auto !important; height: 160px !important; }
-    div[data-testid="stImage"] img { display: block !important; margin-left: auto !important; margin-right: auto !important; max-height: 150px !important; width: auto !important; object-fit: contain !important; }
-    
-    /* Botones */
-    div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
-    div.stButton button p { color: #ffffff !important; }
-    div.stButton button:disabled, button[kind="secondary"] { background-color: #e74c3c !important; color: white !important; opacity: 1 !important; border: 1px solid #c0392b !important; }
-    div.stButton button:disabled p { color: white !important; }
-    
-    button[data-baseweb="tab"] { color: #000000 !important; }
-    div[data-baseweb="tab-list"] { background-color: #f1f3f4 !important; border-radius: 8px; }
-    .profile-section { text-align: center !important; padding: 20px 0px; }
-    .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
-    [data-testid="stSidebarNav"] {display: none;}
-    </style>
-    """, unsafe_allow_html=True)
 
 # ==============================================================================
 # 4. VENTANAS EMERGENTES
@@ -457,16 +457,13 @@ elif opcion == "Carga":
             with st.container(border=True):
                 st.markdown(f"### Editando: {prod_data['nombre']}")
                 
-                # --- EDICIÓN DESBLOQUEADA ---
+                # --- EDICIÓN BLOQUEADA ---
+                # Categoría, Marca y Código fijos (Disabled)
                 col_u1, col_u2 = st.columns(2)
                 with col_u1:
-                    current_cat = prod_data['categoria']
-                    cat_opts = ["Pantallas", "Baterías", "Flex", "Glases", "Otros"]
-                    idx_cat = cat_opts.index(current_cat) if current_cat in cat_opts else 0
-                    
-                    new_cat = st.selectbox("Categoría", cat_opts, index=idx_cat)
-                    new_marca = st.text_input("Marca", value=prod_data.get('marca') or "")
-                    new_cod = st.text_input("Código de Batería", value=prod_data.get('codigo_bateria') or "")
+                    st.text_input("Categoría", value=prod_data['categoria'], disabled=True)
+                    st.text_input("Marca", value=prod_data.get('marca') or "", disabled=True)
+                    st.text_input("Código de Batería", value=prod_data.get('codigo_bateria') or "", disabled=True)
 
                 with col_u2:
                     new_price_gen = st.number_input("Precio General (S/)", value=float(prod_data['precio_venta']), min_value=0.0, step=0.5)
@@ -486,10 +483,8 @@ elif opcion == "Carga":
                                 "stock": total_stock, 
                                 "precio_venta": new_price_gen, 
                                 "precio_punto": new_price_punto,
-                                "imagen_url": new_img,
-                                "marca": new_marca,
-                                "categoria": new_cat,
-                                "codigo_bateria": new_cod
+                                "imagen_url": new_img
+                                # NO se actualizan los campos bloqueados para mantener identidad
                             }
                             supabase.table("productos").update(datos_update).eq("id", prod_data['id']).execute()
                             
