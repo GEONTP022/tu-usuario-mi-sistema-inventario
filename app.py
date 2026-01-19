@@ -18,26 +18,33 @@ except:
 
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide")
 
-# --- CSS MAESTRO (LIMPIEZA TOTAL DE INTERFAZ) ---
+# --- CSS MAESTRO (LIMPIEZA TOTAL DE INTERFAZ INCLUYENDO MANAGE APP) ---
 st.markdown("""
     <style>
     /* =========================================
-       1. OCULTAR BARRA SUPERIOR Y MENÚ
+       1. OCULTAR TODAS LAS BARRAS (SUPERIOR E INFERIOR)
        ========================================= */
+    
+    /* Ocultar Menú hamburguesa y Header superior */
     #MainMenu {visibility: hidden; display: none;}
     header {visibility: hidden; display: none;}
-    [data-testid="stToolbar"] {visibility: hidden; display: none;}
     
-    /* =========================================
-       2. OCULTAR BARRA INFERIOR (MANAGE APP)
-       ========================================= */
+    /* Ocultar Barra de herramientas inferior (Manage app) */
+    [data-testid="stToolbar"] {visibility: hidden; display: none !important;}
+    
+    /* Ocultar Footer estándar */
     footer {visibility: hidden; display: none !important;}
-    .stDeployButton {display:none;}
-    [data-testid="stDecoration"] {display:none;}
-    [data-testid="stStatusWidget"] {display:none;}
+    
+    /* Ocultar botón de Deploy y decoraciones */
+    .stDeployButton {display:none !important;}
+    [data-testid="stDecoration"] {display:none !important;}
+    [data-testid="stStatusWidget"] {display:none !important;}
+    
+    /* Forzar ocultamiento del header nativo de la app */
+    .stApp > header {display: none !important;}
     
     /* =========================================
-       3. ESTILOS DE LA APP (TUS COLORES)
+       2. ESTILOS DE LA APP (TUS COLORES)
        ========================================= */
     .stApp, .main, .block-container { background-color: #ffffff !important; }
     
@@ -237,7 +244,7 @@ def modal_gestion(producto):
 def modal_nuevo_producto():
     st.markdown("<h3 style='color:black;'>Crear Producto</h3>", unsafe_allow_html=True)
     
-    # Sin st.form
+    # Campos sueltos (Sin st.form para evitar Enter)
     n = st.text_input("Nombre / Modelo *")
     
     col_cat, col_mar = st.columns(2)
@@ -463,8 +470,8 @@ elif opcion == "Carga":
             with st.container(border=True):
                 st.markdown(f"### Editando: {prod_data['nombre']}")
                 
-                # --- EDICIÓN BLOQUEADA PARA CAT/MARCA/COD ---
-                # Se muestran pero NO se pueden cambiar (disabled=True)
+                # --- EDICIÓN BLOQUEADA ---
+                # Categoría, Marca y Código fijos (Disabled)
                 col_u1, col_u2 = st.columns(2)
                 with col_u1:
                     st.text_input("Categoría", value=prod_data['categoria'], disabled=True)
@@ -481,7 +488,7 @@ elif opcion == "Carga":
                 stock_add = st.number_input("Cantidad a AÑADIR (+)", min_value=0, value=0, step=1)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
-                # Botón para GUARDAR (SOLO PRECIOS, IMAGEN Y STOCK)
+                # Botón para GUARDAR
                 if st.button("GUARDAR CAMBIOS", type="primary", use_container_width=True):
                     try:
                         with st.spinner('Guardando cambios...'):
