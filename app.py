@@ -6,58 +6,56 @@ from datetime import datetime, timedelta, date
 import time
 
 # ==============================================================================
-# 1. CONFIGURACIÓN: BARRA LATERAL SIEMPRE ABIERTA
+# 1. CONFIGURACIÓN: BARRA SIEMPRE ABIERTA (OBLIGATORIO)
 # ==============================================================================
 try:
     url = st.secrets["SUPABASE_URL"]
     key = st.secrets["SUPABASE_KEY"]
     supabase = create_client(url, key)
 except:
-    st.error("⚠️ Error crítico de conexión.")
+    st.error("⚠️ Error crítico de conexión. Verifica tus 'secrets' en Streamlit.")
     st.stop()
 
-# 'initial_sidebar_state="expanded"' obliga a que arranque abierta
+# 'initial_sidebar_state="expanded"' es vital aquí
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide", initial_sidebar_state="expanded")
 
 # ==============================================================================
-# 2. CSS MAESTRO: OCULTAR BARRA SUPERIOR Y FIJAR LATERAL
+# 2. CSS MAESTRO: FIJAR BARRA Y LIMPIEZA
 # ==============================================================================
 st.markdown("""
     <style>
-    /* 1. OCULTAR LA BARRA DE HERRAMIENTAS DE ARRIBA A LA DERECHA (La de tu foto) */
-    [data-testid="stToolbar"] {
-        visibility: hidden !important;
-        display: none !important;
-    }
-    
-    /* 2. OCULTAR EL BOTÓN DE CERRAR LA BARRA LATERAL (Para fijarla) */
+    /* 1. ELIMINAR EL BOTÓN DE CERRAR LA BARRA LATERAL (LA FLECHITA/X) */
+    /* Esto hace que la barra sea imposible de cerrar */
     [data-testid="stSidebarCollapsedControl"] {
         display: none !important;
+        visibility: hidden !important;
     }
     
-    /* 3. OCULTAR DECORACIONES Y CABECERA */
-    [data-testid="stDecoration"] {
+    /* 2. OCULTAR BARRA SUPERIOR (HEADER Y TOOLBAR) */
+    [data-testid="stToolbar"] {
+        visibility: hidden !important;
         display: none !important;
     }
     header {
         background-color: transparent !important;
     }
+    [data-testid="stDecoration"] {
+        display: none !important;
+    }
     
-    /* 4. OCULTAR PIE DE PÁGINA */
+    /* 3. OCULTAR PIE DE PÁGINA */
     footer {
         display: none !important;
     }
     
-    /* 5. ESTILOS GENERALES (MODO CLARO FORZADO) */
-    .stApp, .main, .block-container {
-        background-color: #ffffff !important;
-    }
+    /* 4. ESTILOS DE LA APP (FONDO BLANCO LIMPIO) */
+    .stApp, .main, .block-container { background-color: #ffffff !important; }
     
-    /* Sidebar (Azul oscuro profesional) */
+    /* Sidebar (Color Oscuro) */
     [data-testid="stSidebar"] { background-color: #1a222b !important; }
     [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
     
-    /* Botones del Sidebar */
+    /* Botones Sidebar */
     [data-testid="stSidebar"] button { 
         background-color: transparent !important; 
         border: none !important; 
@@ -73,17 +71,15 @@ st.markdown("""
         padding-left: 25px !important; 
     }
     
-    /* Textos generales (Negro) */
+    /* Textos Generales (Negro) */
     div[data-testid="stWidgetLabel"] p, label, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetricLabel { 
         color: #000000 !important; 
         -webkit-text-fill-color: #000000 !important; 
         font-weight: 700 !important; 
     }
-    
-    /* Valores de Métricas (Azul) */
     div[data-testid="stMetricValue"] { color: #2488bc !important; -webkit-text-fill-color: #2488bc !important; }
     
-    /* Inputs (Cajas de texto) */
+    /* Inputs */
     input, textarea, .stNumberInput input { 
         background-color: #ffffff !important; 
         color: #000000 !important; 
@@ -97,14 +93,8 @@ st.markdown("""
         -webkit-text-fill-color: #555555 !important; 
     }
     
-    /* Selectboxes */
-    div[data-baseweb="select"] > div { background-color: #ffffff !important; border: 1px solid #888888 !important; }
-    div[data-baseweb="select"] span { color: #000000 !important; }
-    ul[data-testid="stSelectboxVirtualDropdown"] { background-color: #ffffff !important; }
-    ul[data-testid="stSelectboxVirtualDropdown"] li { background-color: #ffffff !important; color: #000000 !important; }
-    ul[data-testid="stSelectboxVirtualDropdown"] li:hover { background-color: #f0f2f6 !important; }
-    
-    /* Tarjetas */
+    /* Tarjetas y Modales */
+    div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
     div[data-testid="stVerticalBlockBorderWrapper"] { 
         background-color: #ffffff !important; 
         border: 1px solid #ddd !important; 
@@ -118,24 +108,10 @@ st.markdown("""
     div[data-testid="stImage"] { display: flex !important; justify-content: center !important; height: 160px !important; }
     div[data-testid="stImage"] img { max-height: 150px !important; width: auto !important; object-fit: contain !important; }
     
-    /* Botones Principales */
-    div.stButton button { 
-        background-color: #2488bc !important; 
-        color: #ffffff !important; 
-        border: none !important; 
-        font-weight: bold !important; 
-        width: 100% !important; 
-        margin-top: auto !important; 
-    }
+    /* Botones */
+    div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
     div.stButton button p { color: #ffffff !important; }
-    
-    /* Botones Secundarios/Disabled */
-    div.stButton button:disabled, button[kind="secondary"] { 
-        background-color: #e74c3c !important; 
-        color: white !important; 
-        opacity: 1 !important; 
-        border: 1px solid #c0392b !important; 
-    }
+    div.stButton button:disabled, button[kind="secondary"] { background-color: #e74c3c !important; color: white !important; opacity: 1 !important; border: 1px solid #c0392b !important; }
     div.stButton button:disabled p { color: white !important; }
     
     /* Perfil */
@@ -146,7 +122,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 3. SISTEMA DE SESIÓN (12 HORAS)
+# 3. SISTEMA DE SESIÓN (12H + ANTI-REFRESCO)
 # ==============================================================================
 SESSION_DURATION = 12 * 3600 
 
@@ -157,7 +133,7 @@ if 'autenticado' not in st.session_state:
     st.session_state.menu = "Stock"
     st.session_state.login_time = 0
 
-# Recuperar sesión por URL (Anti-Refresco)
+# Anti-Refresco
 if not st.session_state.autenticado:
     params = st.query_params
     if "user_session" in params:
@@ -180,7 +156,7 @@ if st.session_state.autenticado:
         st.query_params.clear()
         st.rerun()
 
-# --- LOGIN (CON ENTER) ---
+# --- PANTALLA DE LOGIN ---
 if not st.session_state.autenticado:
     st.markdown("<br><br><h1 style='text-align:center; color:#2488bc;'>VILLAFIX SYSTEM</h1>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 1.5, 1])
@@ -209,7 +185,7 @@ if not st.session_state.autenticado:
     st.stop()
 
 # ==============================================================================
-# 4. FUNCIONES
+# 4. FUNCIONES DE AYUDA
 # ==============================================================================
 def es_coincidencia(busqueda, texto_db):
     if not busqueda: return True 
@@ -225,7 +201,7 @@ def es_coincidencia(busqueda, texto_db):
     return False
 
 # ==============================================================================
-# 5. MODALES (GUARDADO CON CLIC, NO ENTER)
+# 5. MODALES (VENTANAS EMERGENTES)
 # ==============================================================================
 @st.dialog("Gestionar Inventario")
 def modal_gestion(producto):
@@ -328,7 +304,7 @@ def modal_borrar_local(nombre):
         st.rerun()
 
 # ==============================================================================
-# 6. SIDEBAR (FIJO A LA IZQUIERDA)
+# 6. SIDEBAR (FIJA Y ABIERTA)
 # ==============================================================================
 with st.sidebar:
     st.markdown(f"""
@@ -435,7 +411,7 @@ elif opcion == "Carga":
         with st.container(border=True):
             st.markdown(f"### Editando: {p['nombre']}")
             
-            # CAMPOS BLOQUEADOS (SOLO LECTURA)
+            # CAMPOS BLOQUEADOS (GRIS)
             c1, c2 = st.columns(2)
             with c1:
                 st.text_input("Categoría (Bloqueado)", p['categoria'], disabled=True)
