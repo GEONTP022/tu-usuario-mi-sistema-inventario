@@ -2,75 +2,53 @@ import streamlit as st
 from supabase import create_client
 import pandas as pd
 import plotly.express as px
-import streamlit.components.v1 as components
 from datetime import datetime, timedelta, date
 import time
 
 # ==============================================================================
-# 1. CONFIGURACIÓN
+# 1. CONFIGURACIÓN: BARRA SIEMPRE ABIERTA
 # ==============================================================================
 try:
     url = st.secrets["SUPABASE_URL"]
     key = st.secrets["SUPABASE_KEY"]
     supabase = create_client(url, key)
 except:
-    st.error("⚠️ Error crítico de conexión.")
+    st.error("⚠️ Error crítico de conexión. Verifica tus 'secrets' en Streamlit.")
     st.stop()
 
+# 'initial_sidebar_state="expanded"' es la clave para que inicie abierta
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide", initial_sidebar_state="expanded")
 
 # ==============================================================================
-# 2. JAVASCRIPT INTELIGENTE (DETECTA EL TAB)
-# ==============================================================================
-# Este script escucha la tecla TAB. Si no estás escribiendo, abre/cierra la barra.
-js_code = """
-<script>
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Tab') {
-            // Verificar si el usuario está escribiendo en un input
-            const activeTag = document.activeElement.tagName.toLowerCase();
-            if (activeTag === 'input' || activeTag === 'textarea') {
-                return; // Si escribe, deja que el TAB funcione normal
-            }
-            
-            // Si no escribe, evita el salto y busca el botón de la barra
-            e.preventDefault();
-            const collapseBtn = window.parent.document.querySelector('[data-testid="stSidebarCollapsedControl"]');
-            if (collapseBtn) {
-                collapseBtn.click();
-            }
-        }
-    });
-</script>
-"""
-components.html(js_code, height=0, width=0)
-
-# ==============================================================================
-# 3. CSS MAESTRO: OCULTAR FLECHAS VISUALMENTE PERO DEJARLAS FUNCIONALES
+# 2. CSS CORRECTIVO (SIN SCRIPT DE TAB)
 # ==============================================================================
 st.markdown("""
     <style>
-    /* 1. TRUCO DE MAGIA: HACER LA FLECHA INVISIBLE PERO CLICKEABLE POR CODIGO */
-    [data-testid="stSidebarCollapsedControl"] {
-        opacity: 0 !important;        /* Invisible al ojo */
-        width: 0px !important;        /* Sin ancho visual */
-        margin-left: -20px;           /* Moverlo fuera de la vista */
+    /* 1. ELIMINAR EL BOTÓN DE COLAPSAR (<<) DENTRO DEL SIDEBAR */
+    /* Este selector apunta específicamente al botón de cabecera de la barra lateral */
+    section[data-testid="stSidebar"] button[kind="header"] {
+        display: none !important;
     }
     
-    /* 2. LIMPIEZA GENERAL */
-    [data-testid="stToolbar"] { display: none !important; }
+    /* 2. ELIMINAR EL BOTÓN FLOTANTE (>) POR SI ACASO */
+    [data-testid="stSidebarCollapsedControl"] {
+        display: none !important;
+    }
+
+    /* 3. LIMPIEZA DE BARRAS SUPERIORES E INFERIORES */
+    [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
     header { background-color: transparent !important; }
     [data-testid="stDecoration"] { display: none !important; }
     footer { display: none !important; }
     
-    /* 3. ESTILOS APP */
+    /* 4. ESTILOS GENERALES (FONDO BLANCO) */
     .stApp, .main, .block-container { background-color: #ffffff !important; }
     
-    /* 4. SIDEBAR OSCURO */
+    /* 5. SIDEBAR (ASEGURAR QUE LOS BOTONES SE VEAN) */
     [data-testid="stSidebar"] { background-color: #1a222b !important; }
     [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
     
-    /* 5. BOTONES DEL MENÚ (Asegurar que se vean bien) */
+    /* Estilo de tus botones de menú */
     [data-testid="stSidebar"] button { 
         background-color: transparent !important; 
         border: none !important; 
@@ -78,7 +56,7 @@ st.markdown("""
         text-align: left !important; 
         padding-left: 15px !important; 
         transition: 0.3s;
-        display: block !important;
+        display: block !important; 
     }
     [data-testid="stSidebar"] button:hover { 
         background-color: rgba(255,255,255,0.05) !important; 
@@ -87,7 +65,7 @@ st.markdown("""
         padding-left: 25px !important; 
     }
     
-    /* 6. ESTILOS GENERALES */
+    /* RESTO DEL DISEÑO */
     div[data-testid="stWidgetLabel"] p, label, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetricLabel { 
         color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-weight: 700 !important; 
     }
@@ -102,7 +80,10 @@ st.markdown("""
     div[data-testid="stVerticalBlockBorderWrapper"] { 
         background-color: #ffffff !important; border: 1px solid #ddd !important; padding: 10px !important; 
         box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; 
+        display: flex; flex-direction: column; justify-content: space-between; 
     }
+    div[data-testid="stImage"] { display: flex !important; justify-content: center !important; height: 160px !important; }
+    div[data-testid="stImage"] img { max-height: 150px !important; width: auto !important; object-fit: contain !important; }
     
     div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
     div.stButton button p { color: #ffffff !important; }
@@ -116,7 +97,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 4. SISTEMA DE SESIÓN
+# 3. SISTEMA DE SESIÓN
 # ==============================================================================
 SESSION_DURATION = 12 * 3600 
 
@@ -177,7 +158,7 @@ if not st.session_state.autenticado:
     st.stop()
 
 # ==============================================================================
-# 5. FUNCIONES
+# 4. FUNCIONES
 # ==============================================================================
 def es_coincidencia(busqueda, texto_db):
     if not busqueda: return True 
@@ -193,7 +174,7 @@ def es_coincidencia(busqueda, texto_db):
     return False
 
 # ==============================================================================
-# 6. MODALES
+# 5. MODALES
 # ==============================================================================
 @st.dialog("Gestionar Inventario")
 def modal_gestion(producto):
@@ -293,7 +274,7 @@ def modal_borrar_local(nombre):
         st.rerun()
 
 # ==============================================================================
-# 7. SIDEBAR
+# 6. SIDEBAR
 # ==============================================================================
 with st.sidebar:
     st.markdown(f"""
@@ -320,7 +301,7 @@ with st.sidebar:
         st.rerun()
 
 # ==============================================================================
-# 8. VISTAS PRINCIPALES
+# 7. VISTAS PRINCIPALES
 # ==============================================================================
 opcion = st.session_state.menu
 
