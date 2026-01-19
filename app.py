@@ -16,22 +16,39 @@ except:
     st.error("⚠️ Error crítico de conexión. Verifica tus 'secrets' en Streamlit.")
     st.stop()
 
-# 'initial_sidebar_state="expanded"' es vital aquí
+# 'initial_sidebar_state="expanded"' obliga a que la barra arranque abierta
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide", initial_sidebar_state="expanded")
 
 # ==============================================================================
-# 2. CSS MAESTRO: FIJAR BARRA Y LIMPIEZA
+# 2. CSS NUCLEAR: ELIMINAR FLECHAS Y FIJAR BARRA
 # ==============================================================================
 st.markdown("""
     <style>
-    /* 1. ELIMINAR EL BOTÓN DE CERRAR LA BARRA LATERAL (LA FLECHITA/X) */
-    /* Esto hace que la barra sea imposible de cerrar */
+    /* ============================================================
+       1. ZONA CRÍTICA: BORRAR EL BOTÓN DE CERRAR BARRA (<<)
+       ============================================================ */
+    
+    /* Selector principal del botón */
     [data-testid="stSidebarCollapsedControl"] {
         display: none !important;
         visibility: hidden !important;
+        opacity: 0 !important;
+        width: 0px !important;
     }
     
-    /* 2. OCULTAR BARRA SUPERIOR (HEADER Y TOOLBAR) */
+    /* Selector de respaldo por si el primero falla */
+    section[data-testid="stSidebar"] > div:first-child div[role="button"] {
+        display: none !important;
+    }
+    
+    /* Asegurar que no quede espacio vacío arriba en el sidebar */
+    section[data-testid="stSidebar"] .block-container {
+        padding-top: 2rem !important;
+    }
+
+    /* ============================================================
+       2. OCULTAR BARRA SUPERIOR Y DECORACIONES
+       ============================================================ */
     [data-testid="stToolbar"] {
         visibility: hidden !important;
         display: none !important;
@@ -43,19 +60,21 @@ st.markdown("""
         display: none !important;
     }
     
-    /* 3. OCULTAR PIE DE PÁGINA */
+    /* Ocultar pie de página */
     footer {
         display: none !important;
     }
     
-    /* 4. ESTILOS DE LA APP (FONDO BLANCO LIMPIO) */
+    /* ============================================================
+       3. ESTILOS DE LA APP (DISEÑO LIMPIO)
+       ============================================================ */
     .stApp, .main, .block-container { background-color: #ffffff !important; }
     
     /* Sidebar (Color Oscuro) */
     [data-testid="stSidebar"] { background-color: #1a222b !important; }
     [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
     
-    /* Botones Sidebar */
+    /* Estilo de los botones del menú lateral */
     [data-testid="stSidebar"] button { 
         background-color: transparent !important; 
         border: none !important; 
@@ -86,29 +105,25 @@ st.markdown("""
         -webkit-text-fill-color: #000000 !important; 
         border: 1px solid #888888 !important; 
     }
-    /* Inputs Bloqueados (Gris) */
     input:disabled { 
         background-color: #e9ecef !important; 
         color: #555555 !important; 
         -webkit-text-fill-color: #555555 !important; 
     }
     
-    /* Tarjetas y Modales */
+    /* Tarjetas y Elementos UI */
     div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
     div[data-testid="stVerticalBlockBorderWrapper"] { 
         background-color: #ffffff !important; 
         border: 1px solid #ddd !important; 
         padding: 10px !important; 
         box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; 
-        height: 100% !important; 
         display: flex; flex-direction: column; justify-content: space-between; 
     }
-    
-    /* Imágenes */
     div[data-testid="stImage"] { display: flex !important; justify-content: center !important; height: 160px !important; }
     div[data-testid="stImage"] img { max-height: 150px !important; width: auto !important; object-fit: contain !important; }
     
-    /* Botones */
+    /* Botones de acción */
     div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
     div.stButton button p { color: #ffffff !important; }
     div.stButton button:disabled, button[kind="secondary"] { background-color: #e74c3c !important; color: white !important; opacity: 1 !important; border: 1px solid #c0392b !important; }
@@ -122,7 +137,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 3. SISTEMA DE SESIÓN (12H + ANTI-REFRESCO)
+# 3. SISTEMA DE SESIÓN (12 HORAS)
 # ==============================================================================
 SESSION_DURATION = 12 * 3600 
 
@@ -133,7 +148,6 @@ if 'autenticado' not in st.session_state:
     st.session_state.menu = "Stock"
     st.session_state.login_time = 0
 
-# Anti-Refresco
 if not st.session_state.autenticado:
     params = st.query_params
     if "user_session" in params:
@@ -149,14 +163,13 @@ if not st.session_state.autenticado:
         except:
             pass
 
-# Verificar tiempo
 if st.session_state.autenticado:
     if (time.time() - st.session_state.login_time) > SESSION_DURATION:
         st.session_state.autenticado = False
         st.query_params.clear()
         st.rerun()
 
-# --- PANTALLA DE LOGIN ---
+# --- LOGIN ---
 if not st.session_state.autenticado:
     st.markdown("<br><br><h1 style='text-align:center; color:#2488bc;'>VILLAFIX SYSTEM</h1>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 1.5, 1])
@@ -185,7 +198,7 @@ if not st.session_state.autenticado:
     st.stop()
 
 # ==============================================================================
-# 4. FUNCIONES DE AYUDA
+# 4. FUNCIONES
 # ==============================================================================
 def es_coincidencia(busqueda, texto_db):
     if not busqueda: return True 
@@ -201,7 +214,7 @@ def es_coincidencia(busqueda, texto_db):
     return False
 
 # ==============================================================================
-# 5. MODALES (VENTANAS EMERGENTES)
+# 5. MODALES
 # ==============================================================================
 @st.dialog("Gestionar Inventario")
 def modal_gestion(producto):
@@ -215,7 +228,6 @@ def modal_gestion(producto):
         try: locs = [l['nombre'] for l in supabase.table("locales").select("nombre").execute().data]
         except: locs = ["Principal"]
 
-        # Sin st.form
         tecnico = st.selectbox("Técnico", ["Seleccionar"] + techs, key="ts")
         local = st.selectbox("Local", ["Seleccionar"] + locs, key="ls")
         max_val = producto['stock'] if producto['stock'] > 0 else 1
@@ -250,7 +262,6 @@ def modal_gestion(producto):
 @st.dialog("✨ Nuevo Producto")
 def modal_nuevo_producto():
     st.markdown("<h3 style='color:black;'>Crear Producto</h3>", unsafe_allow_html=True)
-    # Sin st.form
     n = st.text_input("Nombre / Modelo *")
     c1, c2 = st.columns(2)
     with c1: cat = st.selectbox("Categoría *", ["Pantallas", "Baterías", "Flex", "Glases", "Otros"])
@@ -269,7 +280,6 @@ def modal_nuevo_producto():
             q = supabase.table("productos").select("id").eq("nombre", n).eq("marca", m).eq("categoria", cat)
             if cod: q = q.eq("codigo_bateria", cod)
             else: q = q.eq("codigo_bateria", "")
-            
             if q.execute().data: st.error("⚠️ Producto Duplicado.")
             else:
                 with st.spinner('Guardando...'):
@@ -304,7 +314,7 @@ def modal_borrar_local(nombre):
         st.rerun()
 
 # ==============================================================================
-# 6. SIDEBAR (FIJA Y ABIERTA)
+# 6. SIDEBAR (FIJO)
 # ==============================================================================
 with st.sidebar:
     st.markdown(f"""
@@ -350,7 +360,6 @@ if opcion == "Stock":
             elif cat != "Todos" and p['categoria'] == cat and match: filtro.append(p)
             elif cat == "Todos" and match: filtro.append(p)
         
-        # Grid
         N_COLS = 4
         rows = [filtro[i:i + N_COLS] for i in range(0, len(filtro), N_COLS)]
         for row in rows:
@@ -364,7 +373,6 @@ if opcion == "Stock":
                                 <img src="{u_img}" style="max-height: 150px; width: auto; object-fit: contain;">
                             </div>
                         """, unsafe_allow_html=True)
-                        
                         marca = p.get('marca', '')
                         cod = p.get('codigo_bateria', '')
                         st.markdown(f"""
@@ -374,7 +382,6 @@ if opcion == "Stock":
                                 <div style='color:#555; font-size:11px; font-weight:bold; text-transform:uppercase; margin-top:2px;'>{cod}</div>
                             </div>
                         """, unsafe_allow_html=True)
-
                         k1, k2, k3 = st.columns([1, 1.2, 1.2])
                         with k1: st.markdown(f"<div style='text-align:center; color:black; font-size:12px; font-weight:bold;'>Stock<br><span style='font-size:14px;'>{p['stock']}</span></div>", unsafe_allow_html=True)
                         with k2: st.markdown(f"<div style='text-align:center; color:#2c3e50; font-size:12px;'>Gral.<br><span style='font-weight:bold;'>S/ {p['precio_venta']}</span></div>", unsafe_allow_html=True)
@@ -383,7 +390,6 @@ if opcion == "Stock":
                             col_p = "#27ae60" if pp else "#bdc3c7"
                             val_p = f"S/ {pp}" if pp else "--"
                             st.markdown(f"<div style='text-align:center; color:{col_p}; font-size:12px;'>Punto<br><span style='font-weight:bold;'>{val_p}</span></div>", unsafe_allow_html=True)
-                        
                         st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
                         if p['stock'] > 0: 
                             if st.button("SALIDA", key=f"s{p['id']}", use_container_width=True): modal_gestion(p)
@@ -411,7 +417,6 @@ elif opcion == "Carga":
         with st.container(border=True):
             st.markdown(f"### Editando: {p['nombre']}")
             
-            # CAMPOS BLOQUEADOS (GRIS)
             c1, c2 = st.columns(2)
             with c1:
                 st.text_input("Categoría (Bloqueado)", p['categoria'], disabled=True)
