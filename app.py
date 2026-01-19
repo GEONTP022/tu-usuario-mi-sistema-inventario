@@ -18,8 +18,88 @@ except:
 
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide")
 
+# --- CSS CORREGIDO (OCULTA TODO MENOS LA FLECHITA DEL MENÚ) ---
+st.markdown("""
+    <style>
+    /* 1. OCULTAR BARRA INFERIOR (Manage App) - ESTO SIGUE IGUAL */
+    [data-testid="stToolbar"] {
+        visibility: hidden !important;
+        display: none !important;
+    }
+    
+    /* 2. OCULTAR FOOTER */
+    footer {
+        visibility: hidden !important;
+        display: none !important;
+    }
+    
+    /* 3. OCULTAR MENÚ DE HAMBURGUESA (Los 3 puntos a la derecha) */
+    #MainMenu {
+        visibility: hidden !important;
+        display: none !important;
+    }
+    
+    /* 4. OCULTAR LA BARRA DE COLORES DE ARRIBA (Decoración) */
+    [data-testid="stDecoration"] {
+        visibility: hidden !important;
+        display: none !important;
+    }
+    
+    /* 5. FIX CRÍTICO: ASEGURAR QUE LA FLECHITA (>) SEA VISIBLE */
+    [data-testid="stSidebarCollapsedControl"] {
+        visibility: visible !important;
+        display: block !important;
+        color: #1a222b !important; /* Color oscuro para que se vea */
+    }
+    
+    /* 6. ESTILOS GENERALES */
+    .stApp, .main, .block-container { background-color: #ffffff !important; }
+    
+    /* Sidebar */
+    [data-testid="stSidebar"] { background-color: #1a222b !important; }
+    [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+    [data-testid="stSidebar"] button { background-color: transparent !important; border: none !important; color: #bdc3c7 !important; text-align: left !important; padding-left: 15px !important; transition: 0.3s; }
+    [data-testid="stSidebar"] button:hover { background-color: rgba(255,255,255,0.05) !important; border-left: 4px solid #3498db !important; color: #ffffff !important; padding-left: 25px !important; }
+    
+    /* Textos */
+    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetricLabel { color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-weight: 700 !important; }
+    div[data-testid="stMetricValue"] { color: #2488bc !important; -webkit-text-fill-color: #2488bc !important; }
+    
+    /* Inputs */
+    input, textarea, .stNumberInput input { background-color: #ffffff !important; color: #000000 !important; -webkit-text-fill-color: #000000 !important; border: 1px solid #888888 !important; caret-color: #000000 !important; }
+    input:disabled { background-color: #e9ecef !important; color: #555555 !important; -webkit-text-fill-color: #555555 !important; }
+    div[data-baseweb="select"] > div { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #888888 !important; }
+    div[data-baseweb="select"] span { color: #000000 !important; -webkit-text-fill-color: #000000 !important; }
+    ul[data-testid="stSelectboxVirtualDropdown"] { background-color: #ffffff !important; }
+    ul[data-testid="stSelectboxVirtualDropdown"] li { background-color: #ffffff !important; color: #000000 !important; }
+    ul[data-testid="stSelectboxVirtualDropdown"] li:hover { background-color: #f0f2f6 !important; }
+    
+    /* Modal */
+    div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
+    
+    /* Tarjetas */
+    div[data-testid="stVerticalBlockBorderWrapper"] { background-color: #ffffff !important; border: 1px solid #ddd !important; padding: 10px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; height: 100% !important; min-height: 350px !important; display: flex; flex-direction: column; justify-content: space-between; }
+    
+    /* Imágenes */
+    div[data-testid="stImage"] { display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; margin: 0 auto !important; height: 160px !important; }
+    div[data-testid="stImage"] img { display: block !important; margin-left: auto !important; margin-right: auto !important; max-height: 150px !important; width: auto !important; object-fit: contain !important; }
+    
+    /* Botones */
+    div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
+    div.stButton button p { color: #ffffff !important; }
+    div.stButton button:disabled, button[kind="secondary"] { background-color: #e74c3c !important; color: white !important; opacity: 1 !important; border: 1px solid #c0392b !important; }
+    div.stButton button:disabled p { color: white !important; }
+    
+    button[data-baseweb="tab"] { color: #000000 !important; }
+    div[data-baseweb="tab-list"] { background-color: #f1f3f4 !important; border-radius: 8px; }
+    .profile-section { text-align: center !important; padding: 20px 0px; }
+    .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
+    [data-testid="stSidebarNav"] {display: none;}
+    </style>
+    """, unsafe_allow_html=True)
+
 # ==============================================================================
-# 2. SISTEMA DE SESIÓN Y ESTILOS GLOBALES
+# 2. SISTEMA DE SESIÓN (PERSISTENTE + 12 HORAS)
 # ==============================================================================
 SESSION_DURATION = 12 * 3600 
 
@@ -29,20 +109,6 @@ if 'autenticado' not in st.session_state:
     st.session_state.user = None
     st.session_state.menu = "Stock"
     st.session_state.login_time = 0
-
-# --- CSS NUCLEAR GLOBAL (Oculta barras de Streamlit siempre) ---
-st.markdown("""
-    <style>
-    [data-testid="stToolbar"] {visibility: hidden !important; display: none !important; height: 0px !important;}
-    header {visibility: hidden !important; display: none !important;}
-    #MainMenu {visibility: hidden !important; display: none !important;}
-    footer {visibility: hidden !important; display: none !important;}
-    .stDeployButton {display: none !important;}
-    [data-testid="stDecoration"] {display: none !important;}
-    [data-testid="stStatusWidget"] {display: none !important;}
-    .stApp > header {display: none !important;}
-    </style>
-    """, unsafe_allow_html=True)
 
 # --- LÓGICA ANTI-REFRESCO ---
 if not st.session_state.autenticado:
@@ -72,86 +138,31 @@ if st.session_state.autenticado:
         time.sleep(2)
         st.rerun()
 
-# ==============================================================================
-# 3. PANTALLA DE LOGIN (DISEÑO "ELEGANTE Y PROFESIONAL")
-# ==============================================================================
+# --- PANTALLA DE LOGIN (DISEÑO ELEGANTE) ---
 if not st.session_state.autenticado:
-    # --- CSS ESPECÍFICO SOLO PARA EL LOGIN ---
+    # CSS específico del login
     st.markdown("""
         <style>
-        /* 1. FONDO DE PANTALLA PROFESIONAL */
         .stApp {
-            /* Imagen de fondo tecnológica abstracta */
-            background-image: url('https://img.freepik.com/free-vector/gradient-technological-background_23-2148884155.jpg?w=1380&t=st=1706000000~exp=1706003600~hmac=example'); 
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
+            background-image: url('https://img.freepik.com/free-vector/gradient-technological-background_23-2148884155.jpg?w=1380'); 
+            background-size: cover; background-position: center;
         }
-        
-        /* 2. TÍTULO PRINCIPAL (Blanco y grande) */
-        .login-title {
-            text-align: center;
-            color: white !important;
-            font-size: 42px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 25px;
-            text-shadow: 0px 2px 4px rgba(0,0,0,0.5);
-        }
-
-        /* 3. TARJETA DE LOGIN (Caja blanca flotante) */
-        [data-testid="stVerticalBlockBorderWrapper"] {
-            background-color: rgba(255, 255, 255, 0.95) !important; /* Blanco casi sólido */
-            border-radius: 20px !important; /* Bordes muy redondeados */
-            border: none !important; /* Quitar borde gris feo */
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3) !important; /* Sombra profunda y elegante */
-            padding: 30px !important;
-        }
-
-        /* 4. SUBTÍTULO DENTRO DE LA TARJETA */
-        .login-card-subtitle {
-            text-align: center;
-            color: #1a222b !important;
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 20px;
-        }
-        
-        /* 5. MEJORA DE LOS INPUTS */
-        [data-testid="stTextInput"] input {
-            border-radius: 10px !important;
-            border: 1px solid #d1d5db !important;
-            padding: 10px !important;
-            background-color: #f9fafb !important;
-        }
-        
-        /* Centrar el contenido verticalmente */
-        .block-container {
-            padding-top: 10vh !important;
-        }
+        .login-title { text-align: center; color: white !important; font-size: 42px; font-weight: 800; text-shadow: 0px 2px 4px rgba(0,0,0,0.5); }
+        [data-testid="stVerticalBlockBorderWrapper"] { background-color: rgba(255, 255, 255, 0.95) !important; border-radius: 20px !important; box-shadow: 0 15px 35px rgba(0,0,0,0.3) !important; padding: 30px !important; }
+        .block-container { padding-top: 10vh !important; }
         </style>
     """, unsafe_allow_html=True)
 
-    # --- ESTRUCTURA DEL LOGIN ---
     st.markdown('<h1 class="login-title">VILLAFIX SYSTEM</h1>', unsafe_allow_html=True)
-    
-    # Usamos columnas para centrar la tarjeta
-    c_left, c_center, c_right = st.columns([1, 2, 1]) # c_center es más ancho ahora
-    
-    with c_center:
-        # El contenedor con border=True es el que nuestro CSS transforma en "tarjeta"
+    c1, c2, c3 = st.columns([1, 2, 1])
+    with c2:
         with st.container(border=True):
-            st.markdown('<h3 class="login-card-subtitle">Acceso Seguro</h3>', unsafe_allow_html=True)
-            
+            st.markdown('<h3 style="text-align:center; color:#333;">Acceso Seguro</h3>', unsafe_allow_html=True)
             with st.form("login_form"):
-                # Iconos en los labels para que se vea más moderno
                 u = st.text_input("👤 Usuario")
                 p = st.text_input("🔒 Contraseña", type="password")
-                
                 st.markdown("<br>", unsafe_allow_html=True)
-                # Botón ancho
-                submit = st.form_submit_button("➡️ INGRESAR AL SISTEMA", use_container_width=True)
+                submit = st.form_submit_button("➡️ INGRESAR", use_container_width=True)
             
             if submit:
                 try:
@@ -164,16 +175,13 @@ if not st.session_state.autenticado:
                         st.query_params["user_session"] = u
                         st.rerun()
                     else:
-                        # Mensaje de error dentro de la tarjeta
-                        st.error("❌ Usuario o contraseña incorrectos.")
-                except Exception as e:
-                    st.error(f"Error de conexión: {e}")
-    
-    # Detenemos aquí para que no se cargue el resto de la app si no hay login
+                        st.error("❌ Credenciales incorrectas")
+                except:
+                    st.error("Error de conexión")
     st.stop()
 
 # ==============================================================================
-# 4. FUNCIONES DE AYUDA
+# 3. FUNCIONES DE AYUDA
 # ==============================================================================
 
 def es_coincidencia(busqueda, texto_db):
@@ -190,58 +198,7 @@ def es_coincidencia(busqueda, texto_db):
     return False
 
 # ==============================================================================
-# 5. ESTILOS DE LA APP PRINCIPAL (SE APLICAN CUANDO YA ENTRASTE)
-# ==============================================================================
-st.markdown("""
-    <style>
-    /* Volvemos el fondo blanco para la app principal */
-    .stApp, .main, .block-container { background-color: #ffffff !important; background-image: none !important; }
-    
-    /* Sidebar */
-    [data-testid="stSidebar"] { background-color: #1a222b !important; }
-    [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
-    [data-testid="stSidebar"] button { background-color: transparent !important; border: none !important; color: #bdc3c7 !important; text-align: left !important; padding-left: 15px !important; transition: 0.3s; }
-    [data-testid="stSidebar"] button:hover { background-color: rgba(255,255,255,0.05) !important; border-left: 4px solid #3498db !important; color: #ffffff !important; padding-left: 25px !important; }
-    
-    /* Textos */
-    div[data-testid="stWidgetLabel"] p, label, .stMarkdown p, h1, h2, h3, .stDialog p, .stDialog label, div[role="dialog"] p, .stMetricLabel { color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-weight: 700 !important; }
-    div[data-testid="stMetricValue"] { color: #2488bc !important; -webkit-text-fill-color: #2488bc !important; }
-    
-    /* Inputs */
-    input, textarea, .stNumberInput input { background-color: #ffffff !important; color: #000000 !important; -webkit-text-fill-color: #000000 !important; border: 1px solid #888888 !important; caret-color: #000000 !important; }
-    input:disabled { background-color: #e9ecef !important; color: #555555 !important; -webkit-text-fill-color: #555555 !important; }
-    div[data-baseweb="select"] > div { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #888888 !important; }
-    div[data-baseweb="select"] span { color: #000000 !important; -webkit-text-fill-color: #000000 !important; }
-    ul[data-testid="stSelectboxVirtualDropdown"] { background-color: #ffffff !important; }
-    ul[data-testid="stSelectboxVirtualDropdown"] li { background-color: #ffffff !important; color: #000000 !important; }
-    ul[data-testid="stSelectboxVirtualDropdown"] li:hover { background-color: #f0f2f6 !important; }
-    
-    /* Modal */
-    div[role="dialog"] { background-color: #ffffff !important; color: #000000 !important; }
-    
-    /* Tarjetas internas */
-    div[data-testid="stVerticalBlockBorderWrapper"] { background-color: #ffffff !important; border: 1px solid #ddd !important; padding: 10px !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; min-height: unset !important; }
-    
-    /* Imágenes */
-    div[data-testid="stImage"] { display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; margin: 0 auto !important; height: 160px !important; }
-    div[data-testid="stImage"] img { display: block !important; margin-left: auto !important; margin-right: auto !important; max-height: 150px !important; width: auto !important; object-fit: contain !important; }
-    
-    /* Botones */
-    div.stButton button { background-color: #2488bc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; width: 100% !important; margin-top: auto !important; }
-    div.stButton button p { color: #ffffff !important; }
-    div.stButton button:disabled, button[kind="secondary"] { background-color: #e74c3c !important; color: white !important; opacity: 1 !important; border: 1px solid #c0392b !important; }
-    div.stButton button:disabled p { color: white !important; }
-    
-    button[data-baseweb="tab"] { color: #000000 !important; }
-    div[data-baseweb="tab-list"] { background-color: #f1f3f4 !important; border-radius: 8px; }
-    .profile-section { text-align: center !important; padding: 20px 0px; }
-    .profile-pic { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f39c12; object-fit: cover; display: block; margin: 0 auto 10px auto; }
-    [data-testid="stSidebarNav"] {display: none;}
-    </style>
-    """, unsafe_allow_html=True)
-
-# ==============================================================================
-# 6. VENTANAS EMERGENTES (MODALES)
+# 4. VENTANAS EMERGENTES (MODALES)
 # ==============================================================================
 
 @st.dialog("Gestionar Inventario")
@@ -256,7 +213,6 @@ def modal_gestion(producto):
         try: locs = [l['nombre'] for l in supabase.table("locales").select("nombre").execute().data]
         except: locs = ["Principal"]
 
-        # Sin st.form para evitar Enter
         tecnico = st.selectbox("Técnico", ["Seleccionar"] + techs, key="tec_sal")
         local = st.selectbox("Local", ["Seleccionar"] + locs, key="loc_sal")
         max_val = producto['stock'] if producto['stock'] > 0 else 1
@@ -307,7 +263,6 @@ def modal_gestion(producto):
 def modal_nuevo_producto():
     st.markdown("<h3 style='color:black;'>Crear Producto</h3>", unsafe_allow_html=True)
     
-    # Campos sueltos (Sin st.form para evitar Enter)
     n = st.text_input("Nombre / Modelo *")
     
     col_cat, col_mar = st.columns(2)
@@ -395,7 +350,7 @@ def modal_borrar_local(nombre):
         st.rerun()
 
 # ==============================================================================
-# 7. MENÚ LATERAL (SIDEBAR)
+# 5. MENÚ LATERAL (SIDEBAR)
 # ==============================================================================
 with st.sidebar:
     st.markdown(f"""
@@ -422,7 +377,7 @@ with st.sidebar:
         st.rerun()
 
 # ==============================================================================
-# 8. PANTALLAS PRINCIPALES
+# 6. PANTALLAS PRINCIPALES
 # ==============================================================================
 opcion = st.session_state.menu
 
