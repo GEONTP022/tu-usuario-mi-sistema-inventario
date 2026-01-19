@@ -16,11 +16,11 @@ except:
     st.error("⚠️ Error crítico de conexión. Verifica tus 'secrets' en Streamlit.")
     st.stop()
 
-# 'initial_sidebar_state="expanded"' obliga a que la barra arranque abierta
+# 'initial_sidebar_state="expanded"' OBLIGA a que la barra arranque abierta
 st.set_page_config(page_title="VillaFix | Admin", page_icon="🛠️", layout="wide", initial_sidebar_state="expanded")
 
 # ==============================================================================
-# 2. CSS NUCLEAR: ELIMINAR FLECHAS Y FIJAR BARRA
+# 2. CSS NUCLEAR: ELIMINAR FLECHAS << Y FIJAR BARRA
 # ==============================================================================
 st.markdown("""
     <style>
@@ -28,26 +28,25 @@ st.markdown("""
        1. ZONA CRÍTICA: BORRAR EL BOTÓN DE CERRAR BARRA (<<)
        ============================================================ */
     
-    /* Selector principal del botón */
+    /* Selector específico para el botón de colapsar dentro del Sidebar */
+    section[data-testid="stSidebar"] button[kind="header"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    
+    /* Selector global para el control de colapso */
     [data-testid="stSidebarCollapsedControl"] {
         display: none !important;
         visibility: hidden !important;
-        opacity: 0 !important;
-        width: 0px !important;
     }
     
-    /* Selector de respaldo por si el primero falla */
-    section[data-testid="stSidebar"] > div:first-child div[role="button"] {
-        display: none !important;
-    }
-    
-    /* Asegurar que no quede espacio vacío arriba en el sidebar */
+    /* Ajuste para que no quede un hueco vacío arriba en la barra */
     section[data-testid="stSidebar"] .block-container {
-        padding-top: 2rem !important;
+        padding-top: 1rem !important;
     }
 
     /* ============================================================
-       2. OCULTAR BARRA SUPERIOR Y DECORACIONES
+       2. OCULTAR BARRA SUPERIOR, DECORACIONES Y MANAGE APP
        ============================================================ */
     [data-testid="stToolbar"] {
         visibility: hidden !important;
@@ -63,6 +62,7 @@ st.markdown("""
     /* Ocultar pie de página */
     footer {
         display: none !important;
+        height: 0px !important;
     }
     
     /* ============================================================
@@ -74,7 +74,7 @@ st.markdown("""
     [data-testid="stSidebar"] { background-color: #1a222b !important; }
     [data-testid="stSidebar"] * { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
     
-    /* Estilo de los botones del menú lateral */
+    /* Estilo de los botones del menú lateral (Tus botones personalizados) */
     [data-testid="stSidebar"] button { 
         background-color: transparent !important; 
         border: none !important; 
@@ -83,6 +83,7 @@ st.markdown("""
         padding-left: 15px !important; 
         transition: 0.3s; 
     }
+    /* Efecto Hover en menú */
     [data-testid="stSidebar"] button:hover { 
         background-color: rgba(255,255,255,0.05) !important; 
         border-left: 4px solid #3498db !important; 
@@ -228,6 +229,7 @@ def modal_gestion(producto):
         try: locs = [l['nombre'] for l in supabase.table("locales").select("nombre").execute().data]
         except: locs = ["Principal"]
 
+        # Sin st.form
         tecnico = st.selectbox("Técnico", ["Seleccionar"] + techs, key="ts")
         local = st.selectbox("Local", ["Seleccionar"] + locs, key="ls")
         max_val = producto['stock'] if producto['stock'] > 0 else 1
